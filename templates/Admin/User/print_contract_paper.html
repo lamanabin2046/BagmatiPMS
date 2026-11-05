@@ -1,0 +1,406 @@
+<!-- {% load nepali_datetime_field %}
+{% load letters %} -->
+<!DOCTYPE html>
+{% load static %}
+{% load nepali_date %}
+{% load nepali_filters %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>आयोजना तथा कार्यक्रम सम्झौता फाराम</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ================= RESET ================= */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ================= PAGE / PRINT SETTINGS ================= */
+    @page {
+      size: A4;
+      margin: 20mm 16mm 18mm 22mm; /* extra left margin for punching/binding */
+    }
+
+    :root {
+      --gov-red: #b0281f;
+      --gov-red-dark: #8c1f18;
+      --ink: #1c1c1c;
+      --muted: #6b6b6b;
+      --hairline: #d8c9a3;
+    }
+
+    html, body { background: #e9e9e9; }
+
+    body {
+      font-family: 'Noto Sans Devanagari', 'Mangal', 'Inter', Arial, sans-serif;
+      font-size: 13.5px;
+      line-height: 1.62;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ================= A4 SHEET (screen preview only) ================= */
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 14mm auto;
+      background: #fff;
+      padding: 18mm 14mm 16mm 20mm;
+      box-shadow: 0 4px 28px rgba(0,0,0,.18);
+    }
+
+    /* ================= FORM HEADER (अनुसूची - २) ================= */
+    .form-header { text-align: center; margin-bottom: 16px; }
+    .form-schedule { font-size: 14px; font-weight: 700; }
+    .form-clause { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .form-office-name { font-size: 19px; font-weight: 800; color: var(--gov-red); margin-top: 8px; letter-spacing: .3px; }
+    .form-title {
+      font-weight: 700;
+      font-size: 15px;
+      margin: 6px 0 4px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* ================= CLAUSES ================= */
+    .clause-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--gov-red-dark);
+      background: #fbf3e7;
+      border-left: 4px solid var(--gov-red);
+      padding: 5px 12px;
+      margin: 13px 0 7px;
+    }
+    .clause-body { padding: 0 4px; text-align: justify; }
+    .clause-body p { margin-bottom: 5px; }
+    .clause-body ol,
+    .clause-body ul {
+      margin: 3px 0 6px 22px;
+    }
+    .clause-body li { margin-bottom: 2px; }
+    .inline-fields { list-style: none; margin-left: 0; }
+    .inline-fields li { margin-bottom: 2px; }
+    .sub-label { font-weight: 600; }
+    .benefit-row { display: flex; flex-wrap: wrap; gap: 4px 34px; list-style: none; margin: 3px 0 6px; }
+
+    /* ================= PAGE BREAK CONTROL ================= */
+    .page-break-before {
+      page-break-before: always;
+      break-before: page;
+    }
+    .clause-title { page-break-after: avoid; break-after: avoid; }
+
+    /* ================= TABLE ================= */
+    .table-box {
+      margin: 6px 0 8px;
+      border: 1px solid var(--hairline);
+      border-radius: 4px;
+      overflow: hidden;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border-bottom: 1px solid #eee0c6; padding: 5px 10px; text-align: left; }
+    tbody tr:last-child td { border-bottom: none; }
+    th { background: #fbf3e7; color: var(--gov-red-dark); font-weight: 700; font-size: 11.5px; }
+    .col-sn { width: 34px; text-align: center; }
+    .col-post { width: 90px; }
+
+    /* ================= TERMS LIST ================= */
+    .terms-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--gov-red-dark);
+      background: #fbf3e7;
+      border-left: 4px solid var(--gov-red);
+      padding: 5px 12px;
+      margin: 13px 0 7px;
+    }
+    .terms-subtitle {
+      font-size: 12.5px;
+      font-weight: 700;
+      text-decoration: underline;
+      margin: 12px 0 5px;
+    }
+    .terms-list {
+      list-style: decimal;
+      margin: 0 0 4px 22px;
+      text-align: justify;
+      font-size: 12.5px;
+    }
+    .terms-list li { margin-bottom: 4px; }
+    .terms-agree { margin: 12px 0 6px; text-align: justify; font-size: 12.5px; }
+
+    /* ================= SIGNATURES ================= */
+    .signature-grid {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+      margin-top: 10px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .signature-grid .sig-col { display: table-cell; vertical-align: top; padding: 0 12px 0 0; width: 50%; }
+    .sig-block { margin-bottom: 20px; }
+    .sig-block .sig-label {
+      display: inline-block;
+      font-weight: 700;
+      color: var(--gov-red-dark);
+      border-bottom: 2px solid var(--gov-red);
+      padding-bottom: 3px;
+      margin-bottom: 10px;
+      font-size: 12.5px;
+    }
+    .sig-block p { font-size: 12px; line-height: 1.8; }
+
+    /* ================= PRINT ADJUSTMENTS ================= */
+    @media print {
+      html, body { background: #fff; }
+      .sheet { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+      .table-box, .signature-grid { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="sheet">
+{% editable_letter "user.print_contract_paper" "आयोजना तथा कार्यक्रम सम्झौता फाराम" %}
+
+  <!-- ================= FORM HEADER ================= -->
+  <div class="form-header">
+    <div class="form-schedule">अनुसूची - २</div>
+    <div class="form-clause">(कार्यविधिको दफा ९ (२) सँग सम्बन्धित)</div>
+    <div class="form-office-name">{{ palika.full_name }}</div>
+    <div class="form-title">आयोजना तथा कार्यक्रम सम्झौता फाराम</div>
+  </div>
+
+  <!-- ================= CONTRACT CONTENT ================= -->
+
+  <div class="clause-title">१. सम्झौता गर्ने पक्ष र आयोजनाः</div>
+  <div class="clause-body">
+    <p class="sub-label">क) उपभोक्ता समितिको विवरणः</p>
+    <ol class="inline-fields">
+      <li>नाम : {{ usercommittee.name }}</li>
+      <li>ठेगाना : वडा नं. {{ project.ward.name|to_nepali_number }}, {{ project.address }}</li>
+    </ol>
+    <p class="sub-label">ख) आयोजनाको विवरणः</p>
+    <ol class="inline-fields">
+      <li>नाम : {{ project.name }}</li>
+      <li>आयोजना स्थल : {{ project.address }}</li>
+      <li>उद्देश्य : ……………………………………………………………………</li>
+      <li>आयोजना सुरु हुने मिति : {{ start_date_nepali|nepali_date }}</li>
+    </ol>
+  </div>
+
+  <div class="clause-title">२. आयोजनाको लागत सम्बन्धी विवरणः</div>
+  <div class="clause-body">
+    <p class="sub-label">क) लागत अनुमान रु. : {{ cost_estimate.total_cost|to_nepali_number }}</p>
+    <p class="sub-label">ख) लागत व्यहोर्ने स्रोतहरू</p>
+    <ol class="inline-fields">
+      <li>कार्यालय : {{ office|to_nepali_number }}</li>
+      <li>उपभोक्ता समिति : {{ cost_estimate.user_contribution|to_nepali_number }}</li>
+      <li>अन्य : ……………………</li>
+    </ol>
+
+    <p class="sub-label" style="margin-top:6px;">ग) बस्तुगत अनुदानको विवरण <span style="font-weight:400;color:var(--muted);">(सामग्रीको नाम र एकाई)</span></p>
+    <ol class="inline-fields">
+      <li>संघबाट : ……………………………………………</li>
+      <li>प्रदेशबाट : ……………………………………………</li>
+      <li>स्थानीय तहबाट : ……………………………………………</li>
+      <li>गैरसरकारी संघ/संस्थाबाट : ……………………………………………</li>
+      <li>विदेशी दातृ संघ/संस्थाबाट : ……………………………………………</li>
+      <li>उपभोक्ता समितिबाट : ……………………………………………</li>
+      <li>अन्य निकायबाट : ……………………………………………</li>
+    </ol>
+
+    <p class="sub-label" style="margin-top:6px;">घ) आयोजनाबाट लाभान्वित हुनेः</p>
+    <ul class="benefit-row">
+      <li>१. घरपरिवार संख्या : ……………</li>
+      <li>२. जनसंख्या : ……………</li>
+      <li>३. संगठित संस्था : ……………</li>
+      <li>४. अन्य : ……………</li>
+    </ul>
+  </div>
+
+  <div class="page-break-before"></div>
+
+  <div class="clause-title">३. उपभोक्ता समिति/समुदायमा आधारित संस्था/गैरसरकारी संस्थाको विवरणः</div>
+  <div class="clause-body">
+    <p class="sub-label">क) गठन भएको मितिः {{ formation_date_nepali|nepali_date }}</p>
+    <p class="sub-label" style="margin-top:4px;">ख) पदाधिकारीको नाम र ठेगाना (नागरिकता प्रमाणपत्र नं. र जिल्ला)</p>
+
+    <div class="table-box">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-sn">सि.नं.</th>
+            <th class="col-post">पद</th>
+            <th>नाम, थर</th>
+            <th>ठेगाना</th>
+            <th>ना.प्र.नं.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in usercommittee.roster %}
+          <tr>
+            <td class="col-sn">{{ forloop.counter|to_nepali_number }}</td>
+            <td>{{ m.post_label }}</td>
+            <td>{{ m.name }}</td>
+            <td>{% if m.address %}{{ m.address }}{% else %}&nbsp;{% endif %}</td>
+            <td>{% if m.citizenship %}{{ m.citizenship }}{% elif m.nid %}NID: {{ m.nid }}{% else %}&nbsp;{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="sub-label">ग) गठन गर्दा उपस्थित लाभान्वितको संख्याः ……………………</p>
+  </div>
+
+  <div class="clause-title">४. आयोजना सञ्चालन सम्बन्धी अनुभवः</div>
+  <div class="clause-body">
+    <p>……………………………………………………………………………………………………</p>
+  </div>
+
+  <div class="clause-title">५. उपभोक्ता समिति/समुदायमा आधारित संस्था/गैरसरकारी संस्थाले प्राप्त गर्ने किस्ता विवरणः</div>
+  <div class="clause-body">
+    <div class="table-box">
+      <table>
+        <thead>
+          <tr>
+            <th>किस्ताको क्रम</th>
+            <th>मिति</th>
+            <th>किस्ता रकम</th>
+            <th>निर्माण सामग्री</th>
+            <th>परिमाण</th>
+            <th>कैफियत</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>पहिलो</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+          <tr><td>दोस्रो</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+          <tr><td>तेस्रो</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+          <tr><td style="text-align:right;font-weight:700;">जम्मा रु.</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="clause-title">६. आयोजना मर्मत संभार सम्बन्धी व्यवस्थाः</div>
+  <div class="clause-body">
+    <p class="sub-label">क) आयोजना मर्मत संभारको जिम्मा लिने समिति/संस्थाको नामः {{ usercommittee.name }}</p>
+    <p class="sub-label" style="margin-top:6px;">ख) मर्मत सम्भारको सम्भावित स्रोत <span style="font-weight:400;color:var(--muted);">(छ/छैन खुलाउने)</span></p>
+    <ol class="inline-fields">
+      <li>जनश्रमदान : ……………………………</li>
+      <li>सेवा शुल्क : ……………………………</li>
+      <li>दस्तुर, चन्दाबाट : ……………………………</li>
+      <li>अन्य केही भए : ……………………………</li>
+    </ol>
+  </div>
+
+  <div class="page-break-before"></div>
+
+  <!-- ================= TERMS AND CONDITIONS ================= -->
+  <div class="terms-title">सम्झौताका शर्तहरू</div>
+
+  <div class="terms-subtitle">उपभोक्ता समितिको जिम्मेवारी तथा पालना गर्नुपर्ने शर्तहरूः</div>
+  <ol class="terms-list">
+    <li>आयोजना मिति {{ start_date_nepali|nepali_date }} देखि शुरु गरी मिति {{ accomplish_date_nepali|nepali_date }} सम्ममा पुरा गर्नु पर्नेछ ।</li>
+    <li>प्राप्त रकम तथा निर्माण सामग्री सम्बन्धित आयोजनाको उद्देश्यका लागि मात्र प्रयोग गर्नुपर्नेछ ।</li>
+    <li>नगदी, जिन्सी सामानको प्राप्ती, खर्च र बाँकी तथा आयोजनाको प्रगति विवरण राख्नु पर्नेछ ।</li>
+    <li>आम्दानी खर्चको विवरण र कार्य प्रगतिको जानकारी उपभोक्ता समूहमा छलफल गरी अर्को किस्ता माग गर्नु पर्नेछ ।</li>
+    <li>आयोजनाको कुल लागत भन्दा घटी लागतमा आयोजना सम्पन्न भएको अवस्थामा सो मुताविकनै अनुदान र श्रमदानको प्रतिशत निर्धारण गरी भुक्तानी लिनु पर्नेछ ।</li>
+    <li>उपभोक्ता समितिले प्राविधिकको राय, परामर्श एवं निर्देशन अनुरूप काम गर्नु पर्नेछ ।</li>
+    <li>उपभोक्ता समितिले आयोजनासँग सम्बन्धित बिल, भरपाईहरू, डोर हाजिरी फारामहरू, जिन्सी नगदी खाताहरू, समिति/समूहको निर्णय पुस्तिका आदि कागजातहरू कार्यालयले मागेको बखत उपलब्ध गराउनु पर्नेछ र त्यसको लेखापरीक्षण गर्न लगाउनु पर्नेछ ।</li>
+    <li>कुनै सामग्री खरिद गर्दा आन्तरिक राजस्व कार्यालयबाट स्थायी लेखा नम्बर र मूल्य अभिबृद्धि कर दर्ता प्रमाण पत्र प्राप्त व्यक्ति वा फर्म संस्था वा कम्पनीबाट खरिद गरी सोही अनुसारको बिल भरपाई आधिकारिक व्यक्तिबाट प्रमाणित गरी पेश गर्नु पर्नेछ ।</li>
+    <li>मूल्य अभिबृद्धि कर (VAT) लाग्ने वस्तु तथा सेवा खरिद गर्दा रु २०,०००।– भन्दा बढी मूल्यको सामग्रीमा अनिवार्य रूपमा मूल्य अभिबृद्धि कर दर्ता प्रमाणपत्र प्राप्त गरेका व्यक्ति फर्म संस्था वा कम्पनीबाट खरिद गर्नु पर्नेछ । साथै उक्त बिलमा उल्लिखित मु.अ.कर बाहेकको रकममा १.५% अग्रिम आयकर बापत करकट्टी गरी बाँकी रकम मात्र सम्बन्धित सेवा प्रदायकलाई भुक्तानी हुनेछ । रु २०,०००।– भन्दा कम मूल्यको सामग्री खरिदमा पान नम्बर लिएको व्यक्ति वा फर्मबाट खरिद गर्नु पर्नेछ । अन्यथा खरिद गर्ने पदाधिकारी स्वयम् जिम्मेवार हुनेछ ।</li>
+    <li>डोजर रोलर लगायतका मेशिनरी सामान भाडामा लिएको एवम् घर बहालमा लिई बिल भरपाई पेश भएको अवस्थामा १०% प्रतिशत घर भाडा कर एवम् बहाल कर तिर्नु पर्नेछ ।</li>
+    <li>निर्माण कार्यको हकमा शुरु लागत अनुमानका कुनै आइटमहरूमा परिवर्तन हुने भएमा अधिकार प्राप्त व्यक्ति/कार्यालयबाट लागत अनुमान संशोधन गरे पश्चात मात्र कार्य गराउनु पर्नेछ । यसरी लागत अनुमान संशोधन नगरी कार्य गरेमा उपभोक्ता समिति/समूहनै जिम्मेवार हुनेछ ।</li>
+    <li>उपभोक्ता समितिले काम सम्पन्न गरिसकेपछि बाँकी रहन गएका खप्ने सामानहरू मर्मत संभार समिति गठन भएको भए सो समितिलाई र सो नभए सम्बन्धित कार्यालयलाई बुझाउनु पर्नेछ । तर मर्मत समितिलाई बुझाएको सामानको विवरण एक प्रति सम्बन्धित कार्यालयलाई जानकारीको लागि बुझाउनु पर्नेछ ।</li>
+    <li>सम्झौता बमोजिम आयोजना सम्पन्न भएपछि अन्तिम भुक्तानीको लागि कार्यसम्पन्न प्रतिवेदन, नापी किताब, प्रमाणित बिल भरपाई, आयोजनाको तस्वीर, सम्बन्धित उपभोक्ता समितिले आयोजना संचालन गर्दा भएको आय व्ययको अनुमोदन सहितको निर्णय, उपभोक्ता भेलाबाट भएको सार्वजनिक लेखा परीक्षणको निर्णयको प्रतिलिपि तथा वडा कार्यालयको सिफारिस सहित अन्तिम किस्ता भुक्तानीको लागि निवेदन पेश गर्नु पर्नेछ ।</li>
+    <li>आयोजना सम्पन्न भएपछि कार्यालयबाट जाँचपास गरी फरफारकको प्रमाणपत्र लिनु पर्नेछ । साथै आयोजनाको आवश्यक मर्मत संभारको व्यवस्था सम्बन्धित उपभोक्ताहरूले नै गर्नु पर्नेछ ।</li>
+    <li>आयोजना कार्यान्वयन गर्ने समूह वा उपभोक्ता समितिले आयोजनाको भौतिक तथा वित्तीय प्रगति प्रतिवेदन अनुसूची ६ को ढाँचामा सम्झौतामा तोकिए बमोजिम कार्यालयमा पेश गर्नु पर्नेछ ।</li>
+    <li>आयोजनाको दिगो सञ्चालन तथा मर्मत संभारको व्यवस्था गर्नु पर्नेछ ।</li>
+    <li>आयोजनाको सबै काम उपभोक्ता समिति/समूहको निर्णय अनुसार गर्नु/गराउनु पर्नेछ ।</li>
+    <li>सामुदायिक भवन वा सार्वजनिक प्रकृतिको भवन वा संरचना निर्माण पश्चात {{ palika.palika_type }}ले उपयोग गर्न चाहेमा निशुल्क उपलब्ध गराउनु पर्नेछ ।</li>
+  </ol>
+
+  <div class="terms-subtitle">कार्यालयको जिम्मेवारी तथा पालना गरिने शर्तहरूः</div>
+  <ol class="terms-list">
+    <li>आयोजनाको बजेट, उपभोक्ता समितिको काम, कर्तव्य तथा अधिकार, खरिद, लेखाङ्कन, प्रतिवेदन आदि विषयमा उपभोक्ता समितिका पदाधिकारीहरूलाई अनुशिक्षण कार्यक्रम सञ्चालन गरिनेछ ।</li>
+    <li>आयोजनामा आवश्यक प्राविधिक सहयोग कार्यालयबाट उपलब्ध गराउन सकिने अवस्थामा गराइनेछ र नसकिने अवस्था भएमा उपभोक्ता समितिले बाह्य बजारबाट सेवा परामर्श अन्तर्गत सेवा लिन सक्नेछ ।</li>
+    <li>आयोजनाको प्राविधिक सुपरिवेक्षणका लागि कार्यालयको तर्फबाट प्राविधिक खटाइनेछ । उपभोक्ता समितिबाट भएको कामको नियमित सुपरिवेक्षण गर्ने जिम्मेवारी निज प्राविधिकको हुनेछ ।</li>
+    <li>पेश्की लिएर लामो समयसम्म आयोजना संचालन नगर्ने उपभोक्ता समितिलाई कार्यालयले नियम अनुसार कारवाही गर्नेछ ।</li>
+    <li>श्रममूलक प्रविधिबाट कार्य गराउने गरी लागत अनुमान स्वीकृत गराई सोही बमोजिम सम्झौता गरी मेशिनरी उपकरणको प्रयोगबाट कार्य गरेको पाइएमा त्यस्तो उपभोक्ता समितिसँग सम्झौता रद्द गरी उपभोक्ता समितिलाई भुक्तानी गरिएको रकम मूल्यांकन गरी बढी भएको रकम सरकारी बाँकी सरह असुल उपर गरिनेछ ।</li>
+    <li>आयोजना सम्पन्न भएपछि कार्यालयबाट जाँच पास गरी फरफार गर्नु पर्नेछ ।</li>
+    <li>आवश्यक कागजात संलग्न गरी भुक्तानी उपलब्ध गराउन सम्बन्धित उपभोक्ता समितिबाट अनुरोध भई आएपछि उपभोक्ता समितिको बैंक खातामा भुक्तानी दिनु पर्नेछ ।</li>
+    <li>यसमा उल्लेख नभएका कुराहरू प्रचलित कानून बमोजिम हुनेछ ।</li>
+  </ol>
+
+  <p class="terms-agree">माथि उल्लेख भए बमोजिमका शर्तहरू पालना गर्न हामी निम्न पक्षहरू मञ्जुर गर्दछौं ।</p>
+
+  <!-- ================= SIGNATURES ================= -->
+  <div class="signature-grid">
+    <div class="sig-col">
+      <div class="sig-block">
+        <span class="sig-label">उपभोक्ता समिति/समूहको तर्फबाट</span>
+        <p>दस्तखतः …………………………</p>
+        <p>नाम थरः …………………………</p>
+        <p>पदः अध्यक्ष</p>
+        <p>ठेगानाः …………………………</p>
+        <p>सम्पर्क नं : …………………………</p>
+        <p>मितिः …………………………</p>
+      </div>
+      <div class="sig-block">
+        <p>उ.स. सचिवको दस्तखतः …………………………</p>
+        <p>उ.स. कोषाध्यक्षको दस्तखतः …………………………</p>
+        <p>मितिः २०८…… । …… । ……</p>
+      </div>
+    </div>
+    <div class="sig-col">
+      <div class="sig-block">
+        <span class="sig-label">कार्यालयको तर्फबाट</span>
+        <p>दस्तखतः …………………………</p>
+        <p>नाम थरः {{ signer.name|default:"…………………………" }}</p>
+        <p>पदः {{ signer.post|default:"…………………………" }}</p>{% if signer.note %}
+        <p style="font-size:11px">({{ signer.note }})</p>{% endif %}
+        <p>ठेगानाः …………………………</p>
+        <p>सम्पर्क नं : …………………………</p>
+        <p>मितिः …………………………</p>
+      </div>
+      <div class="sig-block">
+        <span class="sig-label">योजना शाखाको तर्फबाट</span>
+        <p>दस्तखतः …………………………</p>
+        <p>योजना शाखा</p>
+        <p>मितिः २०८…… । …… । ……</p>
+      </div>
+    </div>
+  </div>
+
+{% endeditable_letter %}
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script>
+  $('a.printPage').click(function () {
+    window.print();
+    return false;
+  });
+
+  window.__letterPrint = (function () {
+    window.print();
+    setTimeout(closePrintView, 3000);
+  });
+
+  function closePrintView() {
+    window.location.href = '/UserCommittee/Workflow/';
+  }
+</script>
+
+</body>
+</html>

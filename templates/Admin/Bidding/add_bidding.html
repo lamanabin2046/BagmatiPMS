@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load outputs %}
+{% block title %}ठेक्काको विवरण प्रवेष्ठी{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+
+  <div>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">योजना/आयोजनाको ठेक्काको विवरण प्रवेष्ठी</h1>
+    <p class="text-sm text-slate-500 mt-0.5">नयाँ ठेक्का विवरण दर्ता गर्नुहोस्</p>
+  </div>
+
+  <div class="card">
+    <form action="{% url 'add_bid_detail' %}" method="post" id="add_project_form">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-building"></i> योजना</h2>
+          <div class="grid grid-cols-1 gap-4">
+            <div>
+              <label class="form-label">योजनाको नामः</label>
+              <select class="form-select select2 w-full" name="project_id" required onchange="updateBudget(this)">
+                <option value="">योजना छान्नुहोस</option>
+                {% for i in projects %}
+                <option value="{{ i.id }}" data-budget="{{ i.budget }}">{{ i.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-calculator"></i> लागत अनुमान विवरण</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">विनियोजत रकम</label>
+              <input type="text" class="form-input" name="budget" id="budget" placeholder="Allocated Budget" required>
+            </div>
+            <div>
+              <label class="form-label">कन्टेन्जेन्सी कट्टी रकम ({% contingency_pct 'bid' as cr %}{{ cr|npn }}%)</label>
+              <input type="text" class="form-input" name="congtingency" id="congtingency" value="congtingency" required>
+            </div>
+            <div>
+              <label class="form-label">पिएस रकम</label>
+              <input type="text" class="form-input" name="ps_amount" id="ps_amount" required>
+            </div>
+            <div>
+              <label class="form-label">लागत अुनमानमा भ्याट लाग्ने रकम</label>
+              <input type="text" class="form-input" name="estimate_with_vat" id="estimate_with_vat" required>
+            </div>
+            <div>
+              <label class="form-label">भ्याट सहित कुल लागत अनुमान</label>
+              <input type="text" class="form-input" name="totalcost" id="totalcost" placeholder="Total Cost Amount">
+            </div>
+            <div>
+              <label class="form-label">ठेक्का नम्बर</label>
+              <input type="text" class="form-input" name="bidding_number" placeholder="Bidding number" required>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-calendar-days"></i> ठेक्का मितिहरु</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">ठेक्का सूचना प्रकाशित मिति</label>
+              <input type="text" class="form-input nepali-date date-required-check" name="bid_published_date" placeholder="सूचना प्रकाशित मिति" required>
+            </div>
+            <div>
+              <label class="form-label">ठेक्का खोलिएको मिति</label>
+              <input type="text" class="form-input nepali-date date-required-check" name="bid_opening_date" placeholder="ठेक्का खोलिएको मिति" required>
+            </div>
+            <div>
+              <label class="form-label">ठेक्का मूल्याकन मिति</label>
+              <input type="text" class="form-input nepali-date date-required-check" name="bid_evaluation_date" placeholder="ठेक्का मूल्याकन मिति" required>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-user-tie"></i> निर्माण व्यवसायी विवरण</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">निर्माण व्यवसायीको नाम</label>
+              <input type="text" class="form-input" name="bidder_name_nepali" placeholder="Bidders Firm Name" required>
+            </div>
+            <div>
+              <label class="form-label">प्रोपाइट</label>
+              <input type="text" class="form-input" name="bidder_owner_nepali" placeholder="Bidders Owner Name" required>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div>
+              <label class="form-label">निर्माण व्यवसायीको ठेगाना</label>
+              <input type="text" class="form-input" name="bidder_address_nepali" placeholder="Bidders Address" required>
+            </div>
+            <div>
+              <label class="form-label">कबोल रकम</label>
+              <input type="text" class="form-input" name="bidding_amount" id="bidding_amount" placeholder="Bidding Amount">
+            </div>
+            <div>
+              <label class="form-label">घटी प्रतिशत (%)</label>
+              <input type="text" class="form-input" name="bidding_below" id="bidding_below" placeholder="Bidding Below %">
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" onclick="validateForm()" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+  function updateBudget(selectElement) {
+    var selectedOption = selectElement.options[selectElement.selectedIndex];
+    var budgetInput = document.getElementById("budget");
+    budgetInput.value = selectedOption.getAttribute("data-budget");
+    updateTotalCost();
+  }
+
+  function updateTotalCost() {
+    var budget = parseFloat(document.getElementById("budget").value) || 0;
+    var contingencyRate = {% contingency_pct 'bid' %};   // सेटिङ → खरिद विधिका रकम सीमा
+    var contingency = budget * (contingencyRate / 100);
+
+    var contingencyInput = document.getElementById("congtingency");
+    contingencyInput.value = contingency.toFixed(2);
+
+    var estimateWithVat = parseFloat(document.getElementById("estimate_with_vat").value) || 0;
+    var psAmount = parseFloat(document.getElementById("ps_amount").value) || 0;
+
+    var totalCostInput = document.getElementById("totalcost");
+    var totalCost = estimateWithVat + psAmount;
+    totalCostInput.value = totalCost.toFixed(2);
+
+    var availableBudget = budget - contingency;
+    if (totalCost > availableBudget) {
+      totalCostInput.classList.add("warning");
+      totalCostInput.value = `Total Cost exceeds available budget! (${totalCost.toFixed(2)})`;
+    } else {
+      totalCostInput.classList.remove("warning");
+      totalCostInput.value = totalCost.toFixed(2);
+    }
+    updateBiddingBelow();
+  }
+
+  function updateBiddingBelow() {
+    var totalCost = parseFloat(document.getElementById("totalcost").value) || 0;
+    var biddingAmount = parseFloat(document.getElementById("bidding_amount").value) || 0;
+    var biddingBelowInput = document.getElementById("bidding_below");
+
+    if (biddingAmount > 0) {
+      var biddingBelow = ((totalCost - biddingAmount) * 100) / totalCost;
+      biddingBelowInput.value = biddingBelow.toFixed(2);
+    } else {
+      biddingBelowInput.value = "";
+    }
+  }
+
+  $(document).on("input", "#budget, #estimate_with_vat, #ps_amount, #bidding_amount", function () {
+    updateTotalCost();
+    updateBiddingBelow();
+  });
+
+  function validateForm() {
+    var form = document.getElementById("add_project_form");
+    if (!form.checkValidity()) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    form.classList.add("was-validated");
+  }
+</script>
+{% endblock %}

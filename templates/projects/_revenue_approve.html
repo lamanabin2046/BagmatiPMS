@@ -1,0 +1,91 @@
+{% load nepali_date outputs %}
+{# HTMX partial (page-wide modal): राजस्व ठेक्का — प्रशासनिक स्वीकृति वा सफल बोलपत्रदाता स्वीकृति #}
+<div class="flex flex-col max-h-[92vh]">
+  <div class="flex items-start justify-between gap-4 px-6 py-4 border-b border-slate-100">
+    <div class="min-w-0">
+      <p class="text-xs font-medium text-brand-700 flex items-center gap-1.5"><i class="fas fa-stamp"></i> राजस्व आम्दानी — {% if mode == 'approval' %}प्रशासनिक स्वीकृति{% else %}सफल बोलपत्रदाता स्वीकृति{% endif %}</p>
+      <h2 class="text-lg font-bold text-slate-800 truncate mt-0.5">{{ s.name }}</h2>
+      <p class="text-xs text-slate-500 mt-0.5">{{ s.get_category_display }}{% if s.ward %} · वडा नं. {{ s.ward.name|to_nepali_number }}{% endif %} · आ.व. {{ s.fiscalyear.name }}</p>
+    </div>
+    <button type="button" onclick="closeAppModal()" class="w-9 h-9 shrink-0 rounded-lg text-slate-500 hover:bg-slate-100" title="बन्द (Esc)"><i class="fas fa-xmark text-lg"></i></button>
+  </div>
+
+  <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5 slim-scroll-light">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="rounded-xl border border-slate-200 p-3"><p class="text-[11px] text-slate-500">अनुमानित परिमाण</p><p class="font-semibold text-slate-800">{{ s.est_quantity|money:0 }} {{ s.unit }}</p></div>
+      <div class="rounded-xl border border-slate-200 p-3"><p class="text-[11px] text-slate-500">दर</p><p class="font-semibold text-slate-800">रु. {{ s.rate|money:2 }}</p></div>
+      <div class="rounded-xl border border-slate-200 p-3"><p class="text-[11px] text-slate-500">अनुमानित राजस्व</p><p class="font-semibold text-slate-800">रु. {{ s.est_revenue|money:0 }}</p></div>
+      <div class="rounded-xl border border-brand-200 bg-brand-50/50 p-3"><p class="text-[11px] text-slate-500">न्यूनतम कबोल</p><p class="font-semibold text-brand-700">रु. {{ s.min_bid|money:0 }}</p></div>
+    </div>
+
+    {% if mode == 'approval' %}
+    <section class="rounded-xl border border-slate-200 p-4 text-sm space-y-1.5">
+      {% if s.survey_date %}<p><b>सर्वेक्षण:</b> {{ s.survey_date|bs }} · {{ s.surveyor }}{% if s.survey_quantity %} · उपलब्ध {{ s.survey_quantity|money:0 }} {{ s.unit }}{% endif %}</p>{% endif %}
+      {% if s.permitted_area %}<p><b>अनुमति क्षेत्र:</b> {{ s.permitted_area }}</p>{% endif %}
+      {% if s.env_type %}<p><b>वातावरणीय स्वीकृति:</b> {{ s.get_env_type_display }} · {{ s.env_ref }} · {{ s.env_approved_on|bs }}{% if s.env_valid_until %} (म्याद {{ s.env_valid_until|bs }}){% endif %}</p>{% endif %}
+      {% if s.estimate_note %}<p><b>दरको आधार:</b> {{ s.estimate_note|linebreaksbr }}</p>{% endif %}
+      {% if docs %}<p class="flex flex-wrap gap-2 pt-1">{% for d in docs %}<a href="{{ d.file.url }}" target="_blank" rel="noopener" class="rounded-lg border border-slate-200 px-2 py-0.5 text-xs text-brand-700"><i class="fas fa-paperclip"></i> {{ d.get_kind_display }}</a>{% endfor %}</p>{% endif %}
+    </section>
+    {% else %}
+    <section class="rounded-xl border border-slate-200 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead><tr class="bg-slate-50 text-xs text-slate-500 text-left">{% if can_approve %}<th class="px-3 py-2"></th>{% endif %}<th class="px-3 py-2 font-medium">बोलपत्रदाता</th><th class="px-3 py-2 font-medium text-center">योग्य</th><th class="px-3 py-2 font-medium text-center">जमानत</th><th class="px-3 py-2 font-medium text-right">कबोल अङ्क (रु.)</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in rows %}
+          <tr class="{% if s.selected_id == r.b.id or not s.selected_id and rec.id == r.b.id %}bg-emerald-50/70{% elif not r.ok %}text-slate-400{% endif %}">
+            {% if can_approve %}<td class="px-3 py-2.5">{% if r.ok %}<input type="radio" form="rev-approve" name="bid" value="{{ r.b.id }}" {% if rec.id == r.b.id %}checked{% endif %}>{% endif %}</td>{% endif %}
+            <td class="px-3 py-2.5 font-medium">{{ r.b.name }}{% if rec.id == r.b.id %} <span class="badge bg-emerald-100 text-emerald-800 ml-1 !py-0.5">उच्चतम मान्य</span>{% endif %}{% if not r.ok %} <span class="badge bg-rose-50 text-rose-600 ml-1 !py-0.5">अमान्य</span>{% endif %}
+              <span class="block text-[11px] text-slate-400">{{ r.b.address }}{% if r.b.pan %} · PAN {{ r.b.pan }}{% endif %}{% if r.b.remarks %} · {{ r.b.remarks }}{% endif %}</span></td>
+            <td class="px-3 py-2.5 text-center">{% if r.b.eligible %}✓{% else %}✗{% endif %}</td>
+            <td class="px-3 py-2.5 text-center">{% if r.b.security_ok %}✓{% else %}✗{% endif %}</td>
+            <td class="px-3 py-2.5 text-right font-semibold {% if r.b.amount < s.min_bid %}text-rose-600{% endif %}">{{ r.b.amount|money:0 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    <p class="text-[11px] text-slate-500">उच्चतम कबोल मात्र आधार होइन — योग्यता, बोलपत्र जमानत र प्रकाशित शर्त पूरा गरेको मान्य बोलपत्रमध्ये छानिन्छ।</p>
+    {% endif %}
+
+    {% if warnings %}
+    <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 space-y-0.5">{% for w in warnings %}<p class="text-xs text-amber-800"><i class="fas fa-triangle-exclamation"></i> {{ w }}</p>{% endfor %}</div>
+    {% endif %}
+
+    {% if mode == 'approval' and s.approved_at %}
+    <section class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+      <p class="text-sm font-semibold text-emerald-800"><i class="fas fa-circle-check"></i> प्रशासनिक स्वीकृति भइसकेको{% if s.approval_ref %} — निर्णय {{ s.approval_ref }}{% endif %}</p>
+      <p class="text-xs text-emerald-900/80 mt-1">{{ s.approver_name }} · {{ s.approved_at|date:'Y-m-d H:i' }}</p>
+      {% if s.approval_remarks %}<p class="text-xs italic text-emerald-900/80 mt-1">“{{ s.approval_remarks }}”</p>{% endif %}
+    </section>
+    {% elif mode == 'award' and s.award_at %}
+    <section class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+      <p class="text-sm font-semibold text-emerald-800"><i class="fas fa-circle-check"></i> सफल बोलपत्रदाता — {{ s.selected.name }} (रु. {{ s.selected.amount|money:0 }})</p>
+      <p class="text-xs text-emerald-900/80 mt-1">{{ s.award_approver }} · {{ s.award_at|date:'Y-m-d H:i' }}</p>
+      {% if s.award_remarks %}<p class="text-xs italic text-emerald-900/80 mt-1">“{{ s.award_remarks }}”</p>{% endif %}
+    </section>
+    {% endif %}
+  </div>
+
+  {% if can_approve %}
+  <form id="rev-approve" class="border-t border-slate-100 px-6 py-4 bg-slate-50/70 rounded-b-2xl space-y-3"
+        hx-post="{% if mode == 'approval' %}{% url 'revenue_approve' s.id %}{% else %}{% url 'revenue_award' s.id %}{% endif %}"
+        hx-include="[form=rev-approve]" hx-target="#approve-msg" hx-swap="innerHTML">
+    {% csrf_token %}
+    {% if problems %}<div class="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 space-y-0.5">{% for p in problems %}<p class="text-xs text-rose-700"><i class="fas fa-circle-exclamation"></i> {{ p }}</p>{% endfor %}</div>{% endif %}
+    <div id="approve-msg"></div>
+    {% if mode == 'approval' %}<input name="approval_ref" class="form-input" placeholder="निर्णय नं. / मिति (ऐच्छिक)">{% endif %}
+    <textarea name="remarks" rows="2" class="form-textarea" placeholder="{% if mode == 'approval' %}कैफियत — फिर्ता पठाउँदा कारण अनिवार्य{% else %}कैफियत — उच्चतम मान्यबाहेक अर्को छान्दा कारण अनिवार्य{% endif %}"></textarea>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="text-xs text-slate-500">स्वीकृत गर्ने: <b>{{ name }}</b> ({{ post }})</p>
+      <div class="flex gap-2">
+        <button type="button" class="btn-secondary" onclick="closeAppModal()">रद्द</button>
+        {% if mode == 'approval' %}<button type="submit" name="decision" value="return" class="btn-secondary !text-amber-700"><i class="fas fa-rotate-left"></i> सच्याउन फिर्ता</button>{% endif %}
+        <button type="submit" name="decision" value="approve" class="btn-success {% if problems %}opacity-50 cursor-not-allowed{% endif %}" {% if problems %}disabled{% endif %}
+                hx-confirm="स्वीकृत गर्ने?"><i class="fas fa-stamp"></i> स्वीकृत गर्नुहोस्</button>
+      </div>
+    </div>
+  </form>
+  {% else %}
+  <div class="border-t border-slate-100 px-6 py-3 flex justify-end"><button type="button" class="btn-secondary" onclick="closeAppModal()">बन्द गर्नुहोस्</button></div>
+  {% endif %}
+</div>

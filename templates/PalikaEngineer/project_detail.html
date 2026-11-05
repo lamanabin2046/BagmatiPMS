@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}{{ project.name }} — विस्तृत विवरण{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+
+  <!-- ================= PAGE HEADER ================= -->
+  <div class="flex items-center justify-between gap-3">
+    <div>
+      <h1 class="text-lg md:text-xl font-bold text-slate-800">{{ project.name }}</h1>
+      <p class="text-sm text-slate-500 mt-0.5">वडा नं. {{ project.ward.name|default:"—" }} — आ.व. {{ project.fiscalyear.name|default:"—" }} — बजेट रु. {{ project.budget|floatformat:0 }}</p>
+    </div>
+    <a href="{% url 'palika_engineer_project_list' %}" class="btn-chip-brand"><i class="fas fa-arrow-left"></i> योजना सूचीमा फर्कनुहोस्</a>
+  </div>
+
+  <!-- ================= PIPELINE STATUS ================= -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-3 text-center">
+      <p class="text-xs text-slate-500">समिति</p>
+      <p class="text-sm font-semibold mt-1 {% if usercommittee %}text-emerald-600{% else %}text-amber-600{% endif %}">
+        {% if usercommittee %}गठन भयो{% else %}बाँकी{% endif %}
+      </p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-3 text-center">
+      <p class="text-xs text-slate-500">लागत अनुमान</p>
+      <p class="text-sm font-semibold mt-1 {% if cost_estimate %}text-emerald-600{% else %}text-amber-600{% endif %}">
+        {% if cost_estimate %}भयो{% else %}बाँकी{% endif %}
+      </p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-3 text-center">
+      <p class="text-xs text-slate-500">वडा सिफारिस</p>
+      <p class="text-sm font-semibold mt-1 {% if ward_recommendation %}text-emerald-600{% else %}text-amber-600{% endif %}">
+        {% if ward_recommendation %}जारी भयो{% else %}बाँकी{% endif %}
+      </p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-3 text-center">
+      <p class="text-xs text-slate-500">अन्तिम मूल्याङ्कन</p>
+      <p class="text-sm font-semibold mt-1 {% if final_valuation %}text-emerald-600{% else %}text-amber-600{% endif %}">
+        {% if final_valuation %}भयो{% else %}बाँकी{% endif %}
+      </p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-3 text-center">
+      <p class="text-xs text-slate-500">सम्पन्न सिफारिस</p>
+      <p class="text-sm font-semibold mt-1 {% if completion_recommendation %}text-emerald-600{% else %}text-amber-600{% endif %}">
+        {% if completion_recommendation %}जारी भयो{% else %}बाँकी{% endif %}
+      </p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-3 text-center">
+      <p class="text-xs text-slate-500">हस्तान्तरण</p>
+      <p class="text-sm font-semibold mt-1 {% if completion_recommendation %}text-emerald-600{% else %}text-slate-400{% endif %}">
+        {% if completion_recommendation %}तयार{% else %}—{% endif %}
+      </p>
+    </div>
+  </div>
+
+  <!-- ================= समिति / लागत अनुमान / सिफारिस ================= -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <div class="card p-5">
+      <h2 class="section-title"><i class="fas fa-users"></i> उपभोक्ता समिति</h2>
+      {% if usercommittee %}
+      <div class="mt-2 space-y-1 text-sm">
+        <p><span class="text-slate-400">नामः</span> <span class="text-slate-700 font-medium">{{ usercommittee.name }}</span></p>
+        <p><span class="text-slate-400">अध्यक्षः</span> <span class="text-slate-700">{{ usercommittee.chairman_name }}</span></p>
+        <p><span class="text-slate-400">सचिवः</span> <span class="text-slate-700">{{ usercommittee.secretary_name }}</span></p>
+        <p><span class="text-slate-400">सदस्य संख्याः</span> <span class="text-slate-700">{{ usercommittee.get_members_count }}</span></p>
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-400 mt-2">उपभोक्ता समिति अझै गठन भएको छैन।</p>
+      {% endif %}
+    </div>
+
+    <div class="card p-5">
+      <h2 class="section-title"><i class="fas fa-calculator"></i> लागत अनुमान</h2>
+      {% if cost_estimate %}
+      <div class="mt-2 space-y-1 text-sm">
+        <p><span class="text-slate-400">विनियोजित रकमः</span> <span class="text-slate-700 font-medium">रु {{ cost_estimate.budget|floatformat:2 }}</span></p>
+        <p><span class="text-slate-400">कन्टेन्जेन्सीः</span> <span class="text-slate-700">रु {{ cost_estimate.contingency_amount|floatformat:2 }}</span></p>
+        <p><span class="text-slate-400">श्रमदानः</span> <span class="text-slate-700">रु {{ cost_estimate.user_contribution|floatformat:2 }}</span></p>
+        <p><span class="text-slate-400">कुल लागत अनुमानः</span> <span class="text-emerald-600 font-semibold">रु {{ cost_estimate.total_cost|floatformat:2 }}</span></p>
+      </div>
+      <div class="mt-3">
+        <a href="{% url 'edit_cost_estimate' cost_estimate.id %}" class="btn-chip-brand text-xs"><i class="fas fa-pen"></i> सम्पादन गर्नुहोस्</a>
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-400 mt-2">लागत अनुमान अझै थपिएको छैन।</p>
+      {% if usercommittee %}
+      <div class="mt-3">
+        <a href="{% url 'add_cost_estimate_for_project' project.id %}" class="btn-chip-emerald text-xs"><i class="fas fa-calculator"></i> लागत अनुमान भर्नुहोस्</a>
+      </div>
+      {% endif %}
+      {% endif %}
+    </div>
+
+    <div class="card p-5">
+      <h2 class="section-title"><i class="fas fa-file-signature"></i> वडा सिफारिस (सम्झौता)</h2>
+      {% if ward_recommendation %}
+      <div class="mt-2 space-y-1 text-sm">
+        <p><span class="text-slate-400">पत्र संख्याः</span> <span class="text-slate-700">{{ ward_recommendation.letter_number|default:"—" }}</span></p>
+        <p><span class="text-slate-400">चलानी नं.ः</span> <span class="text-slate-700">{{ ward_recommendation.chalani_number|default:"—" }}</span></p>
+        <p><span class="text-slate-400">मितिः</span> <span class="text-slate-700">{{ ward_recommendation.recommendation_date|default:"—" }}</span></p>
+      </div>
+      <div class="mt-3">
+        <a href="{% url 'print_ward_recommendation' project.id %}" class="btn-chip-brand text-xs"><i class="fas fa-print"></i> हेर्नुहोस्</a>
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-400 mt-2">वडा सिफारिस अझै जारी भएको छैन।</p>
+      {% endif %}
+    </div>
+
+    <div class="card p-5">
+      <h2 class="section-title"><i class="fas fa-money-check-dollar"></i> अन्तिम मूल्याङ्कन</h2>
+      {% if final_valuation %}
+      <div class="mt-2 space-y-1 text-sm">
+        <p><span class="text-slate-400">जम्मा मुल्यांकनः</span> <span class="text-slate-700 font-medium">रु {{ final_valuation.final_evaluation|floatformat:2 }}</span></p>
+        <p><span class="text-slate-400">कार्यालय भुक्तानीः</span> <span class="text-slate-700">रु {{ final_valuation.office_contribution|floatformat:2 }}</span></p>
+        <p><span class="text-slate-400">खुद भुक्तानीः</span> <span class="text-emerald-600 font-semibold">रु {{ final_valuation.net_payment|floatformat:2 }}</span></p>
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-400 mt-2">अन्तिम मूल्याङ्कन अझै तयार भएको छैन।</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ================= फोटो टाइमलाइन ================= -->
+  <div class="card p-5">
+    <div class="flex items-center justify-between gap-3">
+      <h2 class="section-title mb-0"><i class="fas fa-camera"></i> फोटो टाइमलाइन</h2>
+      <a href="{% url 'ward_engineer_project_photos' project.id %}" class="btn-chip-brand text-xs"><i class="fas fa-images"></i> पूरा टाइमलाइन हेर्नुहोस्</a>
+    </div>
+    <div class="grid grid-cols-3 gap-3 mt-3 text-center text-xs">
+      <div><span class="font-semibold {% if before_count %}text-emerald-600{% else %}text-slate-400{% endif %}">{{ before_count }}</span> <span class="text-slate-500">सुरु अघि</span></div>
+      <div><span class="font-semibold {% if during_count %}text-emerald-600{% else %}text-slate-400{% endif %}">{{ during_count }}</span> <span class="text-slate-500">भइरहेको बेला</span></div>
+      <div><span class="font-semibold {% if after_count %}text-emerald-600{% else %}text-slate-400{% endif %}">{{ after_count }}</span> <span class="text-slate-500">सम्पन्न भएपछि</span></div>
+    </div>
+    {% if photos %}
+    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
+      {% for item in photos|slice:":6" %}
+      <img src="{{ item.image.url }}" alt="Project Photo" class="w-full h-16 object-cover rounded-lg border border-slate-200">
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-400 mt-3">अहिलेसम्म कुनै फोटो थपिएको छैन।</p>
+    {% endif %}
+  </div>
+
+  <!-- ================= प्राविधिक टिप्पणी ================= -->
+  <div class="card p-5">
+    <h2 class="section-title"><i class="fas fa-clipboard-check"></i> प्राविधिक टिप्पणी / साइट निरीक्षण</h2>
+
+    {% if palika_engineer %}
+    <form method="post" action="{% url 'add_site_inspection_note' project.id %}" class="mt-3 space-y-3">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div>
+          <label class="form-label">निरीक्षण मिति</label>
+          <input type="text" name="inspection_date" class="form-input nepali-date" placeholder="YYYY-MM-DD">
+        </div>
+        <div class="md:col-span-3">
+          <label class="form-label">कैफियत / टिप्पणी</label>
+          <textarea name="remarks" rows="2" class="form-textarea w-full" placeholder="साइट निरीक्षणको बेला देखिएको अवस्था, सुझाव, समस्या आदि लेख्नुहोस्..." required></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end">
+        <button type="submit" class="btn-success text-xs"><i class="fas fa-plus"></i> टिप्पणी थप्नुहोस्</button>
+      </div>
+    </form>
+    {% endif %}
+
+    {% if inspection_notes %}
+    <div class="mt-4 space-y-3">
+      {% for note in inspection_notes %}
+      <div class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span class="font-medium text-slate-600">{{ note.palika_engineer.name|default:"—" }}</span>
+          <span>{{ note.inspection_date|default:note.created_at|date:"Y-m-d" }}</span>
+        </div>
+        <p class="text-sm text-slate-700 mt-1.5">{{ note.remarks }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-400 mt-3">अहिलेसम्म कुनै प्राविधिक टिप्पणी थपिएको छैन।</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

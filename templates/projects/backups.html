@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}ब्याकअप{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800"><i class="fas fa-database text-brand-600"></i> ब्याकअप</h1>
+      <p class="text-sm text-slate-500 mt-0.5">यस पालिकाको सबै डाटा र अपलोड गरिएका फाइल एउटै zip मा · पछिल्ला {{ keep|npn }} वटा राखिन्छन्</p>
+    </div>
+    <form method="post">{% csrf_token %}<button class="btn-primary" onclick="this.disabled=true;this.form.submit()"><i class="fas fa-cloud-arrow-down"></i> अहिले ब्याकअप बनाउनुहोस्</button></form>
+  </div>
+  {% if age is None or age > 48 %}
+  <div class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-800"><i class="fas fa-triangle-exclamation"></i>
+    {% if age is None %}अहिलेसम्म ब्याकअप बनेको छैन।{% else %}पछिल्लो ब्याकअप {{ age|floatformat:0|npn }} घण्टा पुरानो छ।{% endif %} सर्भरमा दैनिक cron राख्नुहोस् (तल हेर्नुहोस्)।</div>
+  {% endif %}
+  <div class="card overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="px-4 py-2.5 text-left font-medium">फाइल</th><th class="px-4 py-2.5 text-left font-medium">बनेको</th><th class="px-4 py-2.5 text-right font-medium">आकार</th><th class="px-4 py-2.5"></th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for b in items %}<tr><td class="px-4 py-2.5 font-mono text-xs">{{ b.name }}</td><td class="px-4 py-2.5">{{ b.at|date:"Y-m-d H:i" }}</td>
+          <td class="px-4 py-2.5 text-right">{% widthratio b.size 1048576 1 as mb %}{% if b.size < 1048576 %}{% widthratio b.size 1024 1 %} KB{% else %}{{ mb }} MB{% endif %}</td>
+          <td class="px-4 py-2.5 text-right"><a href="?file={{ b.name|urlencode }}" class="btn-chip-brand" hx-boost="false"><i class="fas fa-download"></i> डाउनलोड</a></td></tr>
+        {% empty %}<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">ब्याकअप छैन।</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-5 text-sm text-slate-600 space-y-2">
+    <p class="font-semibold text-slate-700">दैनिक स्वचालित ब्याकअप (cPanel → Cron Jobs, रातिको समय)</p>
+    <pre class="bg-slate-50 rounded-lg p-3 text-xs overflow-x-auto">cd /home/&lt;user&gt;/&lt;project&gt; &amp;&amp; /home/&lt;user&gt;/virtualenv/&lt;project&gt;/bin/python manage.py backup_palikas</pre>
+    <p>ब्याकअप सर्भरकै <code>backups/{{ schema }}/</code> मा बस्छ — हप्तामा कम्तीमा एकपटक डाउनलोड गरी अर्को ठाउँ (कम्प्युटर / Google Drive) मा राख्नुहोस्।</p>
+    <p class="font-semibold text-slate-700 pt-2">पुनर्स्थापना (आवश्यक परे)</p>
+    <p>नयाँ खाली पालिका बनाई: <code class="text-xs">python manage.py restore_palika &lt;schema&gt; &lt;zip&gt; --confirm</code> — योजना भएको पालिकामा चल्दैन।</p>
+  </div>
+</div>
+{% endblock %}

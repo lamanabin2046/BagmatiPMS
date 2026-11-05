@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+{% load static outputs %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}राजस्व ठेक्का सूचना{% endblock %} — {{ palika.full_name|default:palika.name }}</title>
+  <link rel="shortcut icon" href="{% static 'assets/img/logonepal.png' %}">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Noto Sans Devanagari', sans-serif; background: #f4f6fa; color: #1e293b; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; }
+    .inp { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: .55rem .75rem; font-size: .9rem; background: #fff; }
+    .inp:focus { outline: 2px solid #93c5fd; border-color: #3b82f6; }
+    .lbl { display: block; font-size: .8rem; color: #475569; margin-bottom: .25rem; }
+    .btn { display: inline-flex; align-items: center; gap: .4rem; background: #1e3a8a; color: #fff; padding: .55rem 1.1rem; border-radius: 10px; font-weight: 600; font-size: .9rem; }
+    .btn2 { display: inline-flex; align-items: center; gap: .4rem; border: 1px solid #cbd5e1; background: #fff; padding: .5rem 1rem; border-radius: 10px; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <header class="text-white" style="background:#1e3a8a">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+      <a href="{% block home %}{% url 'revenue_public' %}{% endblock %}" class="flex items-center gap-3">
+        <img src="{% if palika.logo %}{{ palika.logo.url }}{% else %}{% static 'assets/img/logonepal.png' %}{% endif %}" class="w-11 h-11 bg-white rounded-lg p-0.5 object-contain" alt="">
+        <span><span class="block font-bold text-lg leading-tight">{{ palika.full_name|default:palika.name }}</span>
+          <span class="block text-xs text-blue-100">{% block subtitle %}राजस्व ठेक्का — बोलपत्र सूचना{% if portal %} तथा अनलाइन बोलपत्र{% endif %}{% endblock %}</span></span>
+      </a>
+      <nav class="flex items-center gap-2 text-sm">{% block nav %}
+        {% if bidder %}<a href="{% url 'revenue_portal_mine' %}" class="underline">मेरा बोलपत्र</a><span class="text-blue-200">·</span>
+          <span>{{ bidder.name }}</span><a href="{% url 'revenue_portal_logout' %}" class="ml-2 rounded bg-white/15 px-2 py-1">लगआउट</a>
+        {% elif portal %}<a href="{% url 'revenue_portal_login' %}" class="rounded bg-white/15 px-3 py-1.5">बोलपत्रदाता लगइन</a>
+          <a href="{% url 'revenue_portal_register' %}" class="rounded bg-white px-3 py-1.5 font-semibold" style="color:#1e3a8a">दर्ता</a>{% endif %}
+      {% endblock %}</nav>
+    </div>
+  </header>
+  <main class="{% block width %}max-w-5xl{% endblock %} mx-auto px-4 py-6 space-y-4">
+    {% if messages %}{% for m in messages %}<div class="rounded-xl px-4 py-2.5 text-sm {% if m.tags == 'error' %}bg-rose-50 text-rose-800 border border-rose-200{% elif m.tags == 'warning' %}bg-amber-50 text-amber-800 border border-amber-200{% else %}bg-emerald-50 text-emerald-800 border border-emerald-200{% endif %}">{{ m }}</div>{% endfor %}{% endif %}
+    {% if errors %}<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 space-y-0.5">{% for e in errors %}<p class="text-sm text-rose-700">• {{ e }}</p>{% endfor %}</div>{% endif %}
+    {% block body %}{% endblock %}
+  </main>
+  <footer class="text-center text-xs text-slate-400 py-6">{{ palika.full_name|default:palika.name }} · {% block footer %}राजस्व शाखा{% endblock %}</footer>
+<script src="{% static 'assets/js/camera-upload.js' %}"></script>
+</body>
+</html>

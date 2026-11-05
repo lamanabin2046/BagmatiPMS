@@ -1,0 +1,69 @@
+{% load static nepali_date %}{% comment %}
+  सबै पत्र / टिप्पणीको साझा पत्र शीर्ष — पालिकाको "कार्यालय सेटिङ" बाट आउँछ।
+  प्रयोग:  {% include 'includes/letterhead.html' with branch="(योजना शाखा)" %}
+           {% include 'includes/letterhead.html' with title="टिप्पणी र आदेश" %}
+           {% include 'includes/letterhead.html' with ward=project.ward.name ward_hq=... %}   (वडा कार्यालयको पत्र)
+  ऐच्छिक: office (कार्यालयको नाम बदल्न), place (ठेगाना लाइन बदल्न)
+{% endcomment %}
+<style>
+  .lh { --lh: {{ palika.letterhead_color|default:'#c4161c' }}; color: var(--lh); margin-bottom: 10px; font-family: inherit; }
+  .lh-row { display: flex; align-items: center; gap: 16px; }
+  .lh-logo { flex: 0 0 92px; height: 92px; display: flex; align-items: center; justify-content: center; }
+  .lh-logo img { max-width: 92px !important; max-height: 92px !important; width: auto !important; height: auto !important; object-fit: contain; margin: 0 !important; }
+  .lh-center { flex: 1 1 auto; text-align: center; line-height: 1.35; }
+  .lh-slogan { font-size: 12px; font-style: italic; font-weight: 600; margin-bottom: 2px; }
+  .lh-palika { font-size: 25px; font-weight: 800; letter-spacing: .3px; }
+  .lh-office { font-size: 17px; font-weight: 700; margin-top: 1px; }
+  .lh-place { font-size: 13.5px; font-weight: 500; }
+  .lh-branch { font-size: 13.5px; font-weight: 600; margin-top: 1px; }
+  .lh-full { display: block; width: 100% !important; height: auto !important; max-height: 190px; object-fit: contain; }
+  .lh-rule { border-bottom: 3px solid var(--lh); margin-top: 8px; position: relative; }
+  .lh-rule::after { content: ""; position: absolute; left: 0; right: 0; bottom: -5px; border-bottom: 1px solid var(--lh); }
+  .lh-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; font-size: 11.5px; margin-top: 9px; }
+  .lh-contact b { font-weight: 700; }
+  .lh-title { text-align: center; font-size: 16px; font-weight: 800; margin-top: 8px; text-decoration: underline; text-underline-offset: 4px; }
+  @media print { .lh { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+<div class="lh">
+  {% if palika.letterhead_image %}
+    <img class="lh-full" src="{{ palika.letterhead_image.url }}" alt="{{ palika.full_name }}">
+  {% else %}
+  <div class="lh-row">
+    <div class="lh-logo">
+      {% if palika.show_govt_emblem %}
+        <img src="{% static 'assets/img/logonepal.png' %}" alt="नेपाल सरकारको निशान छाप">
+      {% elif palika.logo %}
+        <img src="{{ palika.logo.url }}" alt="{{ palika.full_name }}को लोगो">
+      {% endif %}
+    </div>
+    <div class="lh-center">
+      {% if palika.slogan %}<div class="lh-slogan">“{{ palika.slogan }}”</div>{% endif %}
+      <div class="lh-palika">{{ palika.full_name }}</div>
+      {% if ward %}
+        <div class="lh-office">वडा नं. {{ ward|to_nepali_number }} वडा कार्यालय</div>
+      {% else %}
+        <div class="lh-office">{{ office|default:palika.executive_office }}</div>
+      {% endif %}
+      {% if ward %}
+        <div class="lh-place">{% if ward_hq %}{{ ward_hq }}, {% endif %}{{ palika.district }}</div>
+      {% else %}
+        <div class="lh-place">{{ place|default:palika.location_line }}</div>
+      {% endif %}
+      <div class="lh-place">{{ palika.province }}, नेपाल</div>
+      {% if branch %}<div class="lh-branch">{{ branch }}</div>{% endif %}
+    </div>
+    <div class="lh-logo">
+      {% if palika.show_govt_emblem and palika.logo %}
+        <img src="{{ palika.logo.url }}" alt="{{ palika.full_name }}को लोगो">
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+  <div class="lh-rule"></div>
+  {% if palika.contact_lines %}
+  <div class="lh-contact">
+    {% for label, value in palika.contact_lines %}<span><b>{{ label }}:</b> {{ value }}</span>{% endfor %}
+  </div>
+  {% endif %}
+  {% if title %}<div class="lh-title">{{ title }}</div>{% endif %}
+</div>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+{% load outputs %}
+<html lang="ne"><head><meta charset="UTF-8"><title>आ.व. {{ fy.name }} बन्द प्रतिवेदन</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 landscape; margin: 12mm; }
+  body { font-family: 'Noto Sans Devanagari', sans-serif; font-size: 12px; color: #111; }
+  h2 { text-align: center; margin: 6px 0 2px; font-size: 16px; } h3 { margin: 12px 0 4px; font-size: 13px; } p.c { text-align: center; margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #555; padding: 3px 5px; } th { background: #eee; }
+  td.r { text-align: right; white-space: nowrap; } tr.t td { font-weight: 700; background: #f6f6f6; }
+  .sign { display: flex; justify-content: space-between; margin-top: 50px; text-align: center; } .sign div { flex: 0 0 28%; border-top: 1px dotted #333; padding-top: 4px; }
+</style></head>
+<body onload="window.print()">
+  {% include 'includes/letterhead.html' with branch="(योजना / लेखा शाखा)" %}
+  <h2>आर्थिक वर्ष {{ fy.name }} बन्द प्रतिवेदन</h2>
+  <p class="c">{{ fy.close_ref }}{% if fy.closed_at %} · बन्द मिति {{ fy.closed_at.date|bs }}{% endif %}</p>
+  {% for g in groups %}
+  <h3>{{ g.label }} ({{ g.lines|length|npn }})</h3>
+  <table>
+    <tr><th>क्र.सं.</th><th>योजना</th><th>वडा</th><th>विधि</th><th>स्थिति</th><th>विनियोजित</th><th>खर्च</th>{% if g.key == 'carried' %}<th>नयाँ आवंटन</th>{% endif %}<th>धरौटी</th></tr>
+    {% for x in g.lines %}<tr><td>{{ forloop.counter|npn }}</td><td>{{ x.project_name }}</td><td>{{ x.ward_name|npn }}</td><td>{{ x.kind_label }}</td><td>{{ x.status_label }}</td><td class="r">{{ x.allocated|money:0 }}</td><td class="r">{{ x.spent|money:0 }}</td>{% if g.key == 'carried' %}<td class="r">{{ x.new_allocation|money:0 }}</td>{% endif %}<td class="r">{{ x.retention_held|money:0 }}</td></tr>{% endfor %}
+    <tr class="t"><td colspan="5">जम्मा</td><td class="r">{{ g.allocated|money:0 }}</td><td class="r">{{ g.spent|money:0 }}</td>{% if g.key == 'carried' %}<td class="r">{{ g.new_allocation|money:0 }}</td>{% endif %}<td class="r">{{ g.retention_held|money:0 }}</td></tr>
+  </table>
+  {% endfor %}
+  {% if rev_out %}<h3>राजस्व — असुल गर्न बाँकी / बक्यौता</h3>
+  <table><tr><th>स्रोत</th><th>ठेकेदार</th><th>बाँकी</th><th>बक्यौता</th></tr>{% for s, ms in rev_out %}<tr><td>{{ s.name }}</td><td>{{ s.selected.name|default:'' }}</td><td class="r">{{ ms.outstanding|money:0 }}</td><td class="r">{{ s.arrears|money:0 }}</td></tr>{% endfor %}</table>{% endif %}
+  <div class="sign"><div>तयार गर्ने<br>(योजना शाखा)</div><div>जाँच गर्ने<br>(लेखा शाखा)</div><div>स्वीकृत गर्ने<br>(प्रमुख प्रशासकीय अधिकृत)</div></div>
+</body></html>

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load nepali_date %}
+{% block title %}भौतिक उपलब्धि{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-start justify-between gap-3 mb-5">
+  <div class="min-w-0">
+    <h1 class="text-2xl font-bold text-slate-800">भौतिक उपलब्धि</h1>
+    <p class="text-sm text-slate-500 mt-1 truncate">{{ project.name }} · वडा नं. {{ project.ward.name|to_nepali_number }}{% if project.fiscalyear %} · आ.व. {{ project.fiscalyear.name|to_nepali_number }}{% endif %}</p>
+  </div>
+  <div class="flex gap-2">
+    {% if 'report.outputs' in me.perms %}<a href="{% url 'outputs_report' %}" class="btn-secondary"><i class="fas fa-chart-column"></i> प्रतिवेदन</a>{% endif %}
+    <a href="{% url 'usercommittee_workflow' %}" class="btn-secondary"><i class="fas fa-arrow-left"></i> उपभोक्ता समिति</a>
+  </div>
+</div>
+
+<form method="post" class="card">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <div class="p-6">
+    {% include 'Admin/User/_outputs.html' %}
+  </div>
+  <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-xl flex justify-end">
+    <button class="btn-success"><i class="fas fa-floppy-disk"></i> सुरक्षित गर्नुहोस्</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% load nepali_date %}
+{# HTMX partial: step-by-step panel for one project (loaded under its row) #}
+<div class="bg-slate-50 border-y border-slate-200 px-4 md:px-6 py-5">
+  <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+    <div>
+      <h3 class="font-bold text-slate-800">{{ project.name }}</h3>
+      <p class="text-xs text-slate-500">
+        <span class="inline-block rounded-full bg-violet-50 text-violet-700 px-2 py-0.5 mr-1">{{ summary.mode_label }}</span>
+        {{ summary.done_count|to_nepali_number }}/{{ summary.total|to_nepali_number }} चरण सम्पन्न
+        {% if summary.deadline_bs %} · म्याद {{ summary.deadline_bs }}{% if summary.extended %} (थपिएको){% endif %}{% endif %}
+        {% if summary.overdue %} · <span class="text-amber-600 font-semibold">{{ summary.days_late|to_nepali_number }} दिन ढिला</span>{% endif %}
+      </p>
+    </div>
+    <button type="button" class="btn-chip-slate" onclick="this.closest('[id^=wf-detail-]').innerHTML=''">
+      <i class="fas fa-xmark"></i> बन्द
+    </button>
+  </div>
+
+  {# progress bar #}
+  <div class="h-1.5 bg-slate-200 rounded-full mb-5 overflow-hidden">
+    <div class="h-full bg-emerald-400 rounded-full" style="width: {% widthratio summary.done_count summary.total 100 %}%"></div>
+  </div>
+
+  {% if fy_locked %}<div class="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"><i class="fas fa-lock"></i> {{ fy_lock_msg }}</div>{% endif %}
+  <ol class="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
+    {% for st in steps %}
+    <li class="rounded-xl border bg-white p-3 {% if st.n == focus %}ring-2 {% if st.state == 'warning' %}ring-amber-400{% else %}ring-brand-400{% endif %}{% endif %}
+               {% if st.state == 'done' %}border-emerald-200{% elif st.state == 'warning' %}border-amber-300{% elif st.state == 'current' %}border-brand-300{% else %}border-slate-200{% endif %}">
+      <div class="flex items-center gap-2">
+        <span class="wf-dot wf-{{ st.state }} !w-7 !h-7 !text-xs !animate-none">
+          {% if st.state == 'done' %}<i class="fas fa-check"></i>{% elif st.state == 'optional' %}—{% else %}{{ st.n|to_nepali_number }}{% endif %}
+        </span>
+        <span class="text-sm font-semibold text-slate-800 leading-tight">{{ st.label }}</span>
+      </div>
+      <div class="mt-2 text-xs text-slate-500 space-y-0.5 min-h-[1.25rem]">
+        {% if st.date_bs %}<div><i class="far fa-calendar mr-1"></i>{{ st.date_bs }}</div>{% endif %}
+        {% if st.note %}<div>{{ st.note }}</div>{% endif %}
+        {% if st.remarks %}<div class="italic">“{{ st.remarks }}”</div>{% endif %}
+        {% if st.state == 'pending' %}<div class="text-slate-400">अघिल्लो चरण सकिएपछि</div>{% endif %}
+        {% if st.state == 'optional' %}<div class="text-slate-400">ऐच्छिक</div>{% endif %}
+      </div>
+      {% if st.actions %}
+      <div class="mt-3 flex flex-wrap gap-1.5">
+        {% for a in st.actions %}
+          {% if a.modal %}
+          <button type="button" class="{% if a.primary %}btn-chip-brand{% else %}btn-chip-slate{% endif %}"
+                  hx-get="{{ a.url }}" hx-target="#app-modal-body" hx-swap="innerHTML">
+            {% if a.icon %}<i class="fas fa-{{ a.icon }}"></i>{% endif %} {{ a.label }}
+          </button>
+          {% elif a.inline %}
+          <button type="button" class="{% if a.primary %}btn-chip-brand{% else %}btn-chip-slate{% endif %}"
+                  hx-get="{{ a.url }}" hx-target="#wf-form-{{ project.id }}-{{ st.key }}" hx-swap="innerHTML">
+            {{ a.label }}
+          </button>
+          {% else %}
+          <a href="{{ a.url }}" {% if a.new_tab %}target="_blank" rel="noopener"{% endif %}
+             class="{% if a.primary %}btn-chip-brand{% else %}btn-chip-slate{% endif %}">
+            {% if a.new_tab %}<i class="fas fa-print"></i>{% endif %} {{ a.label }}
+          </a>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div id="wf-form-{{ project.id }}-{{ st.key }}"></div>
+    </li>
+    {% endfor %}
+  </ol>
+
+  {# ---- optional: किस्ता भुक्तानी (पेश्की / रनिङ बिल) ---- #}
+  {% with ins=summary.installments %}
+  {% if ins.show and ins.can_view %}
+  <div class="mt-4 rounded-xl border border-dashed border-brand-200 bg-white p-4 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="w-9 h-9 rounded-full bg-brand-50 text-brand-700 flex items-center justify-center"><i class="fas fa-layer-group"></i></span>
+      <div>
+        <p class="text-sm font-semibold text-slate-800">किस्ता भुक्तानी (पेश्की / रनिङ बिल) <span class="text-xs font-normal text-slate-400">— ऐच्छिक, अन्तिम भुक्तानीमा कट्टी हुन्छ</span></p>
+        <p class="text-xs text-slate-500">
+          {% if ins.count %}{{ ins.count|to_nepali_number }} किस्ता · रु. {{ ins.total|floatformat:0|to_nepali_number }} · पछिल्लो: {{ ins.last }}{% else %}अहिलेसम्म किस्ता दिइएको छैन{% endif %}
+        </p>
+      </div>
+    </div>
+    <a href="{{ ins.url }}" class="{% if ins.can_add %}btn-chip-brand{% else %}btn-chip-slate{% endif %}">{% if ins.can_add %}<i class="fas fa-plus"></i> किस्ता{% else %}किस्ता हेर्नुहोस्{% endif %}</a>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  {# ---- optional: progress photos / site inspection (ward or site engineer) ---- #}
+  {% with pr=summary.progress %}
+  <div class="mt-4 rounded-xl border border-dashed border-slate-300 bg-white p-4 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center"><i class="fas fa-camera"></i></span>
+      <div>
+        <p class="text-sm font-semibold text-slate-800">काम प्रगति (फोटो / निरीक्षण) <span class="text-xs font-normal text-slate-400">— ऐच्छिक, वडा/साइट इन्जिनियरले राख्ने</span></p>
+        <p class="text-xs text-slate-500">
+          {{ pr.photos|to_nepali_number }} फोटो · {{ pr.inspections|to_nepali_number }} निरीक्षण
+          {% if pr.last_date_bs %} · पछिल्लो फोटो {{ pr.last_date_bs }}{% endif %}
+          {% if pr.stages %} · {{ pr.stages|join:", " }}{% endif %}
+        </p>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-1.5">
+      {% for a in pr.actions %}
+        <a href="{{ a.url }}" class="{% if a.primary %}btn-chip-brand{% else %}btn-chip-slate{% endif %}">{{ a.label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endwith %}
+</div>

@@ -1,0 +1,52 @@
+{% load nepali_date %}{% comment %}लागत अनुमान फारमको तत्काल रकम जाँच (सर्भरको usercommittee/amounts.py जस्तै नियम).
+चाहिने: #budget, #congtingency, #usercontribution; allocated (योजनाको विनियोजित रकम, नभए select[name=project] को data-budget).{% endcomment %}
+<div id="estCheck" class="rounded-xl border px-4 py-3 text-sm hidden" data-allocated="{{ allocated|default_if_none:''|stringformat:'s' }}" data-min="{{ palika.min_user_contribution_pct|default:0|stringformat:'s' }}">
+  <div class="flex flex-wrap items-center gap-x-5 gap-y-1">
+    <span class="font-semibold" id="estPct"></span>
+    <span class="text-slate-600" id="estSplit"></span>
+  </div>
+  <div id="estMsgs" class="mt-1 space-y-0.5"></div>
+</div>
+<script>
+(function () {
+  var ND = '०१२३४५६७८९';
+  var num = function (v) { return parseFloat(String(v || '').replace(/[०-९]/g, function (c) { return ND.indexOf(c); }).replace(/,/g, '')) || 0; };
+  var np = function (n) { return String(n).replace(/[0-9]/g, function (d) { return ND[d]; }); };
+  var rs = function (n) { return 'रु. ' + np(n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })); };
+  var box = document.getElementById('estCheck');
+  if (!box) return;
+  var form = box.closest('form');
+  function allocated() {
+    if (box.dataset.allocated) return num(box.dataset.allocated);
+    var sel = form && form.querySelector('select[name=project]');
+    var opt = sel && sel.options[sel.selectedIndex];
+    return opt ? num(opt.getAttribute('data-budget')) : 0;
+  }
+  function check() {
+    var btn = form && form.querySelector('button[type=submit]');
+    var b = num(document.getElementById('budget').value), c = num(document.getElementById('congtingency').value),
+        u = num(document.getElementById('usercontribution').value), need = num(box.dataset.min);
+    var total = b - c + u, pct = total > 0 ? Math.round(u * 10000 / total) / 100 : 0;
+    var errs = [], warns = [], alloc = allocated();
+    if (!b && !u) { box.classList.add('hidden'); if (btn) btn.disabled = false; return; }
+    if (b < 0 || c < 0 || u < 0) errs.push('रकम ऋणात्मक हुन मिल्दैन।');
+    if (c > b) errs.push('कन्टिन्जेन्सी बजेटभन्दा बढी भयो।');
+    if (alloc > 0 && b > alloc + 1) errs.push('बजेट योजनाको विनियोजित रकम ' + rs(alloc) + ' भन्दा बढी भयो।');
+    if (need > 0 && total > 0 && pct < need) errs.push('उपभोक्ता अंशदान कम्तीमा ' + np(need) + '% (' + rs(total * need / 100) + ') चाहिन्छ।');
+    else if (!u) warns.push('उपभोक्ता अंशदान (श्रमदान) ० छ।');
+    box.classList.remove('hidden');
+    box.className = 'rounded-xl border px-4 py-3 text-sm ' + (errs.length ? 'border-rose-200 bg-rose-50 text-rose-800' : warns.length ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800');
+    document.getElementById('estPct').innerHTML = '<i class="fas fa-hand-holding-heart"></i> उपभोक्ता अंशदान: ' + np(pct) + '%' + (need > 0 ? ' <span class="font-normal">(न्यूनतम ' + np(need) + '%)</span>' : '');
+    document.getElementById('estSplit').textContent = 'कार्यालय ' + rs(b - c) + ' · उपभोक्ता ' + rs(u) + ' · कुल ' + rs(total);
+    document.getElementById('estMsgs').innerHTML = errs.concat(warns).map(function (m, i) {
+      return '<p class="text-xs"><i class="fas ' + (i < errs.length ? 'fa-circle-exclamation' : 'fa-triangle-exclamation') + '"></i> ' + m + '</p>';
+    }).join('');
+    if (btn) { btn.disabled = errs.length > 0; btn.classList.toggle('opacity-50', errs.length > 0); btn.classList.toggle('cursor-not-allowed', errs.length > 0); }
+  }
+  ['input', 'change'].forEach(function (ev) {
+    form.addEventListener(ev, function () { setTimeout(check, 0); });
+  });
+  if (window.jQuery) { jQuery(form).on('change', 'select', function () { setTimeout(check, 50); }); }
+  setTimeout(check, 100);
+})();
+</script>

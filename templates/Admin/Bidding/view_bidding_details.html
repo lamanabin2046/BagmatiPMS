@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}आसय र PG माग{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">लागत अनुमान तयार भएको योजनाको विवरण</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>सिन</th>
+            <th>योजनाको नाम</th>
+            <th>लागत अनुमान</th>
+            <th>कबोल रकम</th>
+            <th>निर्माण व्यवसायी</th>
+            <th>आवश्यक काजगातहरु</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in biddings %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td><a href="" class="text-brand-600 hover:underline">{{ i.project.name }}</a></td>
+            <td>{{ i.total_cost_estimate|floatformat:2 }}/-</td>
+            <td>{{ i.bidding_amount|floatformat:2 }}/-</td>
+            <td>{{ i.bidder_name_nepali }}/-</td>
+            <td>
+              <div class="flex flex-wrap gap-2">
+                <a href="{% url 'print_asay_notice' i.id %}" class="btn-chip-emerald">आशयको सूचना</a>
+                <a href="{% url 'add_pg_requirement' i.id %}" class="btn-chip-amber">PG माग गर्नुहोस</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

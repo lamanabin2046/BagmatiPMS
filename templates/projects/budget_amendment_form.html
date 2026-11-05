@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}बजेट संशोधन दर्ता{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">बजेट थप / कटौती / रकमान्तर दर्ता</h1>
+      <p class="text-sm text-slate-500 mt-0.5">आ.व. {{ fy.name }} · दर्ता हुनेबित्तिकै योजनाको विनियोजित रकम बदलिन्छ।</p>
+    </div>
+    <a href="{% url 'budget_amendments' %}?fiscalyear={{ fy.id }}" class="btn-secondary"><i class="fas fa-arrow-left"></i> सूची</a>
+  </div>
+
+  {% if errors %}
+  <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+    <ul class="list-disc pl-5 space-y-0.5">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="card p-5 space-y-4" id="amend-form">
+    {% csrf_token %}<input type="hidden" name="fiscalyear" value="{{ fy.id }}">
+    <div>
+      <label class="form-label">प्रकार</label>
+      <div class="grid grid-cols-3 gap-2">
+        {% for k, label in kinds %}
+        <label class="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 cursor-pointer has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
+          <input type="radio" name="kind" value="{{ k }}" {% if kind == k %}checked{% endif %}> <span class="text-sm">{{ label }}</span></label>
+        {% endfor %}
+      </div>
+      <p class="text-[11px] text-slate-500 mt-1">थप: नयाँ स्रोत / थप बजेटबाट · कटौती: रकम फिर्ता / समर्पण · रकमान्तर: एउटा योजनाबाट अर्कोमा</p>
+    </div>
+
+    <div data-side="from">
+      <label class="form-label">रकम घटाउने योजना <span class="text-rose-500">*</span></label>
+      <select name="from_project" class="form-select select2 w-full">
+        <option value="">— छान्नुहोस् —</option>
+        {% for p in projects %}<option value="{{ p.id }}" {% if d.from_project == p.id|stringformat:'s' %}selected{% endif %}>वडा {{ p.ward.name|default:'—' }} · {{ p.name }} — विनियोजित {{ p.budget|money:0 }}, घटाउन मिल्ने {{ p.free|money:0 }}</option>{% endfor %}
+      </select>
+      <p class="text-[11px] text-slate-500 mt-1">खर्च वा प्रतिबद्धता (लागत अनुमान / सम्झौता) भन्दा कम गर्न मिल्दैन।</p>
+    </div>
+
+    <div data-side="to">
+      <label class="form-label">रकम थप्ने योजना <span class="text-rose-500">*</span></label>
+      <select name="to_project" class="form-select select2 w-full">
+        <option value="">— छान्नुहोस् —</option>
+        {% for p in projects %}<option value="{{ p.id }}" {% if d.to_project == p.id|stringformat:'s' %}selected{% endif %}>वडा {{ p.ward.name|default:'—' }} · {{ p.name }} — विनियोजित {{ p.budget|money:0 }}{% if p.budget_head %} ({{ p.budget_head }}){% endif %}</option>{% endfor %}
+      </select>
+      <p class="text-[11px] text-slate-500 mt-1">योजनाको बजेट शीर्षकमा बाँकी रकमभित्र मात्र थप्न मिल्छ।</p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div><label class="form-label">रकम (रु.) <span class="text-rose-500">*</span></label>
+        <input name="amount" value="{{ d.amount|default:'' }}" class="form-input" required inputmode="decimal"></div>
+      <div><label class="form-label">निर्णय मिति (वि.सं.) <span class="text-rose-500">*</span></label>
+        <input name="decision_date" value="{{ d.decision_date|default:today_bs }}" class="form-input nepali-date" placeholder="YYYY-MM-DD" autocomplete="off" required></div>
+      <div><label class="form-label">निर्णय गर्ने</label>
+        <input name="decision_by" value="{{ d.decision_by|default:'' }}" class="form-input" list="decision-by" placeholder="जस्तै गाउँ/नगर कार्यपालिका">
+        <datalist id="decision-by"><option value="गाउँ/नगर सभा"><option value="गाउँ/नगर कार्यपालिका"><option value="प्रमुख प्रशासकीय अधिकृत"></datalist></div>
+      <div><label class="form-label">निर्णय नं.</label><input name="decision_no" value="{{ d.decision_no|default:'' }}" class="form-input"></div>
+    </div>
+    <div><label class="form-label">कारण <span class="text-rose-500">*</span></label>
+      <textarea name="reason" rows="3" class="form-input" required>{{ d.reason|default:'' }}</textarea></div>
+    <div><label class="form-label">निर्णयको प्रतिलिपि (ऐच्छिक)</label>
+      <input type="file" name="document" accept=".pdf,image/*" class="form-input"></div>
+
+    <div class="flex justify-end"><button class="btn-primary"><i class="fas fa-floppy-disk"></i> दर्ता गर्नुहोस्</button></div>
+  </form>
+</div>
+<script>
+(function () {
+  var form = document.getElementById('amend-form');
+  function sync() {
+    var k = (form.querySelector('input[name=kind]:checked') || {}).value || 'transfer';
+    form.querySelector('[data-side=from]').hidden = (k === 'increase');
+    form.querySelector('[data-side=to]').hidden = (k === 'decrease');
+  }
+  form.querySelectorAll('input[name=kind]').forEach(function (r) { r.addEventListener('change', sync); });
+  sync();
+})();
+</script>
+{% endblock %}

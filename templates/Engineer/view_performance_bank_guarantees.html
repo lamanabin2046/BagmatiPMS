@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}PG को विवरण{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">Performance Bank Guarantee विवरण</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>क्र.सं.</th>
+            <th>ठेक्का नम्बर</th>
+            <th>आयोजनाको नाम</th>
+            <th>निर्माण व्यवसायी</th>
+            <th class="text-right">बजेट</th>
+            <th class="text-right">कबोल रकम</th>
+            <th>PG नं</th>
+            <th>बैंक</th>
+            <th>म्याद</th>
+            <th class="text-center">बाँकी दिन</th>
+            <th class="text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in bonds %}
+          <tr class="{% if i.days_left < 0 %}bg-rose-50{% elif i.days_left <= 30 %}bg-amber-50{% endif %}">
+            <td>{{ forloop.counter }}</td>
+            <td>{{ i.contract.sealed_bid.bidding_number }}</td>
+            <td>{{ i.contract.sealed_bid.project.name }}</td>
+            <td>{{ i.contract.sealed_bid.bidder_name_nepali }}</td>
+            <td class="text-right">{{ i.contract.sealed_bid.budget }}</td>
+            <td class="text-right">{{ i.contract.sealed_bid.bidding_amount }}</td>
+            <td>{{ i.bond_number }}</td>
+            <td>{{ i.bank_name }}</td>
+            <td>{{ i.current_expiry_date }}</td>
+            <td class="text-center">
+              {% if i.is_expired %}
+              <span class="badge bg-rose-100 text-rose-700">समाप्त ({{ i.days_left_abs }} दिन अघि)</span>
+              {% elif i.is_expiring_soon %}
+              <span class="badge bg-amber-100 text-amber-700">{{ i.days_left }} दिन</span>
+              {% else %}
+              <span class="badge bg-emerald-100 text-emerald-700">{{ i.days_left }} दिन</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <div class="flex flex-col gap-1.5 items-stretch">
+                <a href="" class="btn-chip-brand">म्याद थप</a>
+                <a href="" class="btn-chip-slate">टिप्पणी</a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="11" class="text-center text-slate-400 py-6">कुनै Performance Bank Guarantee फेला परेन।</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-4 border-t border-slate-100 flex justify-end">
+      <a href="#" class="btn-success"><i class="fas fa-file-excel"></i> Download in Excel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

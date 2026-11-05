@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}वडा अनुसार तुलना{% endblock %}
+
+{% block extra_head %}
+<style>
+  .chart-box { position: relative; height: 260px; }
+  .chart-card-body { padding: 14px 16px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="mb-6">
+  <h1 class="text-xl md:text-2xl font-bold text-slate-800">वडा अनुसार तुलना</h1>
+  <p class="text-sm text-slate-500 mt-0.5">{{ palika_engineer.name }} — सम्पूर्ण पालिका (सबै वडा)</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+  <!-- वडा अनुसार लागत अनुमान चरण (grouped bar) -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+      <i class="fas fa-chart-column text-brand-500"></i>
+      <h2 class="text-sm font-semibold text-slate-700">वडा अनुसार लागत अनुमान चरण</h2>
+    </div>
+    <div class="chart-card-body">
+      <div class="chart-box">
+        <canvas id="wardStageChart"></canvas>
+      </div>
+      <div class="flex items-center gap-4 mt-3 text-xs justify-center">
+        <span class="flex items-center gap-1.5"><span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>भइसकेको</span>
+        <span class="flex items-center gap-1.5"><span class="inline-block w-2 h-2 rounded-full bg-amber-500"></span>बाँकी</span>
+        <span class="flex items-center gap-1.5"><span class="inline-block w-2 h-2 rounded-full bg-violet-500"></span>समिति गठन बाँकी</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- वडा अनुसार बजेट उपयोग (bar) -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+      <i class="fas fa-chart-bar text-brand-500"></i>
+      <h2 class="text-sm font-semibold text-slate-700">वडा अनुसार बजेट उपयोग (%)</h2>
+    </div>
+    <div class="chart-card-body">
+      <div class="chart-box">
+        <canvas id="wardUtilizationChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= DATA TABLE ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card mt-4">
+  <div class="px-5 py-4 border-b border-slate-100">
+    <h2 class="text-sm font-semibold text-slate-700">वडा अनुसार विस्तृत विवरण</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase tracking-wide text-slate-500 bg-slate-50">
+          <th class="px-5 py-3 font-medium">वडा</th>
+          <th class="px-5 py-3 font-medium">कुल योजना</th>
+          <th class="px-5 py-3 font-medium">समिति गठन बाँकी</th>
+          <th class="px-5 py-3 font-medium">लागत अनुमान बाँकी</th>
+          <th class="px-5 py-3 font-medium">लागत अनुमान भयो</th>
+          <th class="px-5 py-3 font-medium">सम्पन्न</th>
+          <th class="px-5 py-3 font-medium text-right">कुल बजेट</th>
+          <th class="px-5 py-3 font-medium text-right">कुल लागत अनुमान</th>
+          <th class="px-5 py-3 font-medium text-right">बजेट उपयोग</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for row in ward_rows %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 font-medium text-slate-700">{{ row.ward.name }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ row.total }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ row.committee_pending }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ row.estimate_pending }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ row.estimate_done }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ row.completed }}</td>
+          <td class="px-5 py-3 text-right text-slate-700">रु {{ row.budget|floatformat:0 }}</td>
+          <td class="px-5 py-3 text-right text-slate-700">रु {{ row.estimated_amount|floatformat:0 }}</td>
+          <td class="px-5 py-3 text-right font-semibold text-slate-800">{{ row.utilization_percent|floatformat:1 }}%</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" class="px-5 py-6 text-center text-slate-400">हाल कुनै वडा उपलब्ध छैन</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// ================= 1) वडा अनुसार लागत अनुमान चरण (grouped bar) =================
+// Three status categories per ward — reuses the same validated categorical
+// palette (emerald/amber/violet) already used on the Palika Engineer
+// dashboard's donut chart.
+new Chart(document.getElementById('wardStageChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ ward_labels_json|safe }},
+    datasets: [
+      { label: 'भइसकेको', data: {{ ward_estimate_done_json|safe }}, backgroundColor: '#10b981', borderRadius: 4 },
+      { label: 'बाँकी', data: {{ ward_estimate_pending_json|safe }}, backgroundColor: '#f59e0b', borderRadius: 4 },
+      { label: 'समिति गठन बाँकी', data: {{ ward_committee_pending_json|safe }}, backgroundColor: '#8b5cf6', borderRadius: 4 },
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + ctx.parsed.y + ' योजना' } },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { precision: 0, font: { size: 10 } } },
+    }
+  }
+});
+
+// ================= 2) वडा अनुसार बजेट उपयोग (single-series bar) =================
+// A single measure per ward with no inherent rank between wards, so one
+// flat brand color — not a sequential ramp (that would wrongly imply an
+// order to the wards themselves).
+new Chart(document.getElementById('wardUtilizationChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ ward_labels_json|safe }},
+    datasets: [{
+      data: {{ ward_utilization_json|safe }},
+      backgroundColor: '#3b76f6',
+      borderRadius: 4,
+      barPercentage: 0.6,
+      categoryPercentage: 0.7,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ctx.parsed.y.toFixed(1) + '%' } },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, callback: (v) => v + '%' } },
+    }
+  }
+});
+</script>
+{% endblock %}

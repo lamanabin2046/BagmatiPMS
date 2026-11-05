@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}योजनाको विवरण{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">योजनाको विवरण</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>क्र.स.</th>
+            <th>आ.ब.</th>
+            <th>आयोजनाको नाम</th>
+            <th>वडा</th>
+            <th>प्रकार</th>
+            <th>स्थान</th>
+            <th class="text-right">बजेट</th>
+            <th>कार्यन्वय विधि</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in projects %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ i.fiscalyear.name }}</td>
+            <td><a href="{% url 'project_timeline' i.id %}" class="text-brand-600 font-semibold hover:underline">{{ i.name }}</a></td>
+            <td>{{ i.ward.name }}</td>
+            <td>{{ i.project_type.type }}</td>
+            <td>{{ i.address }}</td>
+            <td class="text-right font-semibold text-emerald-600">रु. {{ i.budget }}</td>
+            <td>{{ i.procurement_type.name }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-4 border-t border-slate-100 flex justify-end">
+      <button class="btn-success"><i class="fas fa-file-excel"></i> Download in Excel</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}प्रस्ताव प्राप्ति र मूल्याङ्कन{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <p class="text-xs font-medium text-brand-700"><i class="fas fa-building"></i> {{ module_label }}</p>
+      <h1 class="text-lg md:text-xl font-bold text-slate-800 mt-0.5"><i class="fas fa-scale-balanced text-brand-500"></i> प्रस्ताव प्राप्ति र मूल्याङ्कन</h1>
+      <p class="text-sm text-slate-500 mt-0.5">{{ project.name }}{% if project.ward %} · वडा नं. {{ project.ward.name|to_nepali_number }}{% endif %}</p>
+    </div>
+    <a href="{{ back }}" class="btn-secondary"><i class="fas fa-arrow-left"></i> कार्यप्रवाहमा फर्कनुहोस्</a>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    {% for c in cards %}<div class="card p-3"><p class="text-[11px] text-slate-500">{{ c.label }}</p><p class="font-semibold {% if c.brand %}text-brand-700{% else %}text-slate-800{% endif %} truncate">{{ c.value }}</p>{% if c.sub %}<p class="text-[11px] text-slate-400 truncate">{{ c.sub }}</p>{% endif %}</div>{% endfor %}
+  </div>
+
+  {% if errors %}
+  <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 space-y-0.5">
+    {% for e in errors %}<p class="text-sm text-rose-700"><i class="fas fa-circle-exclamation"></i> {{ e }}</p>{% endfor %}
+  </div>
+  {% endif %}
+  <div class="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-2.5 text-sm text-brand-900">
+    <i class="fas fa-circle-info text-brand-500"></i>
+    {{ m.get_notice_kind_display }} · पेश गर्ने अन्तिम मिति {{ deadline_bs|default:'—' }} ·
+    प्रस्ताव नआएको संस्थाको रकम खाली छोड्नुहोस्। सार्वजनिक सूचनाबाट आएका अन्य संस्था तलका खाली पङ्क्तिमा थप्नुहोस्।
+    {% if m.pass_mark %}न्यूनतम प्राविधिक अङ्क <b>{{ m.pass_mark|floatformat:0|to_nepali_number }}</b> — नपुगेका छनौट हुँदैनन्।{% endif %}
+    कागजात नपुगेका / सर्त नमिलेका प्रस्तावमा “योग्य” हटाउनुहोस्।
+  </div>
+
+  <form method="post" class="card" novalidate>
+    {% csrf_token %}<input type="hidden" name="next" value="{{ next }}">
+    <div class="p-5 border-b border-slate-100 flex flex-wrap items-end gap-4">
+      <div><label class="form-label">प्रस्ताव खोलेको मिति <span class="text-rose-500">*</span></label>
+        <input name="opening_date" value="{{ opening_date }}" class="form-input nepali-date" autocomplete="off" required></div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-xs text-slate-500">
+          <tr><th class="px-3 py-2.5 text-left font-medium min-w-[14rem]">संस्था</th><th class="px-3 py-2.5 text-left font-medium">दर्ता / PAN</th>
+            <th class="px-3 py-2.5 text-left font-medium">प्रस्तावित रकम (रु.)</th><th class="px-3 py-2.5 text-left font-medium">प्राविधिक अङ्क</th>
+            <th class="px-3 py-2.5 text-center font-medium">योग्य</th><th class="px-3 py-2.5 text-left font-medium">प्राप्त मिति</th>
+            <th class="px-3 py-2.5 text-left font-medium min-w-[10rem]">कैफियत</th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in rows %}
+          <tr class="{% if not r.fixed and not r.q %}bg-slate-50/40{% endif %}">
+            <td class="px-3 py-2">
+              {% if r.fixed %}<span class="font-medium text-slate-800">{{ r.name }}</span><span class="block text-[11px] text-slate-400">{{ r.address }} · आमन्त्रित</span>
+              {% else %}<input name="name_{{ r.key }}" value="{{ r.v.name }}" list="firm-options" class="form-input !py-1.5" placeholder="{% if not r.q %}अन्य संस्था (सूचनाबाट){% endif %}">
+                <input name="address_{{ r.key }}" value="{{ r.v.address }}" class="form-input !py-1 mt-1 text-xs" placeholder="ठेगाना">{% endif %}
+            </td>
+            <td class="px-3 py-2">{% if r.fixed %}{{ r.pan|default:'—' }}{% else %}<input name="pan_{{ r.key }}" value="{{ r.v.pan }}" class="form-input !py-1.5 w-28" maxlength="9" inputmode="numeric">{% endif %}</td>
+            <td class="px-3 py-2"><input name="amount_{{ r.key }}" value="{{ r.v.amount }}" class="form-input !py-1.5 w-36" inputmode="decimal"></td>
+            <td class="px-3 py-2"><input name="score_{{ r.key }}" value="{{ r.v.score }}" class="form-input !py-1.5 w-20" inputmode="decimal" placeholder="०–१००"></td>
+            <td class="px-3 py-2 text-center"><input type="checkbox" name="qualified_{{ r.key }}" value="1" {% if r.v.qualified %}checked{% endif %}></td>
+            <td class="px-3 py-2"><input name="received_{{ r.key }}" value="{{ r.v.received }}" class="form-input nepali-date !py-1.5 w-32" autocomplete="off"></td>
+            <td class="px-3 py-2"><input name="remarks_{{ r.key }}" value="{{ r.v.remarks }}" class="form-input !py-1.5"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <datalist id="firm-options">{% for fo in firm_options %}<option value="{{ fo.firm_name }}">{{ fo.firm_pan }} {{ fo.firm_address }}</option>{% endfor %}</datalist>
+    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-2">
+      <a href="{{ back }}" class="btn-secondary">रद्द</a>
+      <button type="submit" class="btn-success"><i class="fas fa-floppy-disk"></i> सुरक्षित गर्नुहोस्</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-red-100 via-white to-blue-100 flex items-center justify-center px-4 py-12">
+  <div class="bg-white max-w-lg w-full p-8 rounded-3xl shadow-2xl border border-gray-200 text-center space-y-6 animate-fade-in">
+    
+    <!-- Icon -->
+    <div class="text-red-500 text-6xl">
+      <i class="fas fa-ban"></i>
+    </div>
+    
+    <!-- Title -->
+    <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">
+      Access Denied
+    </h1>
+
+    <!-- Message -->
+    <p class="text-gray-600 text-sm md:text-base">
+      Sorry, you don't have the permission to view this page.<br>
+      Please contact the administrator if you believe this is a mistake.
+    </p>
+
+    <!-- Back Button -->
+    <a href="{% url 'login' %}" class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full text-sm font-medium transition shadow">
+      <i class="fas fa-arrow-left"></i>
+      Back to Home
+    </a>
+  </div>
+</div>
+
+<style>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out;
+}
+</style>
+{% endblock %}

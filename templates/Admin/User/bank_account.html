@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% load nepali_date %}
+{% block title %}बैंक खाता{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-start justify-between gap-3 mb-5">
+  <div class="min-w-0">
+    <h1 class="text-2xl font-bold text-slate-800">उपभोक्ता समितिको बैंक खाता</h1>
+    <p class="text-sm text-slate-500 mt-1 truncate">{{ project.name }} · वडा नं. {{ project.ward.name|to_nepali_number }} · {{ committee.name }}</p>
+  </div>
+  <a href="{% url 'usercommittee_workflow' %}" class="btn-secondary"><i class="fas fa-arrow-left"></i> उपभोक्ता समिति</a>
+</div>
+
+<div class="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-sm text-brand-800 mb-4">
+  <i class="fas fa-circle-info"></i> सम्झौतापछि दिइएको <b>बैंक पत्र</b> अनुसार समितिले खाता खोलेपछि यहाँ खाता विवरण राख्नुहोस्।
+  किस्ता र अन्तिम भुक्तानीको टिप्पणीमा यही खाता आफैँ आउँछ।
+</div>
+
+<form method="post" class="card">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <div class="p-6">
+    {% include 'Admin/User/_uc_bank.html' with uc=committee %}
+  </div>
+  <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-xl flex justify-end">
+    <button class="btn-success"><i class="fas fa-floppy-disk"></i> सुरक्षित गर्नुहोस्</button>
+  </div>
+</form>
+{% endblock %}

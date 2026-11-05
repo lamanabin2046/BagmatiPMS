@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}सिफारिस तयार गर्नुहोस{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-4">
+
+  <div class="flex items-center justify-between gap-3">
+    <div>
+      <h1 class="text-lg md:text-xl font-bold text-slate-800">आयोजना सम्झौताका लागि सिफारिस</h1>
+      <p class="text-sm text-slate-500 mt-0.5">{{ project.name }} — वडा नं. {{ sachib.ward.name }}</p>
+    </div>
+    <a href="{% url 'ward_engineer_project_photos' project.id %}" class="btn-chip-brand text-xs"><i class="fas fa-camera"></i> फोटो टाइमलाइन हेर्नुहोस्</a>
+  </div>
+
+  <div class="card">
+    <div class="px-6 py-4 border-b border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+      <div>
+        <p class="text-xs text-slate-400">उपभोक्ता समिति</p>
+        <p class="font-medium text-slate-700">{{ usercommittee.name|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-slate-400">लागत अनुमान</p>
+        <p class="font-medium text-slate-700">रु {{ cost_estimate.total_cost|floatformat:2 }}/-</p>
+      </div>
+      <div>
+        <p class="text-xs text-slate-400">वडा सचिव</p>
+        <p class="font-medium text-slate-700">{{ sachib.name }}</p>
+      </div>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="form-label">पत्र संख्या</label>
+            <input type="text" name="letter_number" class="form-input" placeholder="पत्र संख्या">
+          </div>
+          <div>
+            <label class="form-label">चलानी नं.</label>
+            <input type="text" name="chalani_number" class="form-input" placeholder="चलानी नं.">
+          </div>
+          <div>
+            <label class="form-label">सिफारिस मिति</label>
+            <input type="text" name="recommendation_date" class="form-input nepali-date" required>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">कैफियत</label>
+          <textarea name="remarks" rows="4" class="form-textarea" placeholder="सिफारिस सम्बन्धी कैफियत (वैकल्पिक)"></textarea>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
+        <a href="{% url 'view_projects_for_recommendation' %}" class="btn-secondary">रद्द गर्नुहोस्</a>
+        <button type="submit" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> सिफारिस जारी गर्नुहोस्
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

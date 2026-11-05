@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}लेखापरीक्षण प्याकेट{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-4">
+  <div>
+    <h1 class="text-xl md:text-2xl font-bold text-slate-800"><i class="fas fa-file-shield text-brand-600"></i> लेखापरीक्षण प्याकेट</h1>
+    <p class="text-sm text-slate-500 mt-0.5">लेखापरीक्षणमा माग हुने सबै विवरण एउटै Excel फाइलमा — प्रतिवेदनकै हिसाब, अङ्क मिल्छन्।</p>
+  </div>
+  <form method="get" class="card p-5 space-y-4">
+    <div class="flex flex-wrap items-end gap-3">
+      <div><label class="form-label">आर्थिक वर्ष</label>
+        <select name="fiscalyear" class="form-select !w-auto">{% for x in fiscal_years %}<option value="{{ x.id }}" {% if x.id == fy.id %}selected{% endif %}>आ.व. {{ x.name }}{% if x.closed_at %} (बन्द){% endif %}</option>{% endfor %}</select></div>
+      <button name="download" value="1" class="btn-primary" hx-boost="false"><i class="fas fa-file-excel"></i> Excel डाउनलोड</button>
+    </div>
+    {% if start %}<p class="text-xs text-slate-500">आ.व. अवधि {{ start|bs }} – {{ end|bs }}{% if scoped %} · तपाईंको वडाका योजना मात्र{% endif %}</p>{% endif %}
+  </form>
+  <div class="card p-5">
+    <p class="font-semibold text-slate-700 mb-2 text-sm">फाइलका पाना</p>
+    <ol class="text-sm text-slate-600 list-decimal pl-5 space-y-1">
+      <li><b>सारांश</b> — योजना, बजेट, खर्च, प्रतिबद्धता, विधि र स्थितिअनुसार, राजस्व, धरौटी</li>
+      <li><b>योजना र भुक्तानी</b> — हरेक योजनाको विनियोजित, सम्झौता, कुल / खुद भुक्तानी, कट्टी, स्थिति</li>
+      <li><b>कर तथा कट्टी</b> — मितिअनुसार हरेक कट्टी (अग्रिम कर, भ्याट, धरौटी, हर्जाना …)</li>
+      <li><b>धरौटी</b> — रोक्का, फिर्ता योग्य मिति, फिर्ता भएको</li>
+      <li><b>बैंक जमानत</b> — कार्यसम्पादन र अग्रिम भुक्तानी जमानत, म्याद र स्थिति</li>
+      <li><b>बजेट शीर्षक</b> — स्वीकृत, बाँडिएको, खर्च</li>
+      <li><b>राजस्व ठेक्का</b> र <b>राजस्व असुली</b> — सम्झौता, असुल, विलम्ब शुल्क, बक्यौता, रसिद र SuTRA मिलान</li>
+      <li><b>आ.व. बन्द</b> — क्रमागत / रोक्का / सम्पन्न निर्णय (बन्द भएको भए)</li>
+      <li><b>गतिविधि लग</b> — आ.व. अवधिभित्र कसले के गर्यो</li>
+    </ol>
+  </div>
+</div>
+{% endblock %}

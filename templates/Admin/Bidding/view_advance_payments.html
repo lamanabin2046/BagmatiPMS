@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load nepali_date %}
+{% block title %}अग्रिम भुक्तानी विवरण{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">अग्रिम भुक्तानी विवरण (Advance Payments)</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>क्र.सं.</th>
+            <th>योजना</th>
+            <th>ठेकेदार / फर्मको नाम</th>
+            <th>ठेक्का नं</th>
+            <th class="text-right">अग्रिम रकम</th>
+            <th>स्वीकृत मिति</th>
+            <th>कैफियत</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ap in advance_payments %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>
+              <a href="{% url 'project_timeline' ap.contract.sealed_bid.project.id %}" class="text-brand-600 font-semibold hover:underline">
+                {{ ap.contract.sealed_bid.project.name }}
+              </a>
+            </td>
+            <td>{{ ap.contract.sealed_bid.bidder_name_nepali|default:"—" }}</td>
+            <td>{{ ap.contract.sealed_bid.bidding_number }}</td>
+            <td class="text-right font-semibold text-rose-600">{{ ap.approved_amount|floatformat:2 }}</td>
+            <td>{{ ap.approval_date|nepali_date }}</td>
+            <td>{{ ap.remarks|default:"—" }}</td>
+            <td>
+              <a href="{% url 'print_advance_tippani' ap.id %}" class="btn-chip-slate">टिप्पणी</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-slate-400 py-6">कुनै अग्रिम भुक्तानी विवरण फेला परेन।</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

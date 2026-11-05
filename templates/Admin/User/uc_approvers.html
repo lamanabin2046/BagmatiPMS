@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}स्वीकृत र हस्ताक्षर गर्ने अधिकारी{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-800">स्वीकृत र हस्ताक्षर गर्ने अधिकारी</h1>
+    <p class="text-sm text-slate-500 mt-1">उपभोक्ता समिति, बोलपत्र, दरभाउपत्र, सोझै/अमानत र खरिद योजनाको स्वीकृत कसले गर्ने — CAO ले अधिकृतलाई प्रत्यायोजन</p>
+  </div>
+  <a href="{% url 'usercommittee_workflow' %}" class="btn-secondary"><i class="fas fa-arrow-left"></i> उपभोक्ता समिति</a>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-5">
+  <section class="card p-5 lg:col-span-2 min-w-0">
+    <h2 class="font-semibold text-slate-800 mb-1">स्वीकृत अधिकार प्रत्यायोजन (सबै योजना)</h2>
+    <p class="text-xs text-slate-500 mb-4">प्रमुख प्रशासकीय अधिकृतले भूमिकाअनुसार स्वीकृत गर्नुहुन्छ। तलका अधिकृतलाई प्रकारअनुसार छुट्टाछुट्टै अधिकार दिन / हटाउन सकिन्छ।
+      {% if 'settings.roles' in me.perms %}भूमिका अनुसारको अनुमति <a href="{% url 'roles_permissions' %}" class="text-brand-700 underline">भूमिका र अनुमति</a> पेजबाट बदल्न सकिन्छ।{% endif %}</p>
+
+    <div class="mb-4 space-y-1.5">
+      {% for c in caos %}
+      <div class="flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2 text-sm">
+        <span><i class="fas fa-user-tie text-emerald-600 mr-2"></i>{{ c.name }} <span class="text-xs text-slate-500">({{ c.user.mobile }})</span></span>
+        <span class="badge bg-emerald-100 text-emerald-700">प्रमुख प्रशासकीय अधिकृत</span>
+      </div>
+      {% empty %}
+      <p class="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">CAO प्रयोगकर्ता बनाइएको छैन। कर्मचारी थप्दा "CAO" रोज्नुहोस्।</p>
+      {% endfor %}
+    </div>
+
+    <div class="overflow-x-auto -mx-5 px-5">
+    <table class="w-full text-sm min-w-[760px]">
+      <thead class="text-left text-slate-500 border-b"><tr><th class="py-2">अधिकृत</th>
+        {% for c, t, h in kinds %}<th class="py-2 px-1 text-center text-xs font-medium" title="{{ h }}">{{ t }}</th>{% endfor %}
+        <th class="py-2 text-right text-xs font-medium">सबै</th></tr></thead>
+      <tbody>
+      {% for o in officers %}
+        <tr class="border-b border-slate-100 align-middle">
+          <td class="py-2.5 pr-2"><p class="font-medium text-slate-800">{{ o.name }}</p><p class="text-[11px] text-slate-400">{{ o.role }} · {{ o.user.mobile }}</p></td>
+          {% for x in o.cells %}
+          <td class="py-2.5 px-1 text-center">
+            {% if x.by_role %}<span class="badge bg-emerald-50 text-emerald-700 !text-[10px]" title="भूमिकाबाटै अधिकार छ"><i class="fas fa-check"></i> भूमिका</span>
+            {% else %}
+            <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="user_id" value="{{ o.user.id }}"><input type="hidden" name="perm" value="{{ x.code }}">
+              {% if x.grant %}<button name="action" value="revoke" class="badge bg-brand-600 text-white hover:bg-rose-600 !text-[10px] cursor-pointer" title="{% if x.grant.granted_by %}{{ x.grant.granted_by.mobile }} ले {% endif %}{{ x.grant.granted_at|date:'Y-m-d' }} मा दिएको — थिच्दा हट्छ" hx-confirm="“{{ x.title }}” को स्वीकृत अधिकार हटाउने?"><i class="fas fa-check"></i> प्रत्यायोजित</button>
+              {% else %}<button name="action" value="grant" class="badge bg-slate-100 text-slate-600 hover:bg-brand-50 hover:text-brand-700 !text-[10px] cursor-pointer">+ दिनुहोस्</button>{% endif %}
+            </form>
+            {% endif %}
+          </td>
+          {% endfor %}
+          <td class="py-2.5 text-right whitespace-nowrap">
+            <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="user_id" value="{{ o.user.id }}"><input type="hidden" name="perm" value="all">
+              {% if o.can_more %}<button name="action" value="grant" class="btn-chip-brand">सबै दिनुहोस्</button>{% endif %}
+              {% if o.n %}<button name="action" value="revoke" class="btn-chip-slate" hx-confirm="{{ o.name }} का सबै प्रत्यायोजित अधिकार हटाउने?">सबै हटाउनुहोस्</button>{% endif %}
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="py-6 text-center text-slate-500">कुनै अधिकृत छैन।</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p class="text-[11px] text-slate-500 mt-3"><i class="fas fa-circle-info"></i> अधिकार पाएका अधिकृतको ड्यासबोर्ड र “मेरो काम” मा स्वीकृति पर्खिरहेका फाइल देखिन्छन्; स्वीकृति अभिलेखमा “प्रत्यायोजित अधिकृत” लेखिन्छ। हरियो चिन्ह भएको अधिकार भूमिकाबाटै छ (भूमिका र अनुमति पेजबाट बदलिन्छ)।</p>
+  </section>
+
+  <section class="card p-5">
+    <h2 class="font-semibold text-slate-800 mb-1">वडा प्रत्यायोजित योजना</h2>
+    <p class="text-xs text-slate-500 mb-4">सम्बन्धित वडाका वडा अध्यक्षले आफ्नै वडाका योजना स्वीकृत गर्नुहुन्छ (CAO, प्रत्यायोजित अधिकृत र Admin ले पनि सक्छन्)।</p>
+    <div class="space-y-1.5">
+      {% for c in chairs %}
+      <div class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+        <span>वडा नं. {{ c.ward.name }}</span>
+        <span class="text-slate-700">{{ c.name }}</span>
+      </div>
+      {% empty %}
+      <p class="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">वडा अध्यक्षको login बनाइएको छैन। कर्मचारी थप्दा "WARD CHAIRPERSON (वडा अध्यक्ष)" रोजी वडा छान्नुहोस्।</p>
+      {% endfor %}
+    </div>
+    {% if user.user_type == '1' %}
+    <a href="{% url 'add_staff' %}" class="btn-secondary w-full mt-4"><i class="fas fa-user-plus"></i> कर्मचारी थप्नुहोस्</a>
+    {% endif %}
+  </section>
+</div>
+
+<section id="signers" class="card p-5 mt-5 space-y-4">
+  <div>
+    <h2 class="font-semibold text-slate-800"><i class="fas fa-signature text-brand-600 mr-1"></i> पत्रमा हस्ताक्षर गर्ने अधिकारी</h2>
+    <p class="text-xs text-slate-500 mt-1">बैंक खाता खोल्ने पत्र, कार्यादेश, सम्झौता जस्ता बाहिर जाने पत्रमा कसको नाम र पद छापिने — प्रकारअनुसार प्रत्यायोजन गर्नुहोस्।
+      नतोकिएको प्रकारमा “सबै पत्र” मा तोकिएको अधिकृत, त्यो पनि नभए प्रमुख प्रशासकीय अधिकृत आफैँ। प्रत्यायोजित पत्रमा “प्रमुख प्रशासकीय अधिकृतबाट अख्तियारी प्राप्त” लेखिन्छ। टिप्पणी (स्वीकृत) र वडाका पत्रमा असर पर्दैन।</p>
+  </div>
+  <div class="overflow-x-auto -mx-5 px-5">
+  <table class="w-full text-sm min-w-[760px]">
+    <thead class="text-left text-slate-500 border-b"><tr><th class="py-2">पत्रको प्रकार</th><th class="py-2">हाल हस्ताक्षर गर्ने</th><th class="py-2">अधिकृत छान्नुहोस्</th><th class="py-2">पद (पत्रमा)</th><th></th></tr></thead>
+    <tbody>
+    {% for r in signer_rows %}
+      <tr class="border-b border-slate-100 align-middle {% if r.kind == 'all' %}bg-slate-50/60{% endif %}">
+        <td class="py-2.5 pr-2"><p class="font-medium text-slate-800">{{ r.label }}</p><p class="text-[11px] text-slate-400">{{ r.help }}</p></td>
+        <td class="py-2.5 pr-2 text-xs">{% if r.now.delegated %}<span class="badge bg-brand-50 text-brand-700"><i class="fas fa-check"></i> {{ r.now.name }}</span><p class="text-[11px] text-slate-500 mt-0.5">{{ r.now.post }}{% if not r.a %} · “सबै पत्र” बाट{% endif %}</p>
+          {% else %}<span class="badge bg-emerald-50 text-emerald-700">प्रमुख प्रशासकीय अधिकृत</span>{% if r.now.name %}<p class="text-[11px] text-slate-500 mt-0.5">{{ r.now.name }}</p>{% endif %}{% endif %}</td>
+        <td class="py-2.5 pr-2" colspan="3">
+          <form method="post" class="flex flex-wrap items-center gap-2">{% csrf_token %}
+            <input type="hidden" name="form" value="signer"><input type="hidden" name="kind" value="{{ r.kind }}">
+            <select name="user_id" class="form-select !py-1.5 !text-xs min-w-[200px]">
+              <option value="">— प्रमुख प्रशासकीय अधिकृत आफैँ —</option>
+              {% for u in sign_users %}<option value="{{ u.id }}" {% if r.a and r.a.user_id == u.id %}selected{% endif %}>{{ u.name }} ({{ u.role }})</option>{% endfor %}
+            </select>
+            <input name="post" value="{{ r.a.post|default:'' }}" placeholder="भूमिकाअनुसार (जस्तै: योजना अधिकृत)" class="form-input !py-1.5 !text-xs w-48">
+            <button class="btn-chip-brand">सुरक्षित</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'projects/revenue_public_base.html' %}
+{% load outputs %}
+{% block title %}अनलाइन बोलपत्र{% endblock %}
+{% block body %}
+<div class="card p-5">
+  <p class="text-xs text-slate-500">{{ s.get_category_display }}{% if s.ward %} · वडा नं. {{ s.ward.name|npn }}{% endif %}</p>
+  <h1 class="text-lg font-bold">{{ s.name }}</h1>
+  <p class="text-sm mt-1">न्यूनतम कबोल <b>रु. {{ s.min_bid|money:0 }}</b> · पेश गर्ने अन्तिम मिति <b>{{ s.bid_deadline|bs }}</b> · बोलपत्र जमानत कबोल अङ्कको <b>{{ pct|floatformat:"-2"|npn }}%</b>
+    · <a href="{% url 'revenue_public_notice' s.id %}" target="_blank" class="underline">पूरा सूचना</a></p>
+</div>
+{% if existing %}<div class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm text-sky-900">तपाईंले {{ existing.submitted_at|date:"Y-m-d H:i" }} मा बोलपत्र पेश गरिसक्नुभएको छ। म्यादभित्र फेरि पेश गरे पुरानोको सट्टा नयाँ मान्य हुन्छ। <a href="{% url 'revenue_portal_ack' existing.id %}" class="underline">प्राप्ति-पत्र</a></div>{% endif %}
+<form method="post" enctype="multipart/form-data" class="card p-6 space-y-4">
+  {% csrf_token %}
+  <div class="grid sm:grid-cols-2 gap-3">
+    <div class="sm:col-span-2"><label class="lbl">कबोल अङ्क (रु.) *</label><input name="amount" value="{{ p.amount }}" class="inp text-lg font-semibold" inputmode="decimal" required autocomplete="off">
+      <p class="text-[11px] text-slate-500 mt-1">कबोल अङ्क सिलबन्दी गरी राखिन्छ — पेश गर्ने म्याद सकिनुअघि पालिकाका कर्मचारीले पनि देख्न सक्दैनन्।</p></div>
+    <div><label class="lbl">बोलपत्र जमानतको प्रकार *</label><select name="security_kind" class="inp"><option value="bank" {% if p.security_kind != 'cash' %}selected{% endif %}>बैंक जमानत</option><option value="cash" {% if p.security_kind == 'cash' %}selected{% endif %}>नगद धरौटी</option></select></div>
+    <div><label class="lbl">जमानत रकम (रु.) *</label><input name="security_amount" value="{{ p.security_amount }}" class="inp" inputmode="decimal" required></div>
+    <div class="sm:col-span-2"><label class="lbl">बैंक र जमानत नं. / धरौटी रसिद नं. *</label><input name="security_ref" value="{{ p.security_ref }}" class="inp" required></div>
+    <div><label class="lbl">जमानतको स्क्यान *</label><input name="security_doc" type="file" accept=".pdf,.jpg,.jpeg,.png" class="inp"></div>
+    <div><label class="lbl">अन्य कागजात (दर्ता, PAN, कर चुक्ता — एउटै PDF)</label><input name="doc" type="file" accept=".pdf,.jpg,.jpeg,.png" class="inp"></div>
+  </div>
+  <label class="flex items-start gap-2 text-sm"><input type="checkbox" required class="mt-1"> <span>सूचनामा उल्लिखित सबै शर्त स्वीकार गर्दछु, म / हाम्रो फर्म कालोसूचीमा छैन र पेश गरेका कागजात सत्य हुन्।</span></label>
+  <div class="flex justify-end"><button class="btn">सिलबन्दी बोलपत्र पेश गर्नुहोस्</button></div>
+</form>
+{% endblock %}

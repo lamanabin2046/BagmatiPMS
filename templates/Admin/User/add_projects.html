@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}योजना थप्नुहोस्{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+
+  <div class="flex items-center justify-between">
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">योजना / आयोजना थप्नुहोस्</h1>
+    <a href="{% url 'import_excel' %}" class="btn-secondary text-brand-600">
+      <i class="fas fa-file-excel"></i> Excel Upload
+    </a>
+  </div>
+
+  <div class="card">
+    <form action="{% url 'add_project' %}" method="post" id="add_project_form">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-circle-info"></i> आधारभूत विवरण</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">आर्थिक वर्ष</label>
+              <select name="fiscal" required class="form-select select2 w-full">
+                {% for i in fiscalyear %}
+                <option value="{{ i.id }}">{{ i.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="form-label">योजनाको नाम (नेपाली)</label>
+              <input type="text" name="name" required placeholder="योजनाको नाम लेख्नुहोस" class="form-input">
+            </div>
+            <div>
+              <label class="form-label">वडा नम्बर</label>
+              <select name="ward" required class="form-select select2 w-full">
+                {% for i in ward %}
+                <option value="{{ i.id }}">{{ i.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="form-label">योजना सञ्चालन स्थान</label>
+              <input type="text" name="address" required placeholder="योजना सञ्चालन स्थान" class="form-input">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-diagram-project"></i> योजना विधि</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="rounded-xl bg-brand-50/60 border border-brand-100 px-3 py-2 text-xs text-slate-600 self-end">
+              <i class="fas fa-circle-info text-brand-600"></i> खरिद (सञ्चालन) विधि यहाँ होइन — दर्तापछि
+              <a href="{% url 'app_list' %}" class="text-brand-700 underline">वार्षिक खरिद योजना</a>बाट कानुनी सीमा जाँचेर तोकिन्छ।
+            </div>
+            <div>
+              <label class="form-label">कार्यान्वयन तह <span class="text-slate-400 font-normal">(उपभोक्ता समिति)</span></label>
+              <select class="form-select w-full" name="execution_mode">
+                <option value="" selected>पालिकाको नियम अनुसार{% if palika %} ({% if palika.uc_mode == 'ward' %}वडा प्रत्यायोजित{% else %}पालिका केन्द्रित{% endif %}){% endif %}</option>
+                <option value="municipal">पालिका केन्द्रित</option>
+                <option value="ward">वडा प्रत्यायोजित</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">योजनाको प्रकार</label>
+              <select name="project_type" required class="form-select select2 w-full">
+                {% for i in project_type %}
+                <option value="{{ i.id }}">{{ i.type }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="form-label">बजेट व्यहोर्ने स्रोत</label>
+              <select name="budget_type" required class="form-select select2 w-full">
+                {% for i in budget_type %}
+                <option value="{{ i.id }}">{{ i.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% include 'projects/_sector_fields.html' with required=True %}
+            <div>
+              <label class="form-label">विनियोजित बजेट रकम</label>
+              <input type="text" name="budget" required placeholder="रु. बजेट रकम" class="form-input">
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="button" onclick="showConfirmation()" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> Save Project
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+function showConfirmation() {
+  Swal.fire({
+    title: 'Save this project?',
+    text: "This action cannot be undone!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#dc2626',
+    confirmButtonText: 'Yes, save it'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      document.getElementById("add_project_form").requestSubmit();
+    }
+  });
+}
+</script>
+{% endblock %}

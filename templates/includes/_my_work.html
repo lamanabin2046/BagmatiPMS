@@ -1,0 +1,40 @@
+{% comment %}मेरो काम — सूची. चाहिने: work ({items,total,urgent}), (ऐच्छिक) compact (ड्यासबोर्डमा: ६ वटा मात्र){% endcomment %}
+{% load outputs %}
+<section class="card mb-6" id="my-work">
+  <div class="card-header">
+    <h2 class="font-semibold text-slate-800 flex items-center gap-2">
+      <i class="fas fa-list-check text-brand-600"></i> मेरो काम
+      {% if work.total %}<span class="badge {% if work.urgent %}bg-rose-100 text-rose-700{% else %}bg-amber-100 text-amber-800{% endif %}">{{ work.total|npn }}</span>{% endif %}
+    </h2>
+    <div class="flex items-center gap-2">
+      {% if compact and work.items|length > 6 %}<a href="{% url 'my_work' %}" class="text-xs text-brand-600 underline">सबै हेर्नुहोस् ({{ work.items|length|npn }})</a>{% endif %}
+      <button type="button" class="btn-chip-slate" title="ताजा गर्नुहोस्"
+              hx-get="{% if compact %}{% url 'my_work_panel' %}{% else %}{% url 'my_work' %}{% endif %}?fresh=1" hx-target="#my-work" hx-select="#my-work" hx-swap="outerHTML">
+        <i class="fas fa-rotate"></i></button>
+    </div>
+  </div>
+  {% if work.items %}
+  <ul class="divide-y divide-slate-100">
+    {% for it in work.items %}{% if not compact or forloop.counter <= 6 %}
+    <li>
+      <a href="{{ it.url }}" class="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 group">
+        <span class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
+          {% if it.tone == 'urgent' %}bg-rose-50 text-rose-600{% elif it.tone == 'warn' %}bg-amber-50 text-amber-600{% elif it.tone == 'info' %}bg-slate-100 text-slate-500{% else %}bg-brand-50 text-brand-600{% endif %}">
+          <i class="fas {{ it.icon }}"></i></span>
+        <span class="flex-1 min-w-0">
+          <span class="block text-sm font-medium text-slate-800 group-hover:text-brand-700">{{ it.label }}</span>
+          <span class="block text-[11px] text-slate-500">{{ it.group }}{% if it.hint %} · {{ it.hint }}{% endif %}</span>
+        </span>
+        <span class="text-lg font-bold {% if it.tone == 'urgent' %}text-rose-600{% elif it.tone == 'warn' %}text-amber-600{% else %}text-slate-700{% endif %}">{{ it.count|npn }}</span>
+        <i class="fas fa-chevron-right text-xs text-slate-300 group-hover:text-brand-500"></i>
+      </a>
+    </li>
+    {% endif %}{% endfor %}
+  </ul>
+  {% else %}
+  <div class="px-5 py-8 text-center text-sm text-slate-500">
+    <i class="fas fa-circle-check text-3xl text-emerald-400 mb-2 block"></i>
+    अहिले तपाईंले गर्नुपर्ने काम बाँकी छैन।
+  </div>
+  {% endif %}
+</section>

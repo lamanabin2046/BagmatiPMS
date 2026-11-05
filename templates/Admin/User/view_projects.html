@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}योजनाको विवरण{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <div class="flex items-center justify-between">
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">योजनाको विवरण</h1>
+    <a href="{% url 'add_project' %}" class="btn-primary">
+      <i class="fas fa-plus"></i> Add Project
+    </a>
+  </div>
+
+  <!-- ================= खोज / फिल्टर ================= -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card">
+    <form method="get" data-live-filter class="p-4 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+      <div class="sm:col-span-3 lg:col-span-2">
+        <label class="form-label">खोज्नुहोस्</label>
+        <input type="text" name="q" value="{{ selected_q }}" class="form-input"
+               placeholder="योजना नाम वा उपभोक्ता समिति/अध्यक्षको नाम">
+      </div>
+      <div>
+        <label class="form-label">वडा</label>
+        <select name="ward" class="form-select w-full">
+          <option value="">सबै वडा</option>
+          {% for w in wards %}
+          <option value="{{ w.id }}" {% if selected_ward == w.id|stringformat:"s" %}selected{% endif %}>{{ w.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">आ.व.</label>
+        <select name="fiscalyear" class="form-select w-full">
+          <option value="">सबै आ.व.</option>
+          {% for fy in fiscalyears %}
+          <option value="{{ fy.id }}" {% if selected_fiscalyear == fy.id|stringformat:"s" %}selected{% endif %}>{{ fy.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">कार्यन्वय विधि</label>
+        <select name="procurement_type" class="form-select w-full">
+          <option value="">सबै</option>
+          {% for pt in procurement_types %}
+          <option value="{{ pt.id }}" {% if selected_procurement_type == pt.id|stringformat:"s" %}selected{% endif %}>{{ pt.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">बजेट प्रकार</label>
+        <select name="budget_type" class="form-select w-full">
+          <option value="">सबै</option>
+          {% for bt in budget_types %}
+          <option value="{{ bt.id }}" {% if selected_budget_type == bt.id|stringformat:"s" %}selected{% endif %}>{{ bt.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sm:col-span-3 lg:col-span-6 flex items-center gap-2">
+        <button type="submit" class="btn-success"><i class="fas fa-filter"></i> खोज्नुहोस्</button>
+        <a href="{% url 'view_projects' %}" class="btn-secondary"><i class="fas fa-rotate-left"></i> रीसेट</a>
+        <span class="text-xs text-slate-400 ml-auto">
+          {% if filters_applied %}
+            फिल्टर परिणाम — जम्मा {{ projects.count }} योजना
+          {% else %}
+            पछिल्लो आ.व. ({{ latest_fiscal_year.name }}) का योजनाहरू देखाइँदैछ — खोज्न माथिको फारम प्रयोग गर्नुहोस्
+          {% endif %}
+        </span>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>क्र.स.</th>
+            <th>आ.ब.</th>
+            <th>आयोजनाको नाम</th>
+            <th>वडा</th>
+            <th>प्रकार</th>
+            <th>स्थान</th>
+            <th class="text-right">बजेट</th>
+            <th>कार्यन्वय विधि</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in projects %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ i.fiscalyear.name }}</td>
+            <td><a href="{% url 'project_timeline' i.id %}" class="text-brand-600 font-semibold hover:underline">{{ i.name }}</a>{% if i.sector %}<span class="block text-[11px] text-slate-400">{{ i.sector.name }}{% if i.subsector %} › {{ i.subsector.name }}{% endif %}</span>{% endif %}</td>
+            <td>{{ i.ward.name }}</td>
+            <td>{{ i.project_type.type }}</td>
+            <td>{{ i.address }}</td>
+            <td class="text-right font-semibold text-emerald-600">रु. {{ i.budget }}</td>
+            <td>{{ i.procurement_type.name }}</td>
+            <td>
+              <div class="flex items-center gap-2">
+                {% if i.status == 2 %}
+                <button type="button" class="btn-chip-emerald opacity-40 cursor-not-allowed" disabled
+                        title="सम्पन्न भएको योजना सम्पादन गर्न मिल्दैन">
+                  <i class="fas fa-pen"></i>
+                </button>
+                <button type="button" class="btn-chip-rose opacity-40 cursor-not-allowed" disabled
+                        title="सम्पन्न भएको योजना मेटाउन मिल्दैन">
+                  <i class="fas fa-trash"></i>
+                </button>
+                {% else %}
+                <a href="{% url 'edit_project' i.id %}" class="btn-chip-emerald"><i class="fas fa-pen"></i></a>
+                <form method="post" action="{% url 'delete_project' i.id %}"
+                      hx-confirm="Are you sure you want to delete this project?">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-chip-rose"><i class="fas fa-trash"></i></button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-4 border-t border-slate-100 flex justify-end">
+      <button class="btn-success"><i class="fas fa-file-excel"></i> Download in Excel</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

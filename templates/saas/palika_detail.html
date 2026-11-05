@@ -1,0 +1,88 @@
+{% extends "saas/base.html" %}
+{% block title %}{{ palika.full_name }}{% endblock %}
+{% block content %}
+<a href="{% url 'saas_dashboard' %}" class="text-sm text-indigo-600">← सबै पालिका</a>
+
+{% if credentials %}
+<div class="mt-4 rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
+  <h2 class="font-bold text-amber-900">Login विवरण — अहिले मात्र देखिन्छ, सुरक्षित राख्नुहोस्</h2>
+  <dl class="mt-3 grid sm:grid-cols-3 gap-3 text-sm">
+    <div><dt class="text-amber-700">Site</dt><dd><a class="underline font-mono" target="_blank" href="{{ credentials.url }}">{{ credentials.url }}</a></dd></div>
+    <div><dt class="text-amber-700">मोबाइल (username)</dt><dd class="font-mono">{{ credentials.mobile }}</dd></div>
+    <div><dt class="text-amber-700">Password</dt><dd class="font-mono">{{ credentials.password }}</dd></div>
+  </dl>
+</div>
+{% endif %}
+
+<div class="flex flex-wrap items-start justify-between gap-4 mt-4 mb-6">
+  <div class="flex items-center gap-4">
+    {% if palika.logo %}<img src="{{ palika.logo.url }}" class="h-16 w-16 object-contain" alt="">{% endif %}
+    <div>
+      <h1 class="text-2xl font-bold">{{ palika.full_name }}</h1>
+      <p class="text-sm text-slate-500">{{ palika.executive_office }} · {{ palika.location_line }} · {{ palika.province }}</p>
+    </div>
+  </div>
+  <div class="flex gap-2">
+    <a href="http://{{ palika.primary_domain }}{{ port }}/" target="_blank" class="btn-light">Site खोल्नुहोस्</a>
+    <a href="{% url 'saas_palika_edit' palika.pk %}" class="btn-light">सम्पादन</a>
+    <form method="post" action="{% url 'saas_palika_toggle' palika.pk %}">{% csrf_token %}
+      {% if palika.is_active %}<button class="btn-danger" onclick="return confirm('यो पालिका निष्क्रिय गर्ने? उनीहरूले login गर्न सक्दैनन्।')">निष्क्रिय गर्नुहोस्</button>
+      {% else %}<button class="btn-primary">सक्रिय गर्नुहोस्</button>{% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="grid md:grid-cols-5 gap-4 mb-6">
+  <div class="card p-4"><div class="text-xs text-slate-500">स्थिति</div><div class="text-lg font-bold {% if palika.is_active %}text-emerald-600{% else %}text-rose-600{% endif %}">{% if palika.is_active %}सक्रिय{% else %}निष्क्रिय{% endif %}</div></div>
+  <div class="card p-4"><div class="text-xs text-slate-500">Plan</div><div class="text-lg font-bold">{{ palika.get_plan_display }}</div><div class="text-xs text-slate-400">{{ palika.paid_until|default:"" }}</div></div>
+  <div class="card p-4"><div class="text-xs text-slate-500">योजनाहरू</div><div class="text-lg font-bold">{{ stats.projects }}</div></div>
+  <div class="card p-4"><div class="text-xs text-slate-500">प्रयोगकर्ता</div><div class="text-lg font-bold">{{ stats.users }}</div></div>
+  <div class="card p-4"><div class="text-xs text-slate-500">वडा</div><div class="text-lg font-bold {% if not stats.wards %}text-amber-600{% endif %}">{{ stats.wards }}</div></div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-6">
+  <section class="card p-5">
+    <h2 class="font-semibold mb-3">Admin प्रयोगकर्ता</h2>
+    {% for a in admins %}
+      <div class="flex items-center justify-between border-t first:border-0 py-2 text-sm">
+        <span>{{ a.first_name|default:"Admin" }} · <span class="font-mono">{{ a.mobile }}</span></span>
+        <form method="post" action="{% url 'saas_admin_reset_password' palika.pk %}">{% csrf_token %}
+          <input type="hidden" name="mobile" value="{{ a.mobile }}">
+          <button class="btn-light !py-1" onclick="return confirm('नयाँ password बनाउने?')">Password reset</button>
+        </form>
+      </div>
+    {% empty %}<p class="text-sm text-slate-500">Admin छैन।</p>{% endfor %}
+  </section>
+
+  <section class="card p-5">
+    <h2 class="font-semibold mb-3">डोमेन</h2>
+    {% for d in domains %}
+      <div class="flex items-center justify-between border-t first:border-0 py-2 text-sm">
+        <span class="font-mono">{{ d.domain }}{% if d.is_primary %} <span class="badge bg-indigo-100 text-indigo-700">primary</span>{% endif %}</span>
+        {% if not d.is_primary %}
+        <form method="post" action="{% url 'saas_domain_delete' palika.pk d.pk %}">{% csrf_token %}<button class="text-rose-600 text-xs underline">हटाउनुहोस्</button></form>
+        {% endif %}
+      </div>
+    {% endfor %}
+    <form method="post" action="{% url 'saas_domain_add' palika.pk %}" class="mt-3 flex gap-2">{% csrf_token %}
+      <input name="domain" placeholder="pms.example.gov.np" class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+      <button class="btn-primary">थप्नुहोस्</button>
+    </form>
+  </section>
+
+  <section class="card p-5 md:col-span-2">
+    <h2 class="font-semibold mb-1">वडा</h2>
+    {% if stats.ward_names %}
+      <div class="flex flex-wrap gap-1.5 my-2">{% for w in stats.ward_names %}<span class="inline-flex min-w-[2rem] justify-center rounded-md bg-indigo-50 text-indigo-700 text-sm font-semibold px-2 py-1">{{ w }}</span>{% endfor %}</div>
+    {% else %}
+      <p class="text-sm text-amber-700 my-2">यो पालिकामा अहिलेसम्म कुनै वडा छैन — योजना र वडा कर्मचारी थप्न वडा चाहिन्छ।</p>
+    {% endif %}
+    <form method="post" action="{% url 'saas_palika_wards' palika.pk %}" class="mt-2 flex flex-wrap items-center gap-2">{% csrf_token %}
+      <label class="text-sm text-slate-600">कुल वडा संख्या</label>
+      <input name="total" type="number" min="1" max="40" required value="{% if stats.wards %}{{ stats.wards }}{% endif %}" class="w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+      <button class="btn-primary">वडा थप्नुहोस्</button>
+      <span class="text-xs text-slate-400">नभएका वडा मात्र थपिन्छन्; अध्यक्षको नाम पालिकाको सेटिङ → वडाहरू बाट।</span>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+{% load letters outputs %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if bill %}बिल नं. {{ bill }} — नापीको सार{% else %}नापी किताब{% endif %} — {{ project.name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @page { size: A4 landscape; margin: 12mm 10mm; }
+    body { font-family: 'Noto Sans Devanagari', sans-serif; color: #1c1c1c; background: #eef1f5; font-size: 12.5px; line-height: 1.6; }
+    .sheet { background: #fff; max-width: 297mm; margin: 24px auto; padding: 14mm 12mm; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+    h2 { text-align: center; font-size: 16px; margin: 8px 0 2px; }
+    .sub { text-align: center; color: #475569; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; }
+    th, td { border: 1px solid #555; padding: 3px 6px; vertical-align: top; }
+    th { background: #f1f5f9; font-size: 11.5px; }
+    td.r { text-align: right; white-space: nowrap; }
+    tr.item td { background: #f8fafc; font-weight: 600; }
+    tr.ded td { color: #b91c1c; }
+    tr.tot td { font-weight: 700; }
+    .sign { display: flex; justify-content: space-between; margin-top: 46px; gap: 16px; text-align: center; }
+    .sign div { flex: 1; border-top: 1px dotted #333; padding-top: 4px; }
+    @media print { body { background: #fff; } .sheet { margin: 0; padding: 0; box-shadow: none; max-width: none; } }
+  </style>
+</head>
+<body>
+<div class="sheet">
+  {% include 'includes/letterhead.html' with branch="(प्राविधिक शाखा)" %}
+{% if bill %}
+{% editable_letter "mb.abstract" "नापी किताब: बिलको सार" %}
+  <h2>बिल नं. {{ bill|npn }} — नापीको सार (Abstract of Measurement)</h2>
+  <p class="sub">{{ project.name }} · वडा नं. {{ project.ward.name|npn }} · आ.व. {{ project.fiscalyear.name }}</p>
+  <table>
+    <tr><th rowspan="2">क्र.सं.</th><th rowspan="2">कामको विवरण</th><th rowspan="2">एकाइ</th><th rowspan="2">दर</th>
+        <th colspan="2">अघिल्लो बिलसम्म</th><th colspan="2">यस बिलमा</th><th colspan="2">हालसम्म</th></tr>
+    <tr><th>परिमाण</th><th>रकम</th><th>परिमाण</th><th>रकम</th><th>परिमाण</th><th>रकम</th></tr>
+    {% for x in abstract %}
+    <tr><td>{{ x.item.sn }}</td><td>{{ x.item.description }}</td><td>{{ x.item.unit }}</td><td class="r">{{ x.item.rate|money }}</td>
+        <td class="r">{{ x.prev|qty }}</td><td class="r">{{ x.prev_amt|money }}</td><td class="r">{{ x.this|qty }}</td><td class="r">{{ x.this_amt|money }}</td>
+        <td class="r">{{ x.cum|qty }}</td><td class="r">{{ x.cum_amt|money }}</td></tr>
+    {% endfor %}
+    <tr class="tot"><td colspan="4" class="r">जम्मा</td><td></td><td class="r">{{ abs_total.prev_amt|money }}</td><td></td><td class="r">{{ abs_total.this_amt|money }}</td><td></td><td class="r">{{ abs_total.cum_amt|money }}</td></tr>
+  </table>
+  <div class="sign"><div>नापी गर्ने</div><div>जाँच गर्ने</div><div>स्वीकृत गर्ने</div></div>
+{% endeditable_letter %}
+{% else %}
+{% editable_letter "mb.book" "नापी किताब" %}
+  <h2>नापी किताब (Measurement Book)</h2>
+  <p class="sub">{{ project.name }} · वडा नं. {{ project.ward.name|npn }} · आ.व. {{ project.fiscalyear.name }} · भौतिक प्रगति {{ s.progress|npn }}% · मिति {{ today|bs }}</p>
+  <table>
+    <tr><th>मिति</th><th>स्थान / चेनेज</th><th>संख्या</th><th>लम्बाइ</th><th>चौडाइ</th><th>उचाइ</th><th>परिमाण</th><th>बिल नं.</th><th>कैफियत</th></tr>
+    {% for r in rows %}
+    <tr class="item"><td colspan="6">{{ r.item.sn }}. {{ r.item.description }} ({{ r.item.unit }}) — BOQ {{ r.item.quantity|qty }} @ रु. {{ r.item.rate|money }}</td>
+        <td class="r">{{ r.qty|qty }}</td><td colspan="2" class="r">रु. {{ r.value|money }}</td></tr>
+    {% for m in r.measurements %}
+    <tr class="{% if m.deduction %}ded{% endif %}"><td>{{ m.date|bs }}</td><td>{{ m.location }}</td><td class="r">{{ m.nos|default_if_none:''|qty }}</td>
+        <td class="r">{{ m.length|default_if_none:''|qty }}</td><td class="r">{{ m.breadth|default_if_none:''|qty }}</td><td class="r">{{ m.height|default_if_none:''|qty }}</td>
+        <td class="r">{% if m.deduction %}−{% endif %}{{ m.quantity|qty }}</td><td>{{ m.bill_no|default_if_none:''|npn }}</td><td>{{ m.remarks }}</td></tr>
+    {% endfor %}
+    {% endfor %}
+    <tr class="tot"><td colspan="6" class="r">जम्मा मूल्याङ्कन (BOQ रु. {{ s.boq_total|money }})</td><td colspan="3" class="r">रु. {{ s.value|money }}</td></tr>
+  </table>
+  <div class="sign"><div>नापी गर्ने (प्राविधिक)</div><div>जाँच गर्ने</div><div>निर्माण व्यवसायी / उपभोक्ता समिति</div></div>
+{% endeditable_letter %}
+{% endif %}
+</div>
+<script>
+  window.__letterPrint = function () { window.print(); setTimeout(function () { window.location.href = "{{ back }}"; }, 3000); };
+</script>
+</body>
+</html>

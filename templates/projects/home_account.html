@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}ड्यासबोर्ड — लेखा अधिकृत{% endblock %}
+{% block content %}
+<div class="space-y-5">
+  {% with role_label="लेखा अधिकृत (Finance / Accounts)" %}
+  {% include 'projects/_home_greet.html' with intro="भुक्तानी टिप्पणी, कर कट्टी, धरौटी र बजेट निकासाको स्थिति एकै ठाउँमा।" actions=actions %}
+  {% endwith %}
+
+  {# ---------- KPI ---------- #}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="card p-4"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">कुल विनियोजित बजेट</span><span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center"><i data-lucide="wallet" class="w-4 h-4"></i></span></div>
+      <p class="mt-2 text-lg font-bold text-slate-800">रु. {{ d.allocated|money:0 }}</p><p class="text-[11px] text-slate-500">{{ d.count|npn }} योजना · बाँकी रु. {{ d.remaining|money:0 }}</p>
+      <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2"><div class="bg-brand-700 h-1.5 rounded-full" style="width: 100%"></div></div></div>
+    <div class="card p-4"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">हालसम्मको भुक्तानी खर्च</span><span class="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center"><i data-lucide="banknote" class="w-4 h-4"></i></span></div>
+      <div class="mt-2 flex items-baseline justify-between"><span class="text-lg font-bold text-slate-800">रु. {{ d.spent|money:0 }}</span><span class="text-xs font-bold text-teal-700">{{ d.spent_pct|npn }}%</span></div>
+      <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden"><div class="bg-teal-600 h-1.5 rounded-full" style="width: {% if d.spent_pct > 100 %}100{% else %}{{ d.spent_pct }}{% endif %}%"></div></div></div>
+    <a href="{% url 'my_work' %}" class="card p-4 border-l-4 !border-l-rose-500 hover:shadow-md transition"><div class="flex items-start justify-between"><span class="text-xs text-rose-700 font-medium">भुक्तानी टिप्पणी बाँकी</span><span class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center"><i data-lucide="file-clock" class="w-4 h-4"></i></span></div>
+      <div class="mt-2 flex items-baseline gap-2"><span class="text-lg font-bold text-rose-700">{{ x.tippani_count|npn }} वटा</span>{% if x.tippani_count %}<span class="badge bg-rose-600 text-white !text-[10px]">उच्च प्राथमिकता</span>{% endif %}</div>
+      <p class="text-[11px] text-slate-500">विनियोजित: रु. {{ x.tippani_amount|money:0 }}</p></a>
+    <a href="{% url 'retention_list' %}" class="card p-4 hover:shadow-md transition"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">धरौटी मौज्दात</span><span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center"><i data-lucide="shield-check" class="w-4 h-4"></i></span></div>
+      <p class="mt-2 text-lg font-bold text-slate-800">रु. {{ x.ret_balance|money:0 }}</p><p class="text-[11px] text-slate-500">{{ x.ret_n|npn }} योजना · फिर्ता नभएको (सबै आ.व.)</p></a>
+    <a href="{% url 'uc_report_taxes' %}?fiscalyear={{ fy.id }}" class="card p-4 hover:shadow-md transition"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">यस आ.व. कर कट्टी</span><span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center"><i data-lucide="receipt" class="w-4 h-4"></i></span></div>
+      <p class="mt-2 text-lg font-bold text-slate-800">रु. {{ x.tax_total|money:0 }}</p><p class="text-[11px] text-slate-500">TDS / VAT आदि · धरौटी कट्टी रु. {{ x.ret_fy|money:0 }}</p></a>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+    <div class="lg:col-span-8 space-y-5">
+      {# ---------- भुक्तानी पर्खाइ ---------- #}
+      <section class="card overflow-hidden">
+        <div class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-brand-700 text-white flex items-center justify-center"><i data-lucide="file-check-2" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">भुक्तानीका लागि पेश भएका फाइल</h2><p class="text-xs text-slate-500">मूल्याङ्कन / सिफारिस भई अन्तिम भुक्तानी टिप्पणी पर्खिरहेका</p></div></div>
+          <span class="self-start sm:self-center badge bg-slate-100 text-slate-600">कुल {{ x.pay_count|npn }} फाइल</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left min-w-[820px] text-sm">
+            <thead><tr class="bg-slate-50 text-xs text-slate-500"><th class="py-2.5 px-4 font-medium">योजना / भुक्तानी पाउने</th><th class="py-2.5 px-3 font-medium">विधि</th><th class="py-2.5 px-3 font-medium">वडा</th><th class="py-2.5 px-3 text-right font-medium">विनियोजित (रु.)</th><th class="py-2.5 px-3 font-medium">स्थिति</th><th class="py-2.5 px-3 font-medium">पर्खिरहेको</th><th class="py-2.5 px-4 text-right font-medium">कार्य</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+              {% for r in x.pay %}
+              <tr class="hover:bg-slate-50/60">
+                <td class="py-3 px-4 min-w-[230px]"><p class="font-semibold text-slate-800">{{ r.name }}</p>{% if r.party %}<p class="text-[11px] text-slate-500 flex items-center gap-1"><i data-lucide="{% if r.kind == 'uc' %}users{% else %}building-2{% endif %}" class="w-3 h-3"></i>{{ r.party }}</p>{% endif %}</td>
+                <td class="py-3 px-3 whitespace-nowrap"><span class="badge {% if r.kind == 'uc' %}bg-teal-50 text-teal-800{% elif r.kind == 'bid' %}bg-slate-100 text-slate-700{% else %}bg-amber-50 text-amber-800{% endif %}">{{ r.kind_label }}</span></td>
+                <td class="py-3 px-3 text-xs whitespace-nowrap">{% if r.ward %}वडा {{ r.ward|npn }}{% else %}पालिका{% endif %}</td>
+                <td class="py-3 px-3 text-right font-semibold whitespace-nowrap">{{ r.budget|money:0 }}</td>
+                <td class="py-3 px-3 whitespace-nowrap"><span class="badge {{ r.tone }}">{{ r.step }}</span></td>
+                <td class="py-3 px-3 text-xs whitespace-nowrap {% if r.waiting and r.waiting >= 7 %}text-rose-600{% else %}text-slate-500{% endif %}">{% if r.waiting is not None %}{% if r.waiting == 0 %}आज{% else %}{{ r.waiting|npn }} दिन{% endif %}{% else %}—{% endif %}</td>
+                <td class="py-3 px-4 text-right whitespace-nowrap"><a href="{{ r.url }}" class="inline-flex px-2.5 py-1.5 rounded-lg text-xs font-semibold {% if r.key == 'final_tippani' %}bg-brand-700 text-white hover:bg-brand-800{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">{% if r.key == 'final_tippani' %}टिप्पणी तयार गर्नुहोस्{% else %}हेर्नुहोस्{% endif %}</a></td>
+              </tr>
+              {% empty %}<tr><td colspan="7" class="py-8 text-center text-slate-400">भुक्तानी पर्खिरहेका फाइल छैनन्।</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="bg-slate-50 px-5 py-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+          <span class="flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5 text-brand-600"></i>कर र धरौटी कट्टी भुक्तानी टिप्पणीमा आफैँ हिसाब हुन्छ</span>
+          <span>यस सूचीको विनियोजित: <b class="text-brand-800">रु. {{ x.pay_amount|money:0 }}</b>{% if x.pay_count > 10 %} · <a href="{% url 'my_work' %}" class="text-brand-700 font-semibold">सबै {{ x.pay_count|npn }} →</a>{% endif %}</span>
+        </div>
+      </section>
+
+      {# ---------- बजेट उपशीर्षक ---------- #}
+      <section class="card p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center"><i data-lucide="landmark" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">{% if x.has_heads %}बजेट उपशीर्षकअनुसार खर्च र बाँकी{% else %}बजेट स्रोतअनुसार खर्च र बाँकी{% endif %}</h2><p class="text-xs text-slate-500">विनियोजन, भुक्तानी खर्च र बाँकी मौज्दात</p></div></div>
+          <a href="{% url 'budget_status' %}?fiscalyear={{ fy.id }}" class="self-start text-xs text-brand-700 font-semibold">बजेट स्थिति{% if x.heads_n > x.heads|length %} (सबै {{ x.heads_n|npn }}){% endif %} →</a>
+        </div>
+        <div class="space-y-3">
+          {% for h in x.heads %}
+          <div class="p-4 rounded-xl bg-slate-50 space-y-2.5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">{% if h.code %}<span class="px-2 py-1 rounded bg-brand-100 text-brand-800 text-[11px] font-bold shrink-0">{{ h.code }}</span>{% endif %}
+                <div class="min-w-0"><p class="text-sm font-semibold text-slate-800 truncate">{{ h.name }}</p><p class="text-[11px] text-slate-500">{% if h.group %}{{ h.group }} · {% endif %}{{ h.n|npn }} योजना</p></div></div>
+              <div class="grid grid-cols-3 gap-4 text-right shrink-0">
+                <div><p class="text-[10px] text-slate-500">विनियोजन</p><p class="text-xs font-semibold text-slate-800">रु. {{ h.allocated|money:0 }}</p></div>
+                <div><p class="text-[10px] text-slate-500">खर्च</p><p class="text-xs font-semibold text-teal-700">रु. {{ h.spent|money:0 }}</p></div>
+                <div><p class="text-[10px] text-slate-500">बाँकी</p><p class="text-xs font-bold text-brand-800">रु. {{ h.balance|money:0 }}</p></div>
+              </div>
+            </div>
+            <div class="flex justify-between text-[11px] text-slate-500"><span>खर्च दर: {{ h.pct|npn }}%</span></div>
+            <div class="h-2 w-full rounded-full bg-slate-200 overflow-hidden"><div class="h-full rounded-full {% if h.pct > 100 %}bg-rose-600{% elif h.pct >= 90 %}bg-amber-500{% else %}bg-brand-700{% endif %}" style="width: {% if h.pct > 100 %}100{% else %}{{ h.pct }}{% endif %}%"></div></div>
+          </div>
+          {% empty %}<p class="text-sm text-slate-400 text-center py-4">यस आ.व. मा योजना छैन।</p>{% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <div class="lg:col-span-4 space-y-5">
+      {# ---------- कर कट्टी ---------- #}
+      <section class="card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center"><i data-lucide="receipt" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">कर कट्टी (शीर्षकअनुसार)</h2><p class="text-xs text-slate-500">यस आ.व. का भुक्तानीबाट</p></div></div>
+          <span class="badge bg-slate-100 text-slate-600">TDS / VAT</span>
+        </div>
+        <div class="space-y-2">
+          {% for t in x.taxes %}
+          <div class="p-3 rounded-lg bg-slate-50 flex items-center justify-between gap-2"><div class="min-w-0"><p class="text-xs font-semibold text-slate-800 truncate">{{ t.label }}</p><p class="text-[11px] text-slate-500">{{ t.n|npn }} भुक्तानीमा</p></div><b class="text-sm text-slate-800 shrink-0">रु. {{ t.amount|money:0 }}</b></div>
+          {% empty %}<p class="text-sm text-slate-400 text-center py-3">यस आ.व. मा कर कट्टी भएको छैन।</p>{% endfor %}
+        </div>
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <a href="{% url 'uc_report_taxes' %}?fiscalyear={{ fy.id }}" class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-brand-50 text-brand-800 text-xs font-semibold hover:bg-brand-100"><i data-lucide="file-text" class="w-3.5 h-3.5"></i>कर प्रतिवेदन</a>
+          <a href="https://ird.gov.np" target="_blank" rel="noopener" class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-50 text-slate-700 text-xs font-semibold hover:bg-slate-100"><i data-lucide="external-link" class="w-3.5 h-3.5"></i>IRD पोर्टल</a>
+        </div>
+      </section>
+
+      {# ---------- धरौटी फिर्ता ---------- #}
+      <section class="card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center"><i data-lucide="undo-2" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">धरौटी फिर्ता (DLP)</h2><p class="text-xs text-slate-500">त्रुटि सच्याउने अवधि सकिएका</p></div></div>
+          {% if x.release_n %}<span class="badge bg-indigo-600 text-white">{{ x.release_n|npn }}</span>{% endif %}
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 flex items-center justify-between"><span class="text-xs text-slate-500">फिर्ता प्रक्रियामा कुल</span><b class="text-base text-brand-800">रु. {{ x.release_amount|money:0 }}</b></div>
+        <div class="space-y-2">
+          {% for r in x.release %}
+          <a href="{% url 'retention_list' %}?fiscalyear=all&open={{ r.p.id }}" class="block p-3 rounded-lg bg-slate-50 hover:bg-slate-100 space-y-1.5">
+            <div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="text-xs font-semibold text-slate-800 truncate">{{ r.party|default:r.p.name }}</p><p class="text-[11px] text-slate-500 truncate">{{ r.p.name }}</p></div>
+              <span class="badge shrink-0 !text-[10px] {% if r.status == 'tippani' %}bg-teal-50 text-teal-800{% elif r.status == 'recommended' %}bg-indigo-50 text-indigo-700{% else %}bg-amber-50 text-amber-800{% endif %}">{% if r.status == 'tippani' %}फिर्ता गर्न बाँकी{% elif r.status == 'recommended' %}टिप्पणी बाँकी{% else %}सिफारिस बाँकी{% endif %}</span></div>
+            <div class="flex items-center justify-between text-[11px]"><span class="text-slate-500">{% if r.due_bs %}अवधि सकिएको: {{ r.due_bs }}{% endif %}</span><b class="text-brand-800">रु. {{ r.held|money:0 }}</b></div>
+          </a>
+          {% empty %}<p class="text-sm text-slate-400 text-center py-3">फिर्ता प्रक्रियामा धरौटी छैन।</p>{% endfor %}
+        </div>
+        {% if x.release_n > 3 %}<a href="{% url 'retention_list' %}" class="text-xs text-brand-700 font-semibold">सबै {{ x.release_n|npn }} हेर्नुहोस् →</a>{% endif %}
+      </section>
+
+      {# ---------- राजस्व ---------- #}
+      <section class="card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center"><i data-lucide="coins" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">राजस्व असुली</h2><p class="text-xs text-slate-500">ठेक्का सम्झौता र असुली</p></div></div>
+          <b class="text-lg text-teal-700">{{ d.revenue.pct|npn }}%</b>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden"><div class="bg-teal-600 h-full rounded-full" style="width: {% if d.revenue.pct > 100 %}100{% else %}{{ d.revenue.pct }}{% endif %}%"></div></div>
+        <div class="grid grid-cols-2 gap-2 text-[11px]">
+          <div class="p-2 rounded-lg bg-slate-50"><p class="text-slate-500">असुली</p><b class="text-xs text-slate-800">रु. {{ d.revenue.collected|money:0 }}</b></div>
+          <div class="p-2 rounded-lg bg-slate-50"><p class="text-slate-500">म्याद नाघेको</p><b class="text-xs {% if d.revenue.overdue %}text-rose-700{% else %}text-slate-800{% endif %}">रु. {{ d.revenue.overdue|money:0 }}</b></div>
+        </div>
+        <a href="{% url 'revenue_list' %}?fiscalyear={{ fy.id }}" class="text-xs text-brand-700 font-semibold">किस्ता असुली दर्ता →</a>
+      </section>
+    </div>
+  </div>
+  <p class="text-[11px] text-slate-400">अङ्क खरिद तथा भुक्तानी अभिलेखबाट; ५ मिनेटसम्म cache — फारम सुरक्षित हुँदा आफैँ ताजा हुन्छ।</p>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}उपभोक्ता समिति EDIT{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+
+  <div>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">उपभोक्ता समितिको विवरण (EDIT)</h1>
+    <p class="text-sm text-slate-500 mt-0.5">तलका विवरणहरू सच्याएर सुरक्षित गर्नुहोस्</p>
+  </div>
+
+  <div class="card">
+    <form action="{% url 'update_usercommittee' %}" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="usercommittee_id" value="{{ usercommittee.id }}">
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-building"></i> योजनाको नाम</h2>
+          <input type="text" class="form-input bg-slate-50 font-medium" value="{{ usercommittee.project.name }}" readonly>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-calendar-days"></i> मितिहरु</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">उपभोक्ता समिति गठन मिति</label>
+              <input type="text" name="formation_date" class="form-input nepali-date" value="{{ formation_date_nepali }}">
+            </div>
+            {% if user.user_type == '1' or user.user_type == '3' %}
+            <div>
+              <label class="form-label">योजना सुरु मिति</label>
+              <input type="text" name="start_date" class="form-input nepali-date" value="{{ start_date_nepali }}">
+            </div>
+            <div>
+              <label class="form-label">योजना समाप्त मिति</label>
+              <input type="text" name="accomplish_date" class="form-input nepali-date" value="{{ accomplish_date_nepali }}">
+            </div>
+            {% else %}
+            <div>
+              <label class="form-label">योजना सुरु मिति</label>
+              <input type="text" class="form-input bg-slate-50 text-slate-500" value="{{ start_date_nepali|default:'तोकिएको छैन' }}" readonly disabled>
+              <p class="text-xs text-slate-400 mt-1">योजना शाखा/एडमिनबाट मात्र सच्याउन सकिन्छ</p>
+            </div>
+            <div>
+              <label class="form-label">योजना समाप्त मिति</label>
+              <input type="text" class="form-input bg-slate-50 text-slate-500" value="{{ accomplish_date_nepali|default:'तोकिएको छैन' }}" readonly disabled>
+              <p class="text-xs text-slate-400 mt-1">योजना शाखा/एडमिनबाट मात्र सच्याउन सकिन्छ</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-signature"></i> उपभोक्ता समितिको नाम</h2>
+          <input type="text" name="name" class="form-input" value="{{ usercommittee.name }}" required>
+        </div>
+
+        {% include 'Admin/User/_uc_roster.html' %}
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> सच्याएर सुरक्षित गर्नुहोस्
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

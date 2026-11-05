@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}कर तथा धरौटी कट्टी विवरण{% endblock %}
+
+{% block content %}
+{% include 'reports/_head.html' with report_title="कर तथा धरौटी कट्टी विवरण" %}
+
+<form method="get" class="no-print card p-4 mb-5" data-live-filter>
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 items-end">
+    <div><label class="form-label">कट्टी शीर्षक</label>
+      <select name="code" class="form-select"><option value="">सबै शीर्षक</option>
+        {% for c, l in codes %}<option value="{{ c }}" {% if f.code == c %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">खरिद विधि</label>
+      <select name="kind" class="form-select"><option value="">सबै विधि</option>
+        {% for k, l in kinds %}<option value="{{ k }}" {% if f.kind == k %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">आर्थिक वर्ष</label>
+      <select name="fiscalyear" class="form-select"><option value="all">सबै</option>
+        {% for y in fiscal_years %}<option value="{{ y.id }}" {% if f.fiscalyear == y.id|stringformat:'s' %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">वडा</label>
+      <select name="ward" class="form-select"><option value="">सबै वडा</option>
+        {% for w in all_wards %}<option value="{{ w.id }}" {% if f.ward == w.id|stringformat:'s' %}selected{% endif %}>वडा नं. {{ w.name }}</option>{% endfor %}</select></div>
+    <div class="col-span-2"><label class="form-label">समिति / निर्माण व्यवसायी / फर्म वा योजना</label>
+      <input type="search" name="q" value="{{ f.q }}" class="form-input" placeholder="नाम खोज्नुहोस्..."></div>
+  </div>
+</form>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+  <div class="card p-4"><p class="text-xs text-slate-500">जम्मा कट्टी</p><p class="text-lg font-bold text-rose-700">रु. {{ total|money:0 }}</p><p class="text-[11px] text-slate-400">{{ lines|length|npn }} पटक</p></div>
+  <div class="card p-4"><p class="text-xs text-slate-500">मध्ये धरौटी / रिटेन्सन</p><p class="text-lg font-bold text-amber-700">रु. {{ retention_total|money:0 }}</p>
+    <a href="{% url 'retention_list' %}" class="no-print text-[11px] text-brand-700 hover:underline">धरौटी फिर्ता हेर्नुहोस् →</a></div>
+  <div class="card p-4"><p class="text-xs text-slate-500">शीर्षक</p><p class="text-lg font-bold text-slate-800">{{ heads|length|npn }}</p></div>
+  <div class="card p-4"><p class="text-xs text-slate-500">समिति / व्यवसायी / फर्म</p><p class="text-lg font-bold text-slate-800">{{ parties|length|npn }}</p></div>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-5 items-start mb-5">
+  <section class="card">
+    <div class="card-header"><h2 class="font-semibold text-slate-800"><i class="fas fa-receipt text-rose-500"></i> शीर्षकअनुसार</h2></div>
+    <table class="w-full text-sm">
+      <thead><tr class="bg-slate-50 text-xs text-slate-500"><th class="px-3 py-2 text-left font-medium">शीर्षक</th><th class="px-3 py-2 text-right font-medium">पटक</th><th class="px-3 py-2 text-right font-medium">रकम (रु.)</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for h in heads %}
+        <tr><td class="px-3 py-2"><a href="?{{ qs }}&code={{ h.code }}" class="hover:text-brand-700">{{ h.label }}</a>{% if h.retention %} <span class="badge bg-amber-50 text-amber-700 !py-0">फिर्ता हुने</span>{% endif %}</td>
+          <td class="px-3 py-2 text-right">{{ h.count|npn }}</td><td class="px-3 py-2 text-right font-medium">{{ h.total|money }}</td></tr>
+        {% empty %}<tr><td colspan="3" class="px-3 py-6 text-center text-slate-400">कट्टी छैन।</td></tr>{% endfor %}
+      </tbody>
+      {% if heads %}<tfoot><tr class="bg-slate-50 font-semibold border-t-2 border-slate-200"><td class="px-3 py-2" colspan="2">जम्मा</td><td class="px-3 py-2 text-right text-rose-700">{{ total|money }}</td></tr></tfoot>{% endif %}
+    </table>
+  </section>
+
+  <section class="card lg:col-span-2">
+    <div class="card-header"><h2 class="font-semibold text-slate-800"><i class="fas fa-users text-brand-500"></i> समिति / निर्माण व्यवसायी / फर्मअनुसार</h2></div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="bg-slate-50 text-xs text-slate-500">
+          <th class="px-3 py-2 text-left font-medium">नाम</th><th class="px-3 py-2 text-right font-medium">योजना</th>
+          {% for h in heads %}<th class="px-2 py-2 text-right font-medium">{{ h.label }}</th>{% endfor %}
+          <th class="px-3 py-2 text-right font-medium">जम्मा</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for pt in parties %}
+          <tr><td class="px-3 py-2"><span class="font-medium text-slate-800">{{ pt.party }}</span><span class="block text-[11px] text-slate-400">{{ pt.kind_label }}</span></td>
+            <td class="px-3 py-2 text-right">{{ pt.n_projects|npn }}</td>
+            {% for v in pt.values %}<td class="px-2 py-2 text-right whitespace-nowrap">{% if v %}{{ v|money }}{% else %}<span class="text-slate-300">—</span>{% endif %}</td>{% endfor %}
+            <td class="px-3 py-2 text-right font-semibold whitespace-nowrap">{{ pt.total|money }}</td></tr>
+          {% empty %}<tr><td colspan="{{ heads|length|add:3 }}" class="px-3 py-6 text-center text-slate-400">कट्टी छैन।</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<section class="card">
+  <div class="card-header"><h2 class="font-semibold text-slate-800"><i class="fas fa-list text-slate-500"></i> हरेक कट्टीको विवरण</h2><span class="text-xs text-slate-500">{{ lines|length|npn }} पङ्क्ति</span></div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-[13px]">
+      <thead><tr class="bg-slate-50 text-[11px] text-slate-500">
+        <th class="px-2 py-2.5 text-left font-medium">क्र.सं.</th><th class="px-2 py-2.5 text-left font-medium">मिति</th>
+        <th class="px-2 py-2.5 text-left font-medium min-w-[14rem]">योजना</th><th class="px-2 py-2.5 text-left font-medium">वडा</th>
+        <th class="px-2 py-2.5 text-left font-medium min-w-[12rem]">समिति / निर्माण व्यवसायी / फर्म</th>
+        <th class="px-2 py-2.5 text-left font-medium">स्रोत</th><th class="px-2 py-2.5 text-left font-medium">शीर्षक</th>
+        <th class="px-2 py-2.5 text-right font-medium">रकम (रु.)</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for ln in lines %}
+        <tr>
+          <td class="px-2 py-2 text-slate-400">{{ forloop.counter|npn }}</td>
+          <td class="px-2 py-2 whitespace-nowrap">{{ ln.date_bs|default:"—" }}</td>
+          <td class="px-2 py-2">{{ ln.p.name }}</td>
+          <td class="px-2 py-2">{{ ln.p.ward.name|default:'—' }}</td>
+          <td class="px-2 py-2">{{ ln.party|default:'—' }}<span class="block text-[10px] text-slate-400">{{ ln.kind_label }}</span></td>
+          <td class="px-2 py-2 whitespace-nowrap text-slate-500">{{ ln.source }}</td>
+          <td class="px-2 py-2">{{ ln.label }}</td>
+          <td class="px-2 py-2 text-right font-medium whitespace-nowrap">{{ ln.amount|money }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="px-3 py-10 text-center text-slate-400">यो छनोटमा कुनै कट्टी छैन।</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if lines %}<tfoot><tr class="bg-slate-50 font-semibold border-t-2 border-slate-200"><td colspan="7" class="px-2 py-2.5">जम्मा</td><td class="px-2 py-2.5 text-right text-rose-700">{{ total|money }}</td></tr></tfoot>{% endif %}
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% comment %}बैंक ग्यारेन्टी: कार्यसम्पादन जमानत (PG) र अग्रिम भुक्तानी जमानत (APG){% endcomment %}
+{% if 'bid.view' in me.perms or 'quot.view' in me.perms %}
+<li class="sidebar-group">
+  <button type="button" onclick="toggleSubmenu(this)" class="nav-link-item w-full">
+    <i data-lucide="landmark" class="nav-icon"></i>
+    <span class="sidebar-label flex-1 text-left">बैंक ग्यारेन्टी</span>
+    <i data-lucide="chevron-right" class="menu-arrow"></i>
+  </button>
+  <ul class="submenu-panel {% if current not in 'performance_guarantees,advance_guarantees,extend_performance_bond' %}hidden{% endif %} mt-1 ml-5 pl-3 border-l border-white/10 space-y-0.5">
+    {% if 'bid.view' in me.perms %}
+    <li><a href="{% url 'performance_guarantees' %}" class="submenu-link {% if current == 'performance_guarantees' or current == 'extend_performance_bond' %}active{% endif %}"><i data-lucide="shield-check" class="sub-icon"></i><span>Performance Bank Guarantee</span></a></li>
+    {% endif %}
+    <li><a href="{% url 'advance_guarantees' %}" class="submenu-link {% if current == 'advance_guarantees' %}active{% endif %}"><i data-lucide="wallet" class="sub-icon"></i><span>Advance Payment Guarantee</span></a></li>
+  </ul>
+</li>
+{% endif %}

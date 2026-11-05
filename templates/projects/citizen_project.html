@@ -1,0 +1,37 @@
+{% extends 'projects/revenue_public_base.html' %}
+{% load outputs %}
+{% block title %}{{ p.name }}{% endblock %}
+{% block home %}{% url 'citizen_list' %}{% endblock %}
+{% block subtitle %}विकास योजना — नागरिक जानकारी{% endblock %}
+{% block nav %}<a href="{% url 'citizen_list' %}?fiscalyear={{ p.fiscalyear_id }}" class="rounded bg-white/15 px-3 py-1.5">सबै योजना</a>{% endblock %}
+{% block footer %}योजना शाखा · यो पेजमा देखिएका रकम प्रणालीमा दर्ता भएअनुसार हुन्{% endblock %}
+{% block body %}
+<div class="card p-5 space-y-3">
+  <div class="flex flex-wrap items-start justify-between gap-2">
+    <div><h1 class="text-xl font-bold">{{ r.name }}</h1>
+      <p class="text-sm text-slate-500">आ.व. {{ p.fiscalyear.name }} · {% if r.ward %}वडा {{ r.ward }}{% else %}पालिका स्तर{% endif %}{% if r.address %} · {{ r.address }}{% endif %}</p></div>
+    <span class="text-sm rounded-full px-3 py-1" style="{% if r.st == 'completed' or r.st == 'paid' %}background:#d1fae5;color:#065f46{% elif r.st == 'running' %}background:#dbeafe;color:#1e40af{% else %}background:#f1f5f9;color:#475569{% endif %}">{{ r.status }}</span>
+  </div>
+  <dl class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+    <div><dt class="text-slate-500 text-xs">कार्यान्वयन विधि</dt><dd class="font-semibold">{{ r.kind|default:"—" }}</dd></div>
+    <div><dt class="text-slate-500 text-xs">कार्यान्वयन गर्ने</dt><dd class="font-semibold">{{ r.party|default:"—" }}</dd></div>
+    <div><dt class="text-slate-500 text-xs">बजेट</dt><dd class="font-semibold">रु. {{ r.budget|money:0 }}</dd></div>
+    <div><dt class="text-slate-500 text-xs">सम्झौता रकम</dt><dd class="font-semibold">{% if r.contract %}रु. {{ r.contract|money:0 }}{% else %}—{% endif %}</dd></div>
+    <div><dt class="text-slate-500 text-xs">भुक्तानी भएको</dt><dd class="font-semibold">रु. {{ r.paid|money:0 }}</dd></div>
+    <div class="col-span-2 sm:col-span-3"><dt class="text-slate-500 text-xs">भौतिक प्रगति</dt>
+      <dd>{% if r.progress is not None %}<div class="flex items-center gap-2"><div style="flex:1;height:9px;background:#e2e8f0;border-radius:9px"><div style="height:9px;border-radius:9px;background:#059669;width:{{ r.progress }}%"></div></div><b>{{ r.progress|npn }}%</b></div>{% else %}—{% endif %}</dd></div>
+  </dl>
+  {% if r.lat is not None %}<a class="btn2" target="_blank" rel="noopener" href="https://www.google.com/maps?q={{ r.lat }},{{ r.lng }}">📍 नक्सामा हेर्नुहोस्</a>{% endif %}
+</div>
+{% for label, xs in groups %}
+<div class="card p-4">
+  <h2 class="font-semibold mb-3">{{ label }}</h2>
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    {% for t in xs %}<figure class="text-xs">
+      <a href="{% url 'citizen_photo' t.id %}" target="_blank"><img src="{% url 'citizen_photo' t.id %}" loading="lazy" class="rounded-lg w-full object-cover" style="aspect-ratio:4/3" alt="{{ label }}"></a>
+      <figcaption class="mt-1 text-slate-500">{{ t.created_at|bs }}{% if t.progress_pct is not None %} · प्रगति {{ t.progress_pct|npn }}%{% endif %}</figcaption>
+    </figure>{% endfor %}
+  </div>
+</div>
+{% empty %}<div class="card p-6 text-center text-sm text-slate-500">यो योजनाको फोटो अहिलेसम्म राखिएको छैन।</div>{% endfor %}
+{% endblock %}

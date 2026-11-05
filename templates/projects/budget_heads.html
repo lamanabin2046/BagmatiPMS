@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}बजेट शीर्षक{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">बजेट शीर्षक / उपशीर्षक</h1>
+      <p class="text-sm text-slate-500 mt-0.5">आ.व.को स्वीकृत बजेट शीर्षक र रकम। योजनाको विनियोजित रकम शीर्षकमा बाँकी रकमभित्र मात्र राख्न मिल्छ।</p>
+    </div>
+    <form method="get" class="flex items-center gap-2">
+      <label class="text-sm text-slate-500">आ.व.</label>
+      <select name="fiscalyear" class="form-select !w-40" onchange="this.form.submit()">
+        {% for y in fiscal_years %}<option value="{{ y.id }}" {% if fy.id == y.id %}selected{% endif %}>{{ y.name }}</option>{% endfor %}
+      </select>
+    </form>
+  </div>
+
+  {% if not fy %}
+  <div class="card p-6 text-sm text-slate-500">पहिले सेटिङ → आर्थिक वर्ष थप्नुहोस्।</div>
+  {% else %}
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div class="card p-4"><p class="text-xs text-slate-500">स्वीकृत (जम्मा)</p><p class="text-xl font-bold text-slate-800">रु. {{ total|money:0 }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">योजनामा विनियोजित</p><p class="text-xl font-bold text-brand-700">रु. {{ total_dist|money:0 }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">योजना नछुट्याएको</p><p class="text-xl font-bold text-emerald-700">रु. {{ total|sub:total_dist|money:0 }}</p></div>
+    <a href="{% url 'view_projects' %}?fiscalyear={{ fy.id }}" class="card p-4 hover:shadow-soft {% if unassigned %}bg-amber-50/60{% endif %}"><p class="text-xs text-slate-500">शीर्षक नतोकिएका योजना</p><p class="text-xl font-bold {% if unassigned %}text-amber-700{% else %}text-slate-800{% endif %}">{{ unassigned|npn }}</p></a>
+  </div>
+
+  <section class="card">
+    <div class="card-header"><h2 class="font-semibold text-slate-800"><i class="fas fa-plus text-brand-600"></i> नयाँ शीर्षक ({{ fy.name }})</h2></div>
+    <form method="post" class="p-4 grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
+      {% csrf_token %}<input type="hidden" name="action" value="add"><input type="hidden" name="fiscalyear" value="{{ fy.id }}">
+      <div><label class="form-label">उपशीर्षक नं.</label><input name="code" class="form-input" placeholder="जस्तै ३३७०१२३"></div>
+      <div class="col-span-2"><label class="form-label">शीर्षक / कार्यक्रम <span class="text-rose-500">*</span></label><input name="name" class="form-input" required placeholder="जस्तै सडक पूर्वाधार कार्यक्रम"></div>
+      <div><label class="form-label">स्रोत</label><select name="budget_type" class="form-select"><option value="">—</option>{% for b in budget_types %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select></div>
+      <div><label class="form-label">स्वीकृत रकम (रु.) <span class="text-rose-500">*</span></label><input name="allocated" class="form-input" required inputmode="decimal"></div>
+      <div><button class="btn-primary w-full"><i class="fas fa-plus"></i> थप्नुहोस्</button></div>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-[13px]">
+        <thead><tr class="bg-slate-50 text-[11px] text-slate-500">
+          <th class="px-3 py-3 text-left font-medium">उपशीर्षक नं.</th>
+          <th class="px-3 py-3 text-left font-medium min-w-[14rem]">शीर्षक / कार्यक्रम</th>
+          <th class="px-3 py-3 text-left font-medium">स्रोत</th>
+          <th class="px-3 py-3 text-right font-medium">स्वीकृत (रु.)</th>
+          <th class="px-3 py-3 text-right font-medium">योजनामा विनियोजित</th>
+          <th class="px-3 py-3 text-right font-medium">बाँकी</th>
+          <th class="px-3 py-3 text-right font-medium">योजना</th>
+          <th class="px-3 py-3"></th>
+        </tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for h in heads %}
+          {% if edit_id == h.id %}
+          <tr class="bg-brand-50/40"><td colspan="8" class="px-3 py-3">
+            <form method="post" class="grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
+              {% csrf_token %}<input type="hidden" name="action" value="edit"><input type="hidden" name="id" value="{{ h.id }}"><input type="hidden" name="fiscalyear" value="{{ fy.id }}">
+              <div><label class="form-label">उपशीर्षक नं.</label><input name="code" value="{{ h.code }}" class="form-input"></div>
+              <div class="col-span-2"><label class="form-label">शीर्षक</label><input name="name" value="{{ h.name }}" class="form-input" required></div>
+              <div><label class="form-label">स्रोत</label><select name="budget_type" class="form-select"><option value="">—</option>{% for b in budget_types %}<option value="{{ b.id }}" {% if h.budget_type_id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></div>
+              <div><label class="form-label">स्वीकृत रकम</label><input name="allocated" value="{{ h.allocated|floatformat:2 }}" class="form-input" required>
+                <p class="text-[10px] text-slate-400 mt-0.5">कम्तीमा रु. {{ h.dist|money }}</p></div>
+              <div class="flex gap-2"><button class="btn-primary flex-1"><i class="fas fa-check"></i> सुरक्षित</button>
+                <a href="?fiscalyear={{ fy.id }}" class="btn-secondary">रद्द</a></div>
+            </form>
+          </td></tr>
+          {% else %}
+          <tr class="{% if not h.is_active %}opacity-60{% endif %}">
+            <td class="px-3 py-2.5 whitespace-nowrap">{{ h.code|default:'—' }}</td>
+            <td class="px-3 py-2.5 font-medium text-slate-800">{{ h.name }}{% if not h.is_active %} <span class="badge bg-slate-100 text-slate-500">निष्क्रिय</span>{% endif %}</td>
+            <td class="px-3 py-2.5">{{ h.budget_type.name|default:'—' }}</td>
+            <td class="px-3 py-2.5 text-right whitespace-nowrap">{{ h.allocated|money }}</td>
+            <td class="px-3 py-2.5 text-right whitespace-nowrap">{{ h.dist|money }}</td>
+            <td class="px-3 py-2.5 text-right whitespace-nowrap font-medium {% if h.room < 0 %}text-rose-600{% else %}text-emerald-700{% endif %}">{{ h.room|money }}</td>
+            <td class="px-3 py-2.5 text-right"><a href="{% url 'budget_status' %}?fiscalyear={{ fy.id }}&q={{ h.code|default:h.name|urlencode }}" class="text-brand-600 underline">{{ h.n|npn }}</a></td>
+            <td class="px-3 py-2.5 whitespace-nowrap text-right">
+              <a href="?fiscalyear={{ fy.id }}&edit={{ h.id }}" class="btn-chip-slate"><i class="fas fa-pen"></i></a>
+              <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="{{ h.id }}"><input type="hidden" name="fiscalyear" value="{{ fy.id }}">
+                <button class="btn-chip-slate" title="{% if h.is_active %}निष्क्रिय{% else %}सक्रिय{% endif %}"><i class="fas {% if h.is_active %}fa-eye-slash{% else %}fa-eye{% endif %}"></i></button></form>
+              {% if not h.n %}
+              <form method="post" class="inline" onsubmit="return confirm('“{{ h.name|escapejs }}” हटाउने?')">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ h.id }}"><input type="hidden" name="fiscalyear" value="{{ fy.id }}">
+                <button class="btn-chip-slate !text-rose-600"><i class="fas fa-trash"></i></button></form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endif %}
+          {% empty %}
+          <tr><td colspan="8" class="px-3 py-8 text-center text-slate-400">{{ fy.name }} का बजेट शीर्षक थपिएका छैनन्।</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

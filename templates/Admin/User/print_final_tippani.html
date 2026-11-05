@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+{% load static %}
+{% load nepali_date outputs %}
+{% load nepali_filters %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>अन्तिम मूल्याङ्कन टिप्पणी</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ================= RESET ================= */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ================= PAGE / PRINT SETTINGS ================= */
+    @page {
+      size: A4;
+      margin: 20mm 16mm 18mm 22mm; /* extra left margin for punching/binding */
+    }
+
+    :root {
+      --gov-red: #b0281f;
+      --gov-red-dark: #8c1f18;
+      --ink: #1c1c1c;
+      --muted: #6b6b6b;
+      --hairline: #d8c9a3;
+    }
+
+    html, body { background: #e9e9e9; }
+
+    body {
+      font-family: 'Noto Sans Devanagari', 'Mangal', 'Inter', Arial, sans-serif;
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ================= A4 SHEET (screen preview only) ================= */
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 14mm auto;
+      background: #fff;
+      padding: 14mm 14mm 12mm 18mm;
+      box-shadow: 0 4px 28px rgba(0,0,0,.18);
+    }
+
+    /* ================= HEADER ================= */
+    .letter-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 3px solid var(--gov-red);
+      padding-bottom: 8px;
+      margin-bottom: 4px;
+      position: relative;
+    }
+    .letter-header::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; bottom: -6px;
+      border-bottom: 1px solid var(--gov-red);
+    }
+    .office-logo-wrap {
+      flex: 0 0 auto;
+      width: 62px;
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .office-logo { width: 100%; height: 100%; object-fit: contain; }
+    .office-title {
+      flex: 1 1 auto;
+      text-align: center;
+      line-height: 1.22;
+    }
+    .office-title h2 { font-size: 19px; font-weight: 800; color: var(--gov-red); letter-spacing: .3px; }
+    .office-title h3 { font-size: 13px; font-weight: 600; color: var(--gov-red); margin-top: 1px; }
+    .office-title h4 { font-size: 11px; font-weight: 500; color: var(--gov-red-dark); margin-top: 0; }
+    .header-spacer { flex: 0 0 auto; width: 62px; }
+
+    /* ================= META ================= */
+    .letter-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 10px 0 0;
+      font-size: 13px;
+    }
+    .letter-meta .chip {
+      display: inline-block;
+      border: 1px solid var(--gov-red);
+      color: var(--gov-red);
+      font-weight: 700;
+      padding: 3px 12px;
+      border-radius: 3px;
+      letter-spacing: .3px;
+    }
+    .letter-meta .date-box { color: var(--ink); font-weight: 600; }
+
+    /* ================= SUBJECT / SALUTATION ================= */
+    .letter-subject {
+      font-weight: 700;
+      font-size: 14px;
+      margin: 12px 0 6px;
+    }
+    .letter-salutation {
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    /* ================= BODY ================= */
+    .letter-content p {
+      text-align: justify;
+      margin-bottom: 7px;
+    }
+    .letter-content strong { color: var(--ink); }
+
+    /* ================= FINANCIAL TABLES ================= */
+    .fin-tables {
+      display: flex;
+      gap: 14px;
+      margin: 8px 0 10px;
+    }
+    .table-box {
+      flex: 1;
+      border: 1px solid var(--hairline);
+      border-radius: 4px;
+      overflow: hidden;
+      align-self: flex-start;
+    }
+    .table-box .table-caption {
+      font-weight: 700;
+      font-size: 11.5px;
+      color: var(--gov-red);
+      background: #fbf3e7;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--hairline);
+      text-align: center;
+    }
+    .fin-tables table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+    .fin-tables td { border-bottom: 1px solid #eee0c6; padding: 4px 9px; vertical-align: top; }
+    .fin-tables tbody tr:last-child td { border-bottom: none; }
+    .fin-tables td:last-child { text-align: right; font-weight: 600; white-space: nowrap; }
+
+    /* ================= AUTHORIZATION ================= */
+    .auth-block {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 22px;
+      text-align: center;
+    }
+    .auth-block .auth-col {
+      flex: 1;
+      padding-top: 8px;
+      border-top: 1px solid #888;
+    }
+    .auth-block .auth-col p { line-height: 1.4; font-size: 12.5px; }
+    .auth-block .auth-col p.role {
+      font-weight: 700;
+      color: var(--ink);
+      margin-top: 2px;
+    }
+    .auth-block .auth-col p.action {
+      color: var(--muted);
+      font-size: 11.5px;
+    }
+
+    /* ================= PRINT ADJUSTMENTS ================= */
+    @media print {
+      html, body { background: #fff; }
+      .sheet { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+      .fin-tables { page-break-inside: avoid; break-inside: avoid; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="sheet">
+
+  <!-- ================= HEADER ================= -->
+  <div class="letter-header">
+    <div class="office-logo-wrap">
+      <img src="{% static 'assets/img/logonepal.png' %}" class="office-logo" alt="नगरपालिकाको लोगो">
+    </div>
+    <div class="office-title">
+      {% include 'includes/letter_header.html' %}
+    </div>
+    <div class="header-spacer"></div>
+  </div>
+
+  <!-- ================= META ================= -->
+  <div class="letter-meta">
+    <span class="chip">टिप्पणी र आदेश</span>
+    <span class="date-box">मिति: {{ application_date_nepali|nepali_date }}</span>
+  </div>
+
+  <!-- ================= CONTENT (UNCHANGED) ================= -->
+  <div class="letter-content">
+
+    <div class="letter-subject">विषयः- आयोजनाको फरफारक तथा भुक्तानी सम्बन्धमा ।</div>
+    <p class="letter-salutation">श्रीमान प्रमुख प्रशासकिय अधिकृत ज्यु,</p>
+
+    <p>
+      यस नगरपालिकाको चालु आ. व. {{ project.fiscalyear.name|to_nepali_number }} को नगर सभाबाट स्वीकृत वडा नं.
+      {{ project.ward.name|to_nepali_number }} मा संचालन गरिने
+      <strong>{{ project.name }}</strong> आयोजनाका लागि विनियोजित रकम रु.
+      <strong>{{ project.budget|floatformat:0|to_nepali_number }}/-</strong> छ।
+      सो योजना सञ्चालनको लागि मिति <strong>{{ formation_date_nepali|nepali_date }}</strong> गते यस नगरपालिकाको वडा
+      नं. {{ project.ward.name|to_nepali_number }} मा गरिएको उपभोक्ताहरुको भेलाको निर्णय
+      बमोजिम श्री <strong>{{ usercommittee.chairman_name }}</strong> को अध्यक्षता रहने गरि
+      {{ usercommittee.name }} गठन भई वडा कार्यालयबाट सिफारिस प्राप्त भएको छ।
+    </p>
+
+    <p>
+      यस कार्यालयको प्रविधिक शाखाबाट उक्त आयोजनाको ल.ई. रकम रु.
+      <strong>{{ project.cost_estimate.total_cost|floatformat:0|to_nepali_number }}/-
+      (अक्षरेपी {{ project.cost_estimate.total_cost|floatformat:0|to_devanagari_words }})</strong>
+      (श्रमिक लागत सहभागिता समेत) तयार भई
+      र उपभोक्ता समितिको अध्यक्ष श्री {{ usercommittee.chairman_name }} सँग
+      मिति {{ start_date_nepali|nepali_date }} मा सम्झौता भई
+      सोहि मितिमा कार्य सुरु गरि {{ accomplish_date_nepali|nepali_date }}
+      मा सम्पन्न गर्नु पर्ने गरी कार्यदेश दिइएको छ।
+    </p>
+
+    <p>
+      {{ project.ward.name|to_nepali_number }} नम्बर वडा कार्यालयको सिफारिस पत्र,
+      प्राविधिक मुल्यांकन तथा उपभोक्ता समितिले भुक्तानीका लागि पेश गरेको
+      विल, भर्पाई संलग्न गरी उपभोक्ता समितिले निवेदन दिइएको छ।
+    </p>
+
+    <p>
+      यस नगरपालिकाको वडा स्तरीय तथा नगरपालिका स्तरीय अनुगमन तथा
+      सुपरिवेक्षण समितिको संयोजकबाट समेत उक्त योजना अनुगमन भई
+      भुक्तानीको लागि सिफारिस गरिएको छ।
+    </p>
+
+    <div class="fin-tables">
+      <div class="table-box">
+        <div class="table-caption">योजना सम्झौताको विस्तृत विवरण</div>
+        <table>
+          <tbody>
+            <tr><td>नगरपालिकाबाट विनियोजित रकम</td><td>रु {{ project.budget|to_nepali_number }}</td></tr>
+            <tr><td>कन्टिन्जेन्सी {{ project.cost_estimate.contingency_amount|pct_of:project.budget|to_nepali_number }} प्रतिशत कट्टी रकम</td><td>रु {{ project.cost_estimate.contingency_amount|to_nepali_number }}</td></tr>
+            <tr><td>उपभोक्ता समितिको लागत सहभागित रकम</td><td>रु {{ project.cost_estimate.user_contribution|to_nepali_number }}</td></tr>
+            <tr><td>लागत अनुमान रकम</td><td>रु {{ project.cost_estimate.total_cost|to_nepali_number }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-box">
+        <div class="table-caption">प्राविधिक मुल्याङ्कन</div>
+        <table>
+          <tbody>
+            <tr><td>जम्मा प्राविधिक मुल्यांकन रकम</td><td>रु. {{ final_valuation.final_evaluation|to_nepali_number }} /-</td></tr>
+            <tr><td>नगरपालिकाले व्यहोर्नु पर्ने रकम</td><td>रु. {{ final_valuation.office_contribution|to_nepali_number }} /-</td></tr>
+            <tr><td>उपभोक्ता समितिले व्यहोर्ने रकम</td><td>रु. {{ final_valuation.user_contribution|to_nepali_number }} /-</td></tr>
+            {% for key, value in final_valuation.tax_deduction.items %}
+            <tr>
+              <td>{{ tax_labels|get_item:key|default:key }}</td>
+              <td>रु. {{ value|floatformat:2|to_nepali_number }}</td>
+            </tr>
+            {% endfor %}
+            <tr><td>कुल कर कट्टी रकम</td><td>रु. {{ final_valuation.total_tax|to_nepali_number }} /-</td></tr>
+            <tr><td>खुद भुक्तानी हुने रकम</td><td>रु. {{ final_valuation.net_payment|to_nepali_number }} /-</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p>
+      संलग्न कागजात बमोजिम उक्त उ. स. को प्रस्तुत विल भर्पाईमा
+      नियमअनुसार कट्टा गरिने रकमहरु कट्टी गरि
+      भुक्तानी दिन मनासिव देखि पेश गरेको छु।
+    </p>
+
+  </div>
+
+  <!-- ================= SIGNATURE ================= -->
+  <div class="auth-block">
+    <div class="auth-col">
+      <p class="role">(योजना शाखा)</p>
+      <p class="action">पेश गर्ने</p>
+    </div>
+    <div class="auth-col">
+      <p class="role">(लेखा शाखा)</p>
+      <p class="action">सिफारिस गर्ने</p>
+    </div>
+    <div class="auth-col">
+      <p class="role">(प्रमुख प्रशासकिय अधिकृत)</p>
+      <p class="action">सदर गर्ने</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  window.onload = function () {
+    window.print();
+    setTimeout(() => {
+      window.location.href = "/UserCommittee/Workflow/";
+    }, 1000);
+  };
+</script>
+
+</body>
+</html>

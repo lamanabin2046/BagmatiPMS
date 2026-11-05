@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load nepali_date %}
+{% block title %}रनिङ विल भुक्तानी विवरण{% endblock %}
+
+{% block extra_head %}
+<style>
+  .table-compact th, .table-compact td { padding: 6px 8px !important; font-size: 11.5px; white-space: nowrap; }
+  .table-compact td.wrap-cell { white-space: normal; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">Running Bill / Running Evaluation विवरण</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell table-compact" data-table="true">
+        <thead>
+          <tr>
+            <th>क्र.सं.</th>
+            <th>योजना</th>
+            <th>ठेक्का नं</th>
+            <th>मूल्याङ्कन मिति</th>
+            <th class="text-right">कुल मूल्याङ्कन रकम</th>
+            <th class="text-right">यस पटक भुक्तानी</th>
+            <th class="text-right">अग्रिम समायोजन</th>
+            <th>कर / कट्टी</th>
+            <th class="text-right">खुद भुक्तानी</th>
+         
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rb in running_evaluations %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td class="wrap-cell" style="max-width:180px;">{{ rb.contract.sealed_bid.project.name }}</td>
+            <td>{{ rb.contract.sealed_bid.bidding_number }}</td>
+            <td>{{ rb.evaluation_date|nepali_date }}</td>
+            <td class="text-right font-semibold">{{ rb.total_evaluated_amount|floatformat:2 }}</td>
+            <td class="text-right text-brand-600 font-semibold">{{ rb.payable_amount|floatformat:2 }}</td>
+            <td class="text-right text-rose-600">{{ rb.advance_adjusted|floatformat:2 }}</td>
+            <td class="text-right text-rose-600 font-semibold"
+                title="अग्रिम कर {{ rb.agrim_tax|floatformat:2 }} + VAT {{ rb.vat_deduction|floatformat:2 }} + धरौटी {{ rb.dharauti_deduction|floatformat:2 }} + बहाल कर {{ rb.bahal_tax|floatformat:2 }}">
+              {{ rb.agrim_tax|add:rb.vat_deduction|add:rb.dharauti_deduction|add:rb.bahal_tax|floatformat:2 }}
+            </td>
+            <td class="text-right font-semibold text-emerald-600">{{ rb.net_payable|floatformat:2 }}</td>
+        
+            <td>
+              <a href="{% url 'print_running_tippani' rb.id %}" class="btn-chip-slate">टिप्पणी</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="11" class="text-center text-slate-400 py-6">कुनै Running Bill विवरण उपलब्ध छैन।</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

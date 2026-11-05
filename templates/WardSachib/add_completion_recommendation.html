@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}काम सम्पन्न सिफारिस{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-4">
+
+  <div>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">काम सम्पन्न प्रमाणीकरण सिफारिस</h1>
+    <p class="text-sm text-slate-500 mt-0.5">{{ project.name }} — वडा नं. {{ sachib.ward.name }}</p>
+  </div>
+
+  <div class="card">
+    <div class="px-6 py-4 border-b border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+      <div>
+        <p class="text-xs text-slate-400">उपभोक्ता समिति</p>
+        <p class="font-medium text-slate-700">{{ usercommittee.name|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-slate-400">अन्तिम मूल्याङ्कन</p>
+        <p class="font-medium text-slate-700">रु {{ final_valuation.final_evaluation|floatformat:2 }}/-</p>
+      </div>
+      <div>
+        <p class="text-xs text-slate-400">वडा सचिव</p>
+        <p class="font-medium text-slate-700">{{ sachib.name }}</p>
+      </div>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="form-label">पत्र संख्या</label>
+            <input type="text" name="letter_number" class="form-input" placeholder="पत्र संख्या">
+          </div>
+          <div>
+            <label class="form-label">चलानी नं.</label>
+            <input type="text" name="chalani_number" class="form-input" placeholder="चलानी नं.">
+          </div>
+          <div>
+            <label class="form-label">सिफारिस मिति</label>
+            <input type="text" name="recommendation_date" class="form-input nepali-date" required>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">कैफियत</label>
+          <textarea name="remarks" rows="4" class="form-textarea" placeholder="काम सम्पन्न सम्बन्धी कैफियत (वैकल्पिक)"></textarea>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
+        <a href="{% url 'view_projects_for_completion_recommendation' %}" class="btn-secondary">रद्द गर्नुहोस्</a>
+        <button type="submit" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> सिफारिस जारी गर्नुहोस्
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ================= PHOTO EVIDENCE ================= -->
+  <div class="card p-5">
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <h2 class="section-title mb-0"><i class="fas fa-camera"></i> फोटो प्रमाण — काम सुरु देखि सम्पन्न सम्म</h2>
+      <a href="{% url 'ward_engineer_project_photos' project.id %}" class="btn-chip-brand text-xs"><i class="fas fa-arrow-up-right-from-square"></i> पूरा टाइमलाइन हेर्नुहोस्</a>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-center">
+        <p class="text-xs text-slate-500">सुरु हुनु अघि</p>
+        <p class="text-sm font-semibold {% if before_count %}text-emerald-600{% else %}text-rose-500{% endif %}">{{ before_count }} फोटो</p>
+      </div>
+      <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-center">
+        <p class="text-xs text-slate-500">भइरहेको बेला</p>
+        <p class="text-sm font-semibold {% if during_count %}text-emerald-600{% else %}text-rose-500{% endif %}">{{ during_count }} फोटो</p>
+      </div>
+      <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-center">
+        <p class="text-xs text-slate-500">सम्पन्न भएपछि</p>
+        <p class="text-sm font-semibold {% if after_count %}text-emerald-600{% else %}text-rose-500{% endif %}">{{ after_count }} फोटो</p>
+      </div>
+    </div>
+
+    {% if not after_count %}
+    <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-700 mb-4">
+      <i class="fas fa-triangle-exclamation"></i> काम सम्पन्न भएपछिको फोटो अझै थपिएको छैन। सिफारिस जारी गर्नु अघि वडा इन्जिनियरलाई फोटो थप्न लगाउनुहोस्।
+    </div>
+    {% endif %}
+
+    {% if photos %}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {% for item in photos|slice:":8" %}
+      <a href="{% url 'ward_engineer_project_photos' project.id %}" class="block group">
+        <img src="{{ item.image.url }}" alt="Project Photo"
+             class="w-full h-24 object-cover rounded-lg border border-slate-200 group-hover:opacity-80 transition">
+        <p class="text-[11px] text-slate-500 mt-1 truncate">
+          {% if item.stage %}{{ item.get_stage_display }}{% else %}—{% endif %}
+        </p>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-slate-400 text-sm">अहिलेसम्म कुनै फोटो थपिएको छैन।</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

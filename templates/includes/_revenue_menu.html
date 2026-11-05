@@ -1,0 +1,9 @@
+{% comment %}राजस्व आम्दानी — राजस्व ठेक्का{% endcomment %}
+{% if 'rev.view' in me.perms or 'rev.manage' in me.perms or 'rev.approve' in me.perms or 'rev.survey' in me.perms or 'rev.collect' in me.perms %}
+<li>
+  <a href="{% url 'revenue_list' %}" class="nav-link-item {% if current == 'revenue_list' %}active{% endif %}">
+    <i data-lucide="landmark" class="nav-icon"></i>
+    <span class="sidebar-label">राजस्व आम्दानी</span>
+  </a>
+</li>
+{% endif %}

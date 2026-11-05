@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+{% load static %}
+{% load letters %}
+{% load nepali_date %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>सार्वजनिक परीक्षण मुचुल्का</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @page { size: A4; margin: 20mm 16mm 18mm 22mm; }
+    html, body { background: #e9e9e9; }
+    body { font-family: 'Noto Sans Devanagari', 'Mangal', Arial, sans-serif; font-size: 13.5px; line-height: 1.65; color: #1c1c1c; }
+    .sheet { width: 210mm; min-height: 297mm; margin: 14mm auto; background: #fff; padding: 14mm 14mm 12mm 18mm; box-shadow: 0 4px 28px rgba(0,0,0,.18); }
+    .subject { text-align: center; font-weight: 800; font-size: 16px; text-decoration: underline; margin: 12px 0 14px; }
+    p { margin-bottom: 9px; text-align: justify; }
+    h3 { font-size: 14px; margin: 14px 0 6px; color: #8c1f18; }
+    table.t { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 13px; }
+    table.t th, table.t td { border: 1px solid #cdbf9e; padding: 5px 9px; text-align: left; }
+    table.t th { background: #fbf4e6; color: #8c1f18; width: 38%; }
+    .sign { display: flex; justify-content: space-between; margin-top: 46px; text-align: center; gap: 18px; }
+    .sign div { flex: 1; border-top: 1px dotted #555; padding-top: 4px; font-size: 12.5px; }
+    @media print { html, body { background: #fff; } .sheet { margin: 0; box-shadow: none; width: auto; min-height: auto; padding: 0; } }
+  </style>
+</head>
+<body>
+<div class="sheet">
+  {% include 'includes/letterhead.html' with ward=project.ward.name %}
+{% editable_letter "user.print_public_audit" "सार्वजनिक परीक्षण मुचुल्का" %}
+  <div class="subject">सार्वजनिक परीक्षण / सुनुवाइको मुचुल्का</div>
+
+  <p>
+    आज मिति {{ date_bs|to_nepali_number }} का दिन {% if audit.venue %}{{ audit.venue }} मा{% endif %}
+    {% if audit.chaired_by %}श्री {{ audit.chaired_by }} को अध्यक्षतामा{% endif %}
+    वडा नं. {{ project.ward.name|to_nepali_number }} मा सञ्चालित <b>{{ project.name }}</b> योजनाको
+    <b>{{ usercommittee.name }}</b> ले सम्पन्न गरेको कामको सार्वजनिक परीक्षण गरियो ।
+    उक्त कार्यक्रममा जम्मा {{ audit.participants_total|to_nepali_number }} जना
+    (महिला {{ audit.participants_women|to_nepali_number }} जना) उपभोक्ताहरूको उपस्थिति रहेको थियो ।
+  </p>
+
+  <h3>आम्दानी तथा खर्च विवरण</h3>
+  <table class="t">
+    <tr><th>लागत अनुमान</th><td>{% if cost_estimate %}रु. {{ cost_estimate.total_cost|floatformat:2|to_nepali_number }}{% else %}—{% endif %}</td></tr>
+    {% for i in installments %}<tr><th>{{ i.get_kind_display }} ({{ i.number|to_nepali_number }} औं किस्ता) प्राप्त</th><td>रु. {{ i.amount|floatformat:2|to_nepali_number }}</td></tr>{% endfor %}
+    <tr><th>प्रस्तुत आम्दानी</th><td>{% if audit.income_presented is not None %}रु. {{ audit.income_presented|floatformat:2|to_nepali_number }}{% else %}—{% endif %}</td></tr>
+    <tr><th>प्रस्तुत खर्च</th><td>{% if audit.expense_presented is not None %}रु. {{ audit.expense_presented|floatformat:2|to_nepali_number }}{% else %}—{% endif %}</td></tr>
+    {% if final_payment %}<tr><th>अन्तिम मूल्याङ्कन</th><td>रु. {{ final_payment.final_evaluation|floatformat:2|to_nepali_number }}</td></tr>{% endif %}
+  </table>
+
+  {% if audit.issues %}<h3>उठेका सवाल / गुनासो</h3><p>{{ audit.issues|linebreaksbr }}</p>{% endif %}
+  <h3>निर्णय</h3>
+  <p>{{ audit.decision|default:'आम्दानी खर्च सार्वजनिक गरियो ।'|linebreaksbr }}</p>
+
+  {% if audit.monitoring_date or audit.monitoring_finding or audit.monitoring_remarks %}
+  <h3>अनुगमन समितिको प्रतिवेदन</h3>
+  <table class="t">
+    <tr><th>अनुगमन मिति</th><td>{{ mdate_bs|to_nepali_number|default:'—' }}</td></tr>
+    <tr><th>निष्कर्ष</th><td>{{ audit.get_monitoring_finding_display|default:'—' }}</td></tr>
+    {% if audit.monitoring_members %}<tr><th>अनुगमन समितिका सदस्य</th><td>{{ audit.monitoring_members }}</td></tr>{% endif %}
+    {% if audit.monitoring_remarks %}<tr><th>सुझाव</th><td>{{ audit.monitoring_remarks|linebreaksbr }}</td></tr>{% endif %}
+  </table>
+  {% endif %}
+
+  <p>माथि लेखिए बमोजिम सार्वजनिक परीक्षण गरी यो मुचुल्का तयार गरी उपस्थित सबैको रोहबरमा सहीछाप गरियो ।</p>
+
+  <div class="sign">
+    <div>सचिव<br>{{ usercommittee.secretary_name|default:'' }}</div>
+    <div>अध्यक्ष<br>{{ usercommittee.chairman_name|default:'' }}</div>
+    <div>वडा प्रतिनिधि / अनुगमन समिति</div>
+  </div>
+{% endeditable_letter %}
+</div>
+<script>
+  window.__letterPrint = function () { window.print(); };
+</script>
+</body>
+</html>

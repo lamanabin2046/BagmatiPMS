@@ -1,0 +1,5 @@
+# server मा चल्ने फाइल सधैं Linux line ending (Windows बाट push गर्दा पनि)
+*.sh text eol=lf
+.cpanel.yml text eol=lf
+*.yml text eol=lf
+passenger_wsgi.py text eol=lf

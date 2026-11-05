@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}{{ method_label }} — {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+  {% if fy_locked %}<div class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"><i class="fas fa-lock"></i> {{ fy_lock_msg }}</div>{% endif %}
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <p class="text-xs font-semibold text-brand-700">{{ method_label }}</p>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">{{ project.name }}</h1>
+      <p class="text-sm text-slate-500 mt-0.5">वडा नं. {{ project.ward.name|default:'—'|npn }} · आ.व. {{ project.fiscalyear.name }} · {{ budget_note }}</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'app_plan' project.id %}" class="btn-secondary"><i class="fas fa-list-check"></i> खरिद योजना</a>
+      {% if 'mb.view' in me.perms %}<a href="{% url 'mb_page' project.id %}" class="btn-secondary"><i class="fas fa-ruler-combined"></i> नापी किताब</a>{% endif %}
+      <a href="{% url 'minor_list' %}?method={{ method }}" class="btn-secondary"><i class="fas fa-arrow-left"></i> सूची</a>
+    </div>
+  </div>
+
+  {% if errors %}
+  <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+    <ul class="list-disc pl-5 space-y-0.5">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>
+  {% endif %}
+
+  <ol class="space-y-3">
+  {% for st in steps %}
+  <li class="card {% if st.state == 'current' %}ring-2 ring-brand-500{% endif %}">
+    <div class="flex items-center gap-3 px-5 py-3 {% if st.state != 'current' %}border-b border-slate-100{% endif %}">
+      <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0
+        {% if st.state == 'done' %}bg-emerald-500 text-white{% elif st.state == 'current' %}bg-brand-600 text-white{% elif st.state == 'optional' %}border-2 border-dashed border-slate-300 text-slate-400{% else %}bg-slate-100 text-slate-400{% endif %}">
+        {% if st.state == 'done' %}<i class="fas fa-check"></i>{% else %}{{ forloop.counter|npn }}{% endif %}</span>
+      <div class="flex-1 min-w-0">
+        <p class="font-semibold text-slate-800">{{ st.label }}</p>
+        {% if st.note %}<p class="text-xs {% if st.key == 'plan' and s.gate %}text-rose-600{% else %}text-slate-500{% endif %}">{{ st.note }}</p>{% endif %}
+      </div>
+      {% if st.state == 'current' %}<span class="badge bg-brand-50 text-brand-700">अहिलेको काम</span>{% endif %}
+    </div>
+
+    <div class="px-5 pb-4 pt-3 text-sm">
+    {# ======================= खरिद योजना ======================= #}
+    {% if st.key == 'plan' %}
+      {% if s.gate %}<a href="{% url 'app_plan' project.id %}" class="btn-primary"><i class="fas fa-list-check"></i> खरिद योजना स्वीकृत गराउनुहोस्</a>
+      {% else %}<p class="text-slate-600">{% if plan %}{{ plan.get_nature_display }} · अनुमानित रु. {{ plan.estimated_cost|money }}{% if plan.approval_ref %} · {{ plan.approval_ref }}{% endif %}{% else %}खरिद योजना अनिवार्य नगरिएको (सेटिङ){% endif %}</p>{% endif %}
+
+    {# ======================= लागत अनुमान ======================= #}
+    {% elif st.key == 'estimate' %}
+      {% if can_manage and not m.approved_at and not s.gate %}
+      <form method="post" enctype="multipart/form-data" class="grid sm:grid-cols-4 gap-3 items-end">
+        {% csrf_token %}<input type="hidden" name="action" value="estimate">
+        <div><label class="form-label">लागत अनुमान (रु.)</label><input name="estimate_amount" value="{{ v.estimate_amount|default_if_none:'' }}" class="form-input" required></div>
+        <div><label class="form-label">स्वीकृत मिति</label><input name="estimate_date" value="{{ v.estimate_date }}" class="form-input nepali-date" required autocomplete="off"></div>
+        <div><label class="form-label">लागत अनुमान (स्क्यान, ऐच्छिक)</label><input type="file" name="estimate_doc" class="form-input"></div>
+        <div><button class="btn-primary w-full"><i class="fas fa-floppy-disk"></i> {% if m %}सच्याउनुहोस्{% else %}दर्ता गर्नुहोस्{% endif %}</button></div>
+        {% if method == 'direct' %}<p class="sm:col-span-4 text-[11px] text-slate-500">सोझै खरिद सीमा: रु. {{ direct_cap|money:0 }} (ऐन दफा ४१) — खरिद टुक्र्याउन पाइँदैन।</p>{% endif %}
+      </form>
+      {% elif m %}<p class="text-slate-600">रु. {{ m.estimate_amount|money }} · {{ m.estimate_date|bs }}{% if m.estimate_doc %} · <a href="{{ m.estimate_doc.url }}" target="_blank" class="text-brand-600 underline">स्क्यान</a>{% endif %}</p>
+      {% else %}<p class="text-slate-400">लागत अनुमान बाँकी।</p>{% endif %}
+
+    {# ======================= सूचना ======================= #}
+    {% elif st.key == 'notice' %}
+      {% if can_manage and m and not m.approved_at %}
+      <form method="post" class="grid sm:grid-cols-3 gap-3 items-end">
+        {% csrf_token %}<input type="hidden" name="action" value="notice">
+        <div><label class="form-label">सूचना प्रकाशित मिति</label><input name="notice_date" value="{{ v.notice_date }}" class="form-input nepali-date" required autocomplete="off"></div>
+        <div><label class="form-label">सूचना / पत्रिका / च.नं.</label><input name="notice_ref" value="{{ v.notice_ref }}" class="form-input"></div>
+        <div><button class="btn-primary w-full"><i class="fas fa-bullhorn"></i> सुरक्षित गर्नुहोस्</button></div>
+        <p class="sm:col-span-3 text-[11px] text-slate-500">कम्तीमा १५ दिनको सूचना; रु. {{ L.sanstha_notice_limit|money:0 }} भन्दा बढीमा खुला आशयपत्र (EOI)।</p>
+      </form>
+      {% elif m and m.notice_date %}<p class="text-slate-600">{{ m.notice_date|bs }} · {{ m.notice_ref }}</p>
+      {% else %}<p class="text-slate-400">लागत अनुमानपछि।</p>{% endif %}
+
+    {# ======================= दरभाउ / प्रस्ताव ======================= #}
+    {% elif st.key == 'quotes' %}
+      {% if quotes %}
+      <table class="w-full text-[13px] mb-3">
+        <thead><tr class="text-[11px] text-slate-500 border-b border-slate-100"><th class="py-1.5 text-left">फर्म / संस्था</th><th class="text-left">PAN / दर्ता</th><th class="text-left">प्राप्त मिति</th><th class="text-right">रकम (रु.)</th><th></th></tr></thead>
+        <tbody>{% for q in quotes %}
+          <tr class="border-b border-slate-50 {% if m.selected_id == q.id %}bg-emerald-50{% endif %}">
+            <td class="py-1.5">{{ q.name }}{% if forloop.first %} <span class="badge bg-emerald-50 text-emerald-700 text-[10px]">न्यूनतम</span>{% endif %}{% if m.selected_id == q.id %} <span class="badge bg-brand-50 text-brand-700 text-[10px]">छानिएको</span>{% endif %}<span class="block text-[11px] text-slate-400">{{ q.address }}</span></td>
+            <td>{{ q.pan|default:'—' }}</td><td>{{ q.received_on|bs|default:'—' }}</td>
+            <td class="text-right">{{ q.amount|money }}{% if q.amount > m.estimate_amount %}<span class="block text-[10px] text-rose-600">लागत अनुमानभन्दा बढी</span>{% endif %}</td>
+            <td class="text-right">{% if can_manage and not m.approved_at %}<form method="post" class="inline">{% csrf_token %}<input type="hidden" name="action" value="quote_del"><input type="hidden" name="id" value="{{ q.id }}"><button class="text-rose-500 text-xs"><i class="fas fa-trash"></i></button></form>{% endif %}</td>
+          </tr>{% endfor %}</tbody>
+      </table>
+      {% endif %}
+      {% if can_manage and m and not m.approved_at and not s.gate %}{% if method != 'sanstha' or m.notice_date %}
+      <form method="post" class="grid sm:grid-cols-6 gap-2 items-end">
+        {% csrf_token %}<input type="hidden" name="action" value="quote_add">
+        <div class="sm:col-span-2"><label class="form-label">फर्म / संस्था</label><input name="name" value="{% if failed == 'quote_add' %}{{ v.name }}{% endif %}" class="form-input" required list="firm-options" autocomplete="off"></div>
+        <datalist id="firm-options">{% for fo in firm_options %}<option value="{{ fo.firm_name }}">{{ fo.firm_pan }}</option>{% endfor %}</datalist>
+        <div><label class="form-label">PAN / दर्ता नं.</label><input name="pan" value="{% if failed == 'quote_add' %}{{ v.pan }}{% endif %}" class="form-input"></div>
+        <div><label class="form-label">रकम (रु.)</label><input name="amount" value="{% if failed == 'quote_add' %}{{ v.amount }}{% endif %}" class="form-input" required></div>
+        <div><label class="form-label">प्राप्त मिति</label><input name="received_on" value="{{ today_bs }}" class="form-input nepali-date" autocomplete="off"></div>
+        <div><button class="btn-primary w-full"><i class="fas fa-plus"></i> थप्नुहोस्</button></div>
+        <div class="sm:col-span-6"><input name="address" class="form-input" placeholder="ठेगाना (ऐच्छिक)"></div>
+      </form>
+      <p class="mt-2 text-[11px] text-slate-500">{% if method == 'direct' %}सूचीकृत आपूर्तिकर्ताबाट कम्तीमा ३ वटा दरभाउ लिनुपर्छ (अहिले {{ quotes|length|npn }})।{% else %}प्राप्त सबै प्रस्ताव दर्ता गर्नुहोस्।{% endif %}</p>
+      {% else %}<p class="text-slate-400">पहिले सूचना दर्ता गर्नुहोस्।</p>{% endif %}{% endif %}
+
+    {# ======================= स्वीकृति ======================= #}
+    {% elif st.key == 'approval' %}
+      {% if m.approved_at %}
+        <p class="text-slate-600">{{ m.approver_name }} · {{ m.approved_at|date:'Y-m-d' }}{% if m.selected %} · छनौट: <b>{{ m.selected.name }}</b> (रु. {{ m.selected.amount|money }}){% endif %}{% if m.approval_remarks %} · {{ m.approval_remarks }}{% endif %}</p>
+        {% if can_print %}<a href="{% url 'minor_print' project.id 'approval' %}" target="_blank" class="btn-secondary mt-2 inline-flex"><i class="fas fa-print"></i> {% if prints.approval %}✓ {% endif %}स्वीकृति टिप्पणी प्रिन्ट गर्नुहोस्</a>{% endif %}
+      {% elif m and can_approve and st.state == 'current' %}
+      <form method="post" class="space-y-3">
+        {% csrf_token %}<input type="hidden" name="action" value="approve">
+        {% if quotes %}
+        <div class="grid sm:grid-cols-2 gap-2">
+          {% for q in quotes %}
+          <label class="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
+            <input type="radio" name="quote" value="{{ q.id }}" {% if forloop.first %}checked{% endif %}> <span class="flex-1">{{ q.name }}</span> <b>रु. {{ q.amount|money }}</b></label>
+          {% endfor %}
+        </div>
+        <input name="reason" class="form-input" placeholder="न्यूनतम बाहेक अरू छाने कारण (अनिवार्य)">
+        {% else %}
+        <p class="text-slate-600">लागत अनुमान रु. {{ m.estimate_amount|money }} — अमानतबाट गर्ने स्वीकृति।</p>
+        <input name="remarks" class="form-input" placeholder="कैफियत (ऐच्छिक)">
+        {% endif %}
+        <button class="btn-primary"><i class="fas fa-stamp"></i> स्वीकृत गर्नुहोस्</button>
+      </form>
+      {% elif m and st.state == 'current' %}<p class="text-amber-700">स्वीकृत गर्ने अधिकारीको स्वीकृति बाँकी।</p>
+      {% else %}<p class="text-slate-400">{% if min_quotes %}कम्तीमा {{ min_quotes|npn }} वटा दरभाउ / प्रस्तावपछि।{% else %}लागत अनुमानपछि।{% endif %}</p>{% endif %}
+
+    {# ======================= आदेश / सम्झौता / कार्यादेश ======================= #}
+    {% elif st.key == 'order' %}
+      {% if can_manage and m.approved_at and not pays %}
+      <form method="post" class="grid sm:grid-cols-5 gap-3 items-end">
+        {% csrf_token %}<input type="hidden" name="action" value="order">
+        <div><label class="form-label">नं.</label><input name="order_no" value="{{ v.order_no }}" class="form-input"></div>
+        <div><label class="form-label">मिति</label><input name="order_date" value="{{ v.order_date }}" class="form-input nepali-date" required autocomplete="off"></div>
+        <div><label class="form-label">रकम (रु.)</label><input name="order_amount" value="{{ v.order_amount|default_if_none:'' }}" class="form-input" required></div>
+        <div><label class="form-label">सम्पन्न / आपूर्ति गर्नुपर्ने मिति</label><input name="due_date" value="{{ v.due_date }}" class="form-input nepali-date" required autocomplete="off"></div>
+        {% if method == 'amanat' %}<div><label class="form-label">जिम्मेवार कर्मचारी</label><input name="in_charge" value="{{ v.in_charge }}" class="form-input" required></div>{% endif %}
+        <div><button class="btn-primary w-full"><i class="fas fa-floppy-disk"></i> सुरक्षित गर्नुहोस्</button></div>
+      </form>
+      {% endif %}
+      {% if m.order_date %}
+        <p class="text-slate-600 mt-2">नं. {{ m.order_no|default:'—' }} · {{ m.order_date|bs }} · रु. {{ m.order_amount|money }} · सम्पन्न गर्नुपर्ने {{ m.due_date|bs }}{% if m.in_charge %} · जिम्मेवार: {{ m.in_charge }}{% endif %}</p>
+        {% if can_print %}<a href="{% url 'minor_print' project.id 'order' %}" target="_blank" class="btn-secondary mt-2 inline-flex"><i class="fas fa-print"></i> {% if prints.order %}✓ {% endif %}{% if method == 'direct' %}खरिद आदेश{% elif method == 'amanat' %}कार्यादेश{% else %}सम्झौता{% endif %} प्रिन्ट गर्नुहोस्</a>{% endif %}
+      {% elif not m.approved_at %}<p class="text-slate-400">स्वीकृतिपछि।</p>{% endif %}
+
+    {# ======================= हाजिरी / किस्ता ======================= #}
+    {% elif st.key == 'progress' %}
+      {% with running=pays %}
+      {% for p in pays %}{% if p.kind != 'final' %}
+        <div class="flex items-center justify-between gap-2 border-b border-slate-50 py-1.5">
+          <span>{{ p.get_kind_display }} · {{ p.date|bs }}{% if p.bill_no %} · {{ p.bill_no }}{% endif %}{% if p.person_days %} · {{ p.workers|default:'' }} कामदार, {{ p.person_days }} श्रम दिन{% endif %}</span>
+          <span class="whitespace-nowrap">रु. {{ p.gross|money }} <span class="text-slate-400">(खुद {{ p.net|money }})</span>
+            {% if can_manage and forloop.last and not m.completed_on %}<form method="post" class="inline">{% csrf_token %}<input type="hidden" name="action" value="pay_del"><input type="hidden" name="id" value="{{ p.id }}"><button class="text-rose-500 text-xs ml-2"><i class="fas fa-trash"></i></button></form>{% endif %}</span>
+        </div>
+      {% endif %}{% endfor %}
+      {% endwith %}
+      {% if can_manage and m.order_date and not fin and not m.completed_on or can_manage and method == 'amanat' and m.order_date and not fin and not m.completed_on %}
+      <form method="post" enctype="multipart/form-data" class="grid sm:grid-cols-6 gap-2 items-end mt-3">
+        {% csrf_token %}<input type="hidden" name="action" value="pay">
+        <div><label class="form-label">प्रकार</label><select name="kind" class="form-select">
+          {% if method == 'amanat' %}<option value="muster">हाजिरी (मस्टररोल)</option><option value="material">सामग्री बिल</option>{% else %}<option value="running">किस्ता</option>{% endif %}</select></div>
+        <div><label class="form-label">मिति</label><input name="date" value="{{ today_bs }}" class="form-input nepali-date" autocomplete="off"></div>
+        <div><label class="form-label">कुल रकम</label><input name="gross" class="form-input" required></div>
+        {% if method == 'amanat' %}
+        <div><label class="form-label">कामदार</label><input name="workers" class="form-input"></div>
+        <div><label class="form-label">श्रम दिन</label><input name="person_days" class="form-input"></div>
+        {% endif %}
+        <div><label class="form-label">बिल / भौचर नं.</label><input name="bill_no" class="form-input"></div>
+        {% for k, lbl in tax_fields %}<div><label class="form-label">{{ lbl }}</label><input name="{{ k }}" class="form-input" value="0"></div>{% endfor %}
+        <div><label class="form-label">स्क्यान</label><input type="file" name="doc" class="form-input"></div>
+        <div><button class="btn-primary w-full"><i class="fas fa-plus"></i> दर्ता</button></div>
+      </form>
+      <p class="mt-1 text-[11px] text-slate-500">आदेश रकमभित्र बाँकी: रु. {{ remaining|money }}</p>
+      {% endif %}
+
+    {# ======================= जाँचपास / प्रतिवेदन ======================= #}
+    {% elif st.key == 'completion' %}
+      {% if can_manage and m.order_date and not fin %}
+      <form method="post" enctype="multipart/form-data" class="grid sm:grid-cols-4 gap-3 items-end">
+        {% csrf_token %}<input type="hidden" name="action" value="completion">
+        <div><label class="form-label">{% if method == 'direct' %}आपूर्ति{% else %}सम्पन्न{% endif %} मिति</label><input name="completed_on" value="{{ v.completed_on }}" class="form-input nepali-date" required autocomplete="off"></div>
+        <div><label class="form-label">{% if method == 'amanat' %}नापजाँच (मूल्याङ्कन){% else %}जाँचपास{% endif %} रकम</label><input name="completion_value" value="{{ v.completion_value|default_if_none:'' }}" class="form-input" required></div>
+        <div><label class="form-label">प्रतिवेदन (स्क्यान)</label><input type="file" name="completion_doc" class="form-input"></div>
+        <div><button class="btn-primary w-full"><i class="fas fa-clipboard-check"></i> सुरक्षित</button></div>
+        <div class="sm:col-span-4"><textarea name="completion_note" rows="2" class="form-input" placeholder="{% if method == 'direct' %}जाँचपास समितिको विवरण — सामान परिमाण र गुणस्तर{% elif method == 'amanat' %}नापजाँच गर्ने प्राविधिक र विवरण{% else %}काम सम्पन्न प्रतिवेदनको सार{% endif %}" required>{{ v.completion_note }}</textarea></div>
+      </form>
+      {% elif m.completed_on %}<p class="text-slate-600">{{ m.completed_on|bs }} · रु. {{ m.completion_value|money }} · {{ m.completion_note }}{% if m.completion_doc %} · <a href="{{ m.completion_doc.url }}" target="_blank" class="text-brand-600 underline">प्रतिवेदन</a>{% endif %}</p>
+      {% else %}<p class="text-slate-400">आदेश / सम्झौतापछि।</p>{% endif %}
+
+    {# ======================= अन्तिम भुक्तानी ======================= #}
+    {% elif st.key == 'payment' %}
+      {% if can_manage and m.completed_on and not prints.payment %}
+      <form method="post" enctype="multipart/form-data" class="grid sm:grid-cols-6 gap-2 items-end">
+        {% csrf_token %}<input type="hidden" name="action" value="final">
+        <div><label class="form-label">मिति</label><input name="date" value="{{ v.date }}" class="form-input nepali-date" autocomplete="off"></div>
+        <div><label class="form-label">कुल रकम</label><input name="gross" value="{{ v.gross|default_if_none:'' }}" class="form-input" required></div>
+        <div><label class="form-label">बिल / भौचर नं.</label><input name="bill_no" value="{{ v.bill_no }}" class="form-input"></div>
+        {% for k, lbl in tax_fields %}<div><label class="form-label">{{ lbl }}</label><input name="{{ k }}" class="form-input" value="{% if k == 'agrim_tax' %}{{ v.agrim_tax|default:'0' }}{% elif k == 'vat' %}{{ v.vat|default:'0' }}{% else %}{{ v.dharauti|default:'0' }}{% endif %}"></div>{% endfor %}
+        <div><button class="btn-primary w-full"><i class="fas fa-money-check"></i> {% if fin %}सच्याउनुहोस्{% else %}दर्ता{% endif %}</button></div>
+        <p class="sm:col-span-6 text-[11px] text-slate-500">जाँचपास रकम रु. {{ m.completion_value|money }} − अघि भुक्तानी रु. {{ paid_running|money }} = बाँकी रु. {{ remaining|money }}</p>
+      </form>
+      {% endif %}
+      {% if fin %}
+        <p class="text-slate-600 mt-2">{{ fin.date|bs }} · कुल रु. {{ fin.gross|money }} · खुद रु. {{ fin.net|money }}</p>
+        {% if can_print %}<a href="{% url 'minor_print' project.id 'payment' %}" target="_blank" class="btn-secondary mt-2 inline-flex"><i class="fas fa-print"></i> {% if prints.payment %}✓ {% endif %}भुक्तानी टिप्पणी प्रिन्ट गर्नुहोस्</a>{% endif %}
+      {% elif not m.completed_on %}<p class="text-slate-400">जाँचपास / सम्पन्न प्रतिवेदनपछि।</p>{% endif %}
+    {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+  </ol>
+</div>
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}नापी किताब — {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <p class="text-xs font-semibold text-brand-700">नापी किताब (Measurement Book)</p>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">{{ project.name }}</h1>
+      <p class="text-sm text-slate-500 mt-0.5">वडा नं. {{ project.ward.name|default:'—'|npn }} · आ.व. {{ project.fiscalyear.name }} · {{ project.procurement_type.name|default:'' }}</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'mb_print' project.id %}" target="_blank" class="btn-secondary"><i class="fas fa-print"></i> नापी किताब</a>
+      {% for b in bills %}<a href="{% url 'mb_print' project.id %}?bill={{ b }}" target="_blank" class="btn-secondary"><i class="fas fa-file-invoice"></i> बिल नं. {{ b|npn }} सार</a>{% endfor %}
+      <a href="{{ workflow_url }}" class="btn-secondary"><i class="fas fa-arrow-left"></i> कार्यप्रवाह</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div class="card p-4"><p class="text-xs text-slate-500">BOQ जम्मा</p><p class="text-xl font-bold text-slate-800">रु. {{ s.boq_total|money:0 }}</p><p class="text-[11px] text-slate-400">{{ s.items|npn }} काम</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">नापी अनुसार मूल्याङ्कन</p><p class="text-xl font-bold text-brand-700">रु. {{ s.value|money:0 }}</p><p class="text-[11px] text-slate-400">{{ s.measurements|npn }} नापी</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">भौतिक प्रगति</p><p class="text-xl font-bold text-emerald-700">{{ s.progress|npn }}%</p>
+      <div class="mt-2 h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-emerald-500" style="width: {% if s.progress > 100 %}100{% else %}{{ s.progress|stringformat:'s' }}{% endif %}%"></div></div></div>
+    <div class="card p-4 {% if s.over_items %}bg-amber-50/60{% endif %}"><p class="text-xs text-slate-500">बिलमा नपरेको नापी</p><p class="text-xl font-bold text-slate-800">रु. {{ s.unbilled|money:0 }}</p>
+      {% if s.over_items %}<p class="text-[11px] text-amber-700">{{ s.over_items|npn }} काम BOQ भन्दा बढी — भेरिएसन चाहिन्छ</p>{% endif %}</div>
+  </div>
+
+  {% if can_boq %}
+  <details class="card" {% if not rows %}open{% endif %}>
+    <summary class="card-header cursor-pointer"><h2 class="font-semibold text-slate-800"><i class="fas fa-list-ol text-brand-600"></i> परिमाण सूची (BOQ) थप्नुहोस्</h2></summary>
+    <div class="p-4 space-y-4">
+      <form method="post" class="grid grid-cols-2 md:grid-cols-7 gap-2 items-end">
+        {% csrf_token %}<input type="hidden" name="action" value="item_add">
+        <div><label class="form-label">क्र.सं.</label><input name="sn" class="form-input"></div>
+        <div class="col-span-2 md:col-span-3"><label class="form-label">कामको विवरण</label><input name="description" class="form-input" required></div>
+        <div><label class="form-label">एकाइ</label><input name="unit" class="form-input" list="units" required>
+          <datalist id="units"><option value="घ.मि."><option value="व.मि."><option value="मि."><option value="वटा"><option value="के.जी."><option value="एकमुष्ट"></datalist></div>
+        <div><label class="form-label">परिमाण</label><input name="quantity" class="form-input" required></div>
+        <div><label class="form-label">दर (रु.)</label><input name="rate" class="form-input" required></div>
+        <div class="col-span-2 md:col-span-7 flex justify-end"><button class="btn-primary"><i class="fas fa-plus"></i> काम थप्नुहोस्</button></div>
+      </form>
+      <form method="post" enctype="multipart/form-data" class="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4">
+        {% csrf_token %}<input type="hidden" name="action" value="import">
+        <div><label class="form-label">Excel बाट (.xlsx)</label><input type="file" name="file" accept=".xlsx" class="form-input" required></div>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="replace" value="1"> हालको BOQ हटाएर नयाँ राख्ने</label>
+        <button class="btn-secondary"><i class="fas fa-file-import"></i> आयात</button>
+        <p class="basis-full text-[11px] text-slate-500">स्तम्भ: sn, description, unit, quantity, rate — वा क्र.सं., विवरण, एकाइ, परिमाण, दर। बोलपत्रमा सम्झौताको दर, उपभोक्ता समितिमा लागत अनुमानको दर।</p>
+      </form>
+    </div>
+  </details>
+  {% endif %}
+
+  <section class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-[13px]">
+        <thead><tr class="bg-slate-50 text-[11px] text-slate-500">
+          <th class="px-3 py-3 text-left font-medium">क्र.सं.</th>
+          <th class="px-3 py-3 text-left font-medium min-w-[16rem]">कामको विवरण</th>
+          <th class="px-3 py-3 text-left font-medium">एकाइ</th>
+          <th class="px-3 py-3 text-right font-medium">BOQ परिमाण</th>
+          <th class="px-3 py-3 text-right font-medium">दर</th>
+          <th class="px-3 py-3 text-right font-medium">BOQ रकम</th>
+          <th class="px-3 py-3 text-right font-medium">नापिएको</th>
+          <th class="px-3 py-3 text-right font-medium">मूल्याङ्कन</th>
+          <th class="px-3 py-3 text-left font-medium min-w-[7rem]">प्रगति</th>
+          <th class="px-3 py-3"></th>
+        </tr></thead>
+        {% for r in rows %}
+        <tbody class="border-t border-slate-100" id="item-{{ r.item.id }}">
+          <tr class="{% if r.over %}bg-amber-50/50{% endif %}">
+            <td class="px-3 py-2.5 text-slate-500">{{ r.item.sn }}</td>
+            <td class="px-3 py-2.5 font-medium text-slate-800">{{ r.item.description }}</td>
+            <td class="px-3 py-2.5">{{ r.item.unit }}</td>
+            <td class="px-3 py-2.5 text-right">{{ r.item.quantity|qty }}</td>
+            <td class="px-3 py-2.5 text-right">{{ r.item.rate|money }}</td>
+            <td class="px-3 py-2.5 text-right">{{ r.amount|money }}</td>
+            <td class="px-3 py-2.5 text-right font-medium {% if r.over %}text-amber-700{% endif %}">{{ r.qty|qty }}</td>
+            <td class="px-3 py-2.5 text-right">{{ r.value|money }}</td>
+            <td class="px-3 py-2.5"><div class="flex items-center gap-2"><div class="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden min-w-[3rem]"><div class="h-full {% if r.over %}bg-amber-500{% else %}bg-emerald-500{% endif %}" style="width: {% if r.pct > 100 %}100{% else %}{{ r.pct|stringformat:'s' }}{% endif %}%"></div></div><span class="text-[11px] text-slate-500">{{ r.pct|npn }}%</span></div>
+              {% if r.over %}<span class="text-[10px] text-amber-700">{{ r.excess|qty }} बढी — भेरिएसन</span>{% endif %}</td>
+            <td class="px-3 py-2.5 text-right whitespace-nowrap">
+              <button type="button" class="btn-chip-slate" onclick="document.getElementById('m-{{ r.item.id }}').classList.toggle('hidden')"><i class="fas fa-ruler"></i> नापी ({{ r.measurements|length|npn }})</button>
+              {% if can_boq and not r.measurements %}<form method="post" class="inline" onsubmit="return confirm('यो काम हटाउने?')">{% csrf_token %}<input type="hidden" name="action" value="item_del"><input type="hidden" name="item" value="{{ r.item.id }}"><button class="btn-chip-slate !text-rose-600"><i class="fas fa-trash"></i></button></form>{% endif %}
+            </td>
+          </tr>
+          <tr id="m-{{ r.item.id }}" class="{% if request.GET.open != r.item.id|stringformat:'s' %}hidden{% endif %} bg-slate-50/60">
+            <td></td>
+            <td colspan="9" class="px-3 py-3">
+              {% if r.measurements %}
+              <table class="w-full text-[12px] mb-3">
+                <thead><tr class="text-[10px] text-slate-500 border-b border-slate-200"><th class="py-1 text-left">मिति</th><th class="text-left">स्थान / चेनेज</th><th class="text-right">संख्या</th><th class="text-right">लम्बाइ</th><th class="text-right">चौडाइ</th><th class="text-right">उचाइ</th><th class="text-right">परिमाण</th><th class="text-left pl-2">बिल</th><th class="text-left">कैफियत</th><th></th></tr></thead>
+                <tbody>{% for m in r.measurements %}
+                  <tr class="border-b border-slate-100 {% if m.deduction %}text-rose-700{% endif %}">
+                    <td class="py-1">{{ m.date|bs }}</td><td>{{ m.location|default:'—' }}</td>
+                    <td class="text-right">{{ m.nos|default_if_none:''|qty }}</td><td class="text-right">{{ m.length|default_if_none:''|qty }}</td>
+                    <td class="text-right">{{ m.breadth|default_if_none:''|qty }}</td><td class="text-right">{{ m.height|default_if_none:''|qty }}</td>
+                    <td class="text-right font-medium">{% if m.deduction %}−{% endif %}{{ m.quantity|qty }}</td>
+                    <td class="pl-2">{% if m.bill_no %}<span class="badge bg-emerald-50 text-emerald-700 text-[10px]">नं. {{ m.bill_no|npn }}</span>{% else %}—{% endif %}</td>
+                    <td>{{ m.remarks }}</td>
+                    <td class="text-right">{% if can_measure and not m.bill_no %}<form method="post" class="inline">{% csrf_token %}<input type="hidden" name="action" value="measure_del"><input type="hidden" name="id" value="{{ m.id }}"><input type="hidden" name="item" value="{{ r.item.id }}"><button class="text-rose-500"><i class="fas fa-trash"></i></button></form>{% endif %}</td>
+                  </tr>{% endfor %}</tbody>
+              </table>
+              {% endif %}
+              {% if can_measure %}
+              <form method="post" class="grid grid-cols-3 md:grid-cols-10 gap-2 items-end">
+                {% csrf_token %}<input type="hidden" name="action" value="measure_add"><input type="hidden" name="item" value="{{ r.item.id }}">
+                <div class="col-span-1 md:col-span-2"><label class="form-label">मिति</label><input name="date" value="{{ today_bs }}" class="form-input nepali-date !py-1.5" autocomplete="off"></div>
+                <div class="col-span-2 md:col-span-1"><label class="form-label">स्थान / चेनेज</label><input name="location" class="form-input !py-1.5"></div>
+                <div><label class="form-label">संख्या</label><input name="nos" class="form-input !py-1.5"></div>
+                <div><label class="form-label">लम्बाइ</label><input name="length" class="form-input !py-1.5"></div>
+                <div><label class="form-label">चौडाइ</label><input name="breadth" class="form-input !py-1.5"></div>
+                <div><label class="form-label">उचाइ</label><input name="height" class="form-input !py-1.5"></div>
+                <div><label class="form-label">वा परिमाण</label><input name="quantity" class="form-input !py-1.5" title="आयाम नभरे सिधै परिमाण"></div>
+                <label class="flex items-center gap-1.5 text-xs pb-2"><input type="checkbox" name="deduction" value="1"> घटाउ</label>
+                <div><button class="btn-primary w-full !py-1.5"><i class="fas fa-plus"></i> नापी</button></div>
+                <div class="col-span-3 md:col-span-10"><input name="remarks" class="form-input !py-1.5" placeholder="कैफियत (ऐच्छिक)"></div>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+        </tbody>
+        {% empty %}
+        <tbody><tr><td colspan="10" class="px-3 py-10 text-center text-slate-400">परिमाण सूची (BOQ) थपिएको छैन।{% if can_boq %} माथिबाट काम थप्नुहोस् वा Excel आयात गर्नुहोस्।{% endif %}</td></tr></tbody>
+        {% endfor %}
+        {% if rows %}
+        <tfoot><tr class="bg-slate-50 font-semibold"><td colspan="5" class="px-3 py-2.5 text-right">जम्मा</td><td class="px-3 py-2.5 text-right">{{ s.boq_total|money }}</td><td></td><td class="px-3 py-2.5 text-right">{{ s.value|money }}</td><td class="px-3 py-2.5">{{ s.progress|npn }}%</td><td></td></tr></tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="font-semibold text-slate-800"><i class="fas fa-camera text-brand-600"></i> साइट फोटो</h2>
+      <a href="{% url 'project_timeline' project.id %}" class="text-xs text-brand-600 underline">सबै / थप्नुहोस्</a></div>
+    {% if photos %}
+    <div class="p-4 grid grid-cols-2 md:grid-cols-6 gap-3">
+      {% for ph in photos %}<a href="{{ ph.image.url }}" target="_blank" class="block"><img src="{{ ph.image.url }}" alt="" class="w-full h-28 object-cover rounded-lg border border-slate-200"><span class="block text-[10px] text-slate-500 mt-1 truncate">{{ ph.get_stage_display|default:'' }} · {{ ph.created_at|date:'Y-m-d' }}</span></a>{% endfor %}
+    </div>
+    {% else %}<p class="p-4 text-sm text-slate-400">फोटो छैन।</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SaaS Manager{% endblock %} · Palika PMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','Noto Sans Devanagari','sans-serif']}}}}</script>
+  <style type="text/tailwindcss">
+    @layer components {
+      .card { @apply bg-white rounded-xl border border-slate-200 shadow-sm; }
+      .btn { @apply inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition; }
+      .btn-primary { @apply btn bg-indigo-600 text-white hover:bg-indigo-700; }
+      .btn-light { @apply btn bg-white border border-slate-300 text-slate-700 hover:bg-slate-50; }
+      .btn-danger { @apply btn bg-rose-600 text-white hover:bg-rose-700; }
+      .field input, .field select, .field textarea { @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500; }
+      .field label { @apply block text-sm font-medium text-slate-700 mb-1; }
+      .field .help { @apply text-xs text-slate-500 mt-1; }
+      .field .err { @apply text-xs text-rose-600 mt-1; }
+      .badge { @apply inline-block rounded-full px-2 py-0.5 text-xs font-semibold; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+  {% if user.is_authenticated %}
+  <header class="bg-indigo-900 text-white">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="{% url 'saas_dashboard' %}" class="font-bold tracking-wide">Palika PMS · SaaS Manager</a>
+      <div class="flex items-center gap-4 text-sm">
+        <span class="opacity-80">{{ user.mobile }}</span>
+        <a href="{% url 'saas_logout' %}" class="underline opacity-90">Logout</a>
+      </div>
+    </div>
+  </header>
+  {% endif %}
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    {% for m in messages %}
+      <div class="mb-4 rounded-lg px-4 py-3 text-sm {% if m.tags == 'error' %}bg-rose-50 text-rose-700 border border-rose-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">{{ m }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

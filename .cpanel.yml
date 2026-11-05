@@ -1,0 +1,8 @@
+---
+# cPanel → Git Version Control → Manage → Pull or Deploy → "Deploy HEAD Commit"
+# (GitHub Actions ले पनि cPanel API बाट यही चलाउँछ)। पूरा log: logs/deploy.log
+deployment:
+  tasks:
+    - export REPO_DIR=$HOME/ProjectManagement
+    - mkdir -p $REPO_DIR/logs
+    - /bin/bash $REPO_DIR/scripts/deploy.sh >> $REPO_DIR/logs/deploy.log 2>&1

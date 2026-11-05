@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+{% load static %}
+{% load letters %}
+{% load nepali_date %}
+{% load nepali_filters %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>कार्य आदेश</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ================= RESET ================= */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ================= PAGE / PRINT SETTINGS ================= */
+    @page {
+      size: A4;
+      margin: 22mm 18mm 20mm 25mm; /* extra left margin for punching/binding */
+    }
+
+    :root {
+      --gov-red: #b0281f;
+      --gov-red-dark: #8c1f18;
+      --ink: #1c1c1c;
+      --muted: #6b6b6b;
+      --hairline: #d8c9a3;
+    }
+
+    html, body {
+      background: #e9e9e9;
+    }
+
+    body {
+      font-family: 'Noto Sans Devanagari', 'Mangal', 'Inter', Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.9;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ================= A4 SHEET (screen preview only) ================= */
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 14mm auto;
+      background: #fff;
+      padding: 20mm 16mm 18mm 22mm;
+      box-shadow: 0 4px 28px rgba(0,0,0,.18);
+    }
+
+    .gov-red { color: var(--gov-red); }
+
+    /* ================= HEADER ================= */
+    .letter-header {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      border-bottom: 3px solid var(--gov-red);
+      padding-bottom: 12px;
+      margin-bottom: 6px;
+      position: relative;
+    }
+    .letter-header::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; bottom: -6px;
+      border-bottom: 1px solid var(--gov-red);
+    }
+
+    .office-logo-wrap {
+      flex: 0 0 auto;
+      width: 88px;
+      height: 88px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .office-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .office-title {
+      flex: 1 1 auto;
+      text-align: center;
+      line-height: 1.35;
+    }
+    .office-title h2 {
+      font-size: 25px;
+      font-weight: 800;
+      color: var(--gov-red);
+      letter-spacing: .3px;
+    }
+    .office-title h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gov-red);
+      margin-top: 2px;
+    }
+    .office-title h4 {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gov-red-dark);
+      margin-top: 1px;
+    }
+
+    .header-spacer { flex: 0 0 auto; width: 88px; }
+
+    /* ================= META ROW ================= */
+    .letter-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 16px 0 0;
+      font-size: 14px;
+    }
+    .letter-meta .chip {
+      display: inline-block;
+      border: 1px solid var(--gov-red);
+      color: var(--gov-red);
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 3px;
+      letter-spacing: .3px;
+    }
+    .letter-meta .date-box {
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .letter-meta.secondary {
+      margin: 6px 0 0;
+      font-size: 13.5px;
+      color: var(--muted);
+      justify-content: flex-start;
+      gap: 6px;
+    }
+
+    /* ================= SUBJECT ================= */
+    .letter-subject {
+      text-align: center;
+      font-weight: 700;
+      font-size: 16px;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      margin: 20px 0 18px;
+      letter-spacing: .2px;
+    }
+
+    /* ================= ADDRESS ================= */
+    .letter-address {
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    /* ================= BODY ================= */
+    .letter-body {
+      text-align: justify;
+    }
+    .letter-body p { margin-bottom: 14px; }
+    .letter-body strong { color: var(--ink); }
+
+    /* ================= SIGNATURE ================= */
+    .signature-block {
+      margin-top: 56px;
+      text-align: right;
+      line-height: 1.6;
+    }
+    .signature-block p { font-size: 13.5px; }
+
+    /* ================= PRINT ADJUSTMENTS ================= */
+    @media print {
+      html, body { background: #fff; }
+      .sheet {
+        width: auto;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="sheet">
+
+  <!-- ================= HEADER ================= -->
+  {% include 'includes/letterhead.html' with branch="(योजना शाखा)" %}
+{% editable_letter "user.print_work_order" "कार्य आदेश" %}
+
+  <!-- ================= META ================= -->
+  <div class="letter-meta">
+    <span class="chip">पत्र संख्याः {{ project.fiscalyear.name|to_nepali_number }}</span>
+    <span class="date-box">मिति: {{ start_date_nepali|nepali_date }}</span>
+  </div>
+
+  <div class="letter-meta secondary">
+    <strong>चलानी नम्बरः</strong> ..................
+  </div>
+
+  <!-- ================= SUBJECT ================= -->
+  <div class="letter-subject">
+    विषयः– कार्य आदेश ।
+  </div>
+
+  <!-- ================= ADDRESS ================= -->
+  <p class="letter-address">
+    श्री {{ usercommittee.name }}<br>
+    {{ project.name }} – {{ project.address }}
+  </p>
+
+  <!-- ================= BODY ================= -->
+  <div class="letter-body">
+    <p>
+      प्रस्तुत विषयमा यस {% include 'includes/officename.html' %} को चालु आ.ब.
+      {{ project.fiscalyear.name|to_nepali_number }} को {{ palika.assembly }}बाट स्वीकृत
+      {{ project.ward.name|to_nepali_number }} नं. वडाको वडा/पालिका स्तरिय योजना
+      <strong>{{ project.name }}</strong>
+      ल.ई. रकम रु.
+      <strong>{{ cost_estimate.total_cost|floatformat:0|to_nepali_number }}</strong>/-
+      (अक्षरेपी {{ cost_estimate.total_cost|floatformat:0|to_devanagari_words }})
+      सञ्चालनका लागि यस कार्यालयसँग मिति
+      {{ start_date_nepali|nepali_date }} भएको सम्झौता बमोजिम
+      {{ accomplish_date_nepali|nepali_date }} गते भित्र कार्य सम्पन्न गर्नुहुन
+      यो कार्यादेश दिइएको छ।
+    </p>
+
+    <p>
+      कार्य सुरु गर्दा प्राविधिक शाखासँग आवश्यक समन्वय गर्नुहुन अनुरोध छ।
+    </p>
+  </div>
+
+  <!-- ================= SIGNATURE ================= -->
+  <div class="signature-block">
+    {% include 'includes/cao.html' %}
+  </div>
+
+{% endeditable_letter %}
+</div>
+
+<script>
+  window.__letterPrint = function () {
+    window.print();
+    setTimeout(function () {
+      window.location.href = "/UserCommittee/Workflow/";
+    }, 3000);
+  };
+</script>
+
+</body>
+</html>

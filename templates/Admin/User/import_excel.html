@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Excel बाट योजना आयात{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <div class="card text-center p-8">
+
+    <div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center text-2xl mx-auto mb-4">
+      <i class="fas fa-file-excel"></i>
+    </div>
+
+    <h1 class="text-lg font-bold text-slate-800 mb-1">Excel बाट योजना आयात</h1>
+    <p class="text-sm text-slate-500 mb-5">पहिले ढाँचा डाउनलोड गर्नुहोस्, भर्नुहोस् र यहीँ अपलोड गर्नुहोस्।</p>
+
+    <a href="{% url 'import_template' %}" class="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 p-4 mb-5 text-left transition">
+      <span class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0"><i class="fas fa-download"></i></span>
+      <span class="flex-1 min-w-0">
+        <span class="block text-sm font-semibold text-emerald-800">Excel ढाँचा डाउनलोड गर्नुहोस्</span>
+        <span class="block text-xs text-emerald-700/80">चालु आ.व., वडा, बजेट स्रोत, योजना प्रकार र क्षेत्रका ड्रपडाउन सहित (.xlsx)</span>
+      </span>
+    </a>
+
+    {% include 'includes/messages.html' %}
+
+    <form method="post" enctype="multipart/form-data" action="{% url 'import_excel' %}">
+      {% csrf_token %}
+
+      <label class="flex flex-col items-center justify-center gap-1 border-2 border-dashed border-brand-200 bg-brand-50/40 hover:bg-brand-50 hover:border-brand-400 rounded-2xl p-8 mb-4 cursor-pointer transition">
+        <i class="fas fa-cloud-arrow-up text-2xl text-brand-500 mb-1"></i>
+        <span class="font-semibold text-slate-700 text-sm">भरिएको Excel फाइल छान्नुहोस्</span>
+        <span class="text-xs text-slate-400">.xlsx फाइल मात्र</span>
+        <input type="file" name="excel_file" accept=".xlsx" required class="hidden">
+      </label>
+
+      <div class="text-left text-xs text-slate-500 bg-slate-50 rounded-xl p-3 mb-4 leading-relaxed">
+        <p class="font-semibold text-slate-600 mb-1">ढाँचाका स्तम्भ</p>
+        <p>अनिवार्य: योजनाको नाम, सञ्चालन स्थान, बजेट, आर्थिक वर्ष (चालु मात्र), वडा, बजेट व्यहोर्ने स्रोत, योजनाको प्रकार।</p>
+        <p class="mt-1">ऐच्छिक: क्षेत्र, उपक्षेत्र। खरिद विधि आयातपछि <a href="{% url 'app_list' %}" class="text-brand-700 underline">वार्षिक खरिद योजना</a>बाट तोक्नुहोस्।</p>
+        <p class="mt-1 text-slate-400">पुरानो ढाँचा (<code>name, address, budget, budget_type_id, fiscalyear_id, ward_id, project_type_id</code>) पनि चल्छ।</p>
+      </div>
+
+      <button type="submit" class="btn-primary w-full">
+        <i class="fas fa-upload"></i> अपलोड गर्नुहोस्
+      </button>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

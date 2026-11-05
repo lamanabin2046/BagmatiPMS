@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+{% load static %}
+{% load letters %} {% load nepali_date %} {% load nepali_filters %}
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Office Letter</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+
+      .letter-header {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 20px;
+      }
+
+      .office-logo {
+        max-width: 150px;
+        max-height: 150px;
+      }
+
+      .header-content {
+        flex-grow: 1;
+        text-align: center;
+        margin-left: -40px;
+      }
+
+      .letter-content {
+        margin: 20px 0;
+        text-align: justify;
+      }
+
+      .button-authorisationn {
+        margin-top: 20px;
+        text-align: right;
+      }
+
+      .letter {
+        page-break-after: always; /* Force each letter onto a new page */
+      }
+
+      .letter:last-child {
+        page-break-after: auto; /* Avoid blank page after the last letter */
+      }
+      .chalan-info {
+        display: flex;
+        justify-content: space-between; /* Spread items across the line */
+        align-items: center; /* Vertically align items */
+      }
+
+      .chalan-info .left {
+        text-align: left; /* Aligns text to the left */
+      }
+
+      .chalan-info .right {
+        text-align: right; /* Aligns text to the right */
+        margin-right: 30px; /* Adds 30px right margin */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="letter">
+      {% include 'includes/letterhead.html' with branch="(योजना शाखा)" %}
+{% editable_letter "quatation.print_quatation_work_order" "दरभाउपत्र कार्यादेश" %}
+
+      <div class="letter-content">
+        <p>
+          <strong>पत्र संख्याः {{ project.fiscalyear.fiscal_year }}</strong>
+        </p>
+        <div class="chalan-info">
+          <div class="left">
+            <strong>चलानी नम्बरः</strong>
+          </div>
+          <div class="right">
+            <strong>मिति:</strong> {{ application_date_nepali }}
+          </div>
+        </div>
+
+        <p class="text-center"><strong>विषयः-</strong> कार्यदेश सम्बन्धमा ।</p>
+        <p class="text-main">
+          श्री {{ lowest_firm_name }} </br>{{ lowest_firm_address }} ।
+          <br />
+          {% include 'includes/officename.html' %}को चालु आ.व. {{quatation.project.fiscalyear.name|to_nepali_number}} को {{ palika.assembly }}बाट स्वीकृत बजेट अनुसार वडा नं.{{quatation.project.ward.name|to_nepali_number}} मा
+         वडा/गा.पा.स्तरीय योजना {{quatation.project.name}} कार्यको संचालनका लागि श्री {{lowest_firm_name}} {{lowest_firm_address}} तथा
+         यस कार्यालय बिच {{agreement_date_nepali|nepali_date}} गतेमा भएको सम्झौता अनुसार प्राविधिक डिजाईन तथा ल.इ रु.{{quatation.cost_estimate|to_nepali_number}} (भ्याट समेत) रहेकोमा तपाईले कबोल गरेको रु {{lowest_bidded_price|to_nepali_number}} बाट भुक्तानी पाउने गरी गरी सम्झौताको 
+         परिधि भित्र रहि {{expire_date_nepali|nepali_date}} गते सम्म गुणस्तरिय कार्य समपन्न गरी प्राविधिक मुल्याङ्कन कार्य सम्पन्न प्रतिबेदन तथा आवश्यक विल भरपाई संलग्न राखी भुक्तानी माँग 
+         गर्न समेत गरी यो कार्यादेश दिएको छ ।
+        </p>
+      </div>
+
+      <div class="button-authorisationn">{% include 'includes/cao.html' %}</div>
+    {% endeditable_letter %}
+</div>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script>
+      $("a.printPage").click(function () {
+        window.print();
+        return false;
+      });
+    </script>
+    <script type="text/javascript">
+      window.__letterPrint = (function () {
+        window.print();
+        setTimeout("closePrintView()", 1000);
+      });
+      function closePrintView() {
+        window.location.href = "__WF_RETURN__";
+      }
+    </script>
+  </body>
+</html>

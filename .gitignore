@@ -1,0 +1,47 @@
+.env
+venv/
+__pycache__/
+*.pyc
+db.sqlite3
+media/
+staticfiles_collected/
+_backup_before_saas/
+_transfer_*.tgz
+accounts.zip
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Database
+db.sqlite3
+*.sqlite3
+
+# Django generated files
+staticfiles/
+media/
+*.log
+
+# Temporary files
+tmp/
+_to_delete/
+
+# server runtime (cPanel)
+logs/
+/public/
+stderr.log
+.well-known/
+/.htaccess
+/.user.ini
+/php.ini
+/cgi-bin/
+
+# palika backups (projects/backup.py)
+backups/

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+{% load static %}
+{% load letters %}
+{% load nepali_date %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>किस्ता भुक्तानी टिप्पणी</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @page { size: A4; margin: 20mm 16mm 18mm 22mm; }
+    html, body { background: #e9e9e9; }
+    body { font-family: 'Noto Sans Devanagari', 'Mangal', Arial, sans-serif; font-size: 13.5px; line-height: 1.6; color: #1c1c1c; }
+    .sheet { width: 210mm; min-height: 297mm; margin: 14mm auto; background: #fff; padding: 14mm 14mm 12mm 18mm; box-shadow: 0 4px 28px rgba(0,0,0,.18); }
+    .meta { display: flex; justify-content: space-between; margin: 12px 0 14px; }
+    .meta .chip { border: 1px solid #b0281f; color: #b0281f; font-weight: 700; padding: 4px 12px; border-radius: 4px; }
+    .subject { text-align: center; font-weight: 700; font-size: 15px; text-decoration: underline; margin: 10px 0 14px; }
+    p { margin-bottom: 9px; text-align: justify; }
+    table.amt { width: 100%; border-collapse: collapse; margin: 10px 0 14px; font-size: 13px; }
+    table.amt th, table.amt td { border: 1px solid #cdbf9e; padding: 6px 10px; }
+    table.amt th { background: #fbf4e6; color: #8c1f18; text-align: left; }
+    table.amt td.r { text-align: right; white-space: nowrap; }
+    table.amt tr.total td { font-weight: 700; background: #fbf4e6; }
+    .sign { display: flex; justify-content: space-between; margin-top: 48px; text-align: center; }
+    .sign div { width: 30%; border-top: 1px dotted #555; padding-top: 4px; font-size: 12.5px; }
+    @media print { html, body { background: #fff; } .sheet { margin: 0; box-shadow: none; width: auto; min-height: auto; padding: 0; } }
+  </style>
+</head>
+<body>
+<div class="sheet">
+  {% include 'includes/letterhead.html' with title="टिप्पणी र आदेश" %}
+{% editable_letter "user.print_installment_tippani" "किस्ता भुक्तानी टिप्पणी" %}
+  <div class="meta">
+    <span class="chip">{{ inst.get_kind_display }} — {{ inst.number|to_nepali_number }} औं किस्ता</span>
+    <span><b>मिति:</b> {{ date_bs|to_nepali_number }}</span>
+  </div>
+
+  <div class="subject">विषयः {{ inst.get_kind_display }} भुक्तानी सम्बन्धमा ।</div>
+
+  <p><b>श्रीमान् प्रमुख प्रशासकीय अधिकृतज्यू,</b></p>
+  <p>
+    यस {{ palika.palika_type }}को आ.व. {{ project.fiscalyear.name|to_nepali_number }} को स्वीकृत कार्यक्रम अनुसार
+    वडा नं. {{ project.ward.name|to_nepali_number }} मा सञ्चालित <b>{{ project.name }}</b> योजना
+    <b>{{ usercommittee.name }}</b> मार्फत सञ्चालन भइरहेकोमा
+    {% if inst.kind == 'advance' %}सम्झौता बमोजिम काम सुरु गर्न पेश्की स्वरूप{% else %}हालसम्म सम्पन्न कामको प्राविधिक मूल्याङ्कन रु. {{ inst.work_value|floatformat:2|to_nepali_number }} को आधारमा{% endif %}
+    तपसिल बमोजिमको रकम भुक्तानी दिन उपयुक्त देखिएकोले निर्णयार्थ पेश गरेको छु ।
+  </p>
+
+  <table class="amt">
+    <tr><th colspan="2">रकम विवरण</th></tr>
+    <tr><td>{{ palika.palika_type }}ले बेहोर्ने कुल रकम (लागत अनुमान अनुसार)</td><td class="r">रु. {{ share|floatformat:2|to_nepali_number }}</td></tr>
+    {% for p in previous %}
+    <tr><td>यस अघि दिइएको {{ p.get_kind_display }} ({{ p.number|to_nepali_number }} औं किस्ता)</td><td class="r">रु. {{ p.amount|floatformat:2|to_nepali_number }}</td></tr>
+    {% endfor %}
+    {% if inst.kind != 'advance' %}<tr><td>सम्पन्न कामको मूल्याङ्कन रकम</td><td class="r">रु. {{ inst.work_value|floatformat:2|to_nepali_number }}</td></tr>{% endif %}
+    <tr class="total"><td>यस किस्तामा भुक्तानी हुने रकम</td><td class="r">रु. {{ inst.amount|floatformat:2|to_nepali_number }}</td></tr>
+    {% for name, v in taxes %}
+    <tr><td>कट्टी: {{ name }}</td><td class="r">रु. {{ v|floatformat:2|to_nepali_number }}</td></tr>
+    {% endfor %}
+    {% if taxes %}<tr><td>कुल कर कट्टी</td><td class="r">रु. {{ inst.total_tax|floatformat:2|to_nepali_number }}</td></tr>{% endif %}
+    <tr class="total"><td>खुद भुक्तानी हुने रकम</td><td class="r">रु. {{ inst.net_amount|floatformat:2|to_nepali_number }}</td></tr>
+  </table>
+
+  {% if usercommittee.has_bank_account %}
+  <p>भुक्तानी रकम {{ usercommittee.bank_name }}{% if usercommittee.bank_branch %}, {{ usercommittee.bank_branch }} शाखा{% endif %} मा रहेको
+    {{ usercommittee.account_name|default:usercommittee.name }} को खाता नं. <b>{{ usercommittee.account_number }}</b> मा जम्मा गरिदिनु हुन ।</p>
+  {% endif %}
+  {% if inst.remarks %}<p><b>कैफियत:</b> {{ inst.remarks }}</p>{% endif %}
+
+  <div class="sign">
+    <div>पेश गर्ने</div>
+    <div>सदर गर्ने</div>
+    <div>स्वीकृत गर्ने<br>{% if palika.cao_name %}{{ palika.cao_name }}<br>{% endif %}(प्रमुख प्रशासकीय अधिकृत)</div>
+  </div>
+{% endeditable_letter %}
+</div>
+<script>
+  window.__letterPrint = function () {
+    window.print();
+    setTimeout(function () { window.location.href = "{% url 'uc_installments' project.id %}"; }, 1000);
+  };
+</script>
+</body>
+</html>

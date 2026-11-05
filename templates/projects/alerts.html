@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}SMS / इमेल सूचना{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+  <div>
+    <h1 class="text-xl md:text-2xl font-bold text-slate-800"><i class="fas fa-bell text-brand-600"></i> SMS / इमेल सूचना</h1>
+    <p class="text-sm text-slate-500 mt-0.5">कर्मचारीलाई दैनिक काम-सारांश र राजस्व ठेकेदारलाई किस्ता सम्झना / ताकेता · एउटै सूचना दोहोरिँदैन
+      {% if S.last_run %}· पछिल्लो पटक {{ S.last_run|bs }} {{ S.last_run|time:"H:i" }}{% endif %}</p>
+  </div>
+  {% if errors %}<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">{% for e in errors %}<p class="text-sm text-rose-700">• {{ e }}</p>{% endfor %}</div>{% endif %}
+  {% if not S.last_run %}<div class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-800"><i class="fas fa-triangle-exclamation"></i>
+    सूचना अहिलेसम्म चलेको छैन। सेटिङ मिलाएर परीक्षण गर्नुहोस्, अनि सर्भरमा दैनिक cron राख्नुहोस् (तल हेर्नुहोस्)।</div>{% endif %}
+
+  <form method="post" class="card p-5 space-y-5">{% csrf_token %}<input type="hidden" name="act" value="save">
+    <div><label class="form-label">प्रणालीको ठेगाना (सूचनामा लिङ्क)</label>
+      <input name="site_url" value="{{ S.site_url }}" class="form-input" placeholder="{{ site|default:'https://bagmati.example.gov.np' }}">
+      <p class="text-[11px] text-slate-400 mt-1">खाली छाडे पालिकाको मुख्य डोमेन: {{ site|default:"—" }}</p></div>
+
+    <div class="grid md:grid-cols-2 gap-5">
+      <div class="rounded-xl border border-slate-200 p-4 space-y-3">
+        <label class="flex items-center gap-2 font-semibold text-slate-700 text-sm"><input type="checkbox" name="email_on" value="1" {% if S.email_on %}checked{% endif %}> इमेल (SMTP)</label>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="col-span-2"><label class="form-label">SMTP सर्भर</label><input name="smtp_host" value="{{ S.smtp_host }}" class="form-input" placeholder="mail.palika.gov.np"></div>
+          <div><label class="form-label">Port</label><input name="smtp_port" value="{{ S.smtp_port }}" class="form-input" inputmode="numeric"></div>
+        </div>
+        <div><label class="form-label">प्रयोगकर्ता</label><input name="smtp_user" value="{{ S.smtp_user }}" class="form-input" autocomplete="off"></div>
+        <div><label class="form-label">पासवर्ड {% if S.smtp_password %}<span class="text-emerald-700">(राखिएको ✓ — खाली छाडे उही रहन्छ)</span>{% endif %}</label>
+          <input type="password" name="smtp_password" class="form-input" autocomplete="new-password"></div>
+        <div><label class="form-label">पठाउने इमेल</label><input name="from_email" value="{{ S.from_email }}" class="form-input" placeholder="noreply@palika.gov.np"></div>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="smtp_tls" value="1" {% if S.smtp_tls %}checked{% endif %}> TLS (587) · 465 भए SSL आफैँ</label>
+        <p class="text-[11px] text-slate-400">cPanel: Email Accounts मा noreply@... बनाएर त्यसैको सर्भर/पासवर्ड राख्नुहोस्।</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-4 space-y-3">
+        <p class="font-semibold text-slate-700 text-sm">SMS</p>
+        <div><label class="form-label">SMS सेवा</label><select name="sms_provider" class="form-select">{% for k, v in S.PROVIDERS %}<option value="{{ k }}" {% if S.sms_provider == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+        <div><label class="form-label">API token {% if S.sms_token %}<span class="text-emerald-700">(राखिएको ✓ — खाली छाडे उही रहन्छ)</span>{% endif %}</label>
+          <input type="password" name="sms_token" class="form-input" autocomplete="new-password"></div>
+        <div><label class="form-label">Sender ID (Sparrow मात्र)</label><input name="sms_from" value="{{ S.sms_from }}" class="form-input" placeholder="SparrowSMS ले दिएको"></div>
+        <p class="text-[11px] text-slate-400">Sparrow SMS (sparrowsms.com) वा Aakash SMS (aakashsms.com) मा खाता खोली, credit किनेर token यहाँ राख्नुहोस्। नेपाली SMS लामो हुँदा २–३ credit लाग्न सक्छ।</p>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 p-4 space-y-3">
+      <p class="font-semibold text-slate-700 text-sm">के पठाउने</p>
+      <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="staff_digest" value="1" class="mt-0.5" {% if S.staff_digest %}checked{% endif %}>
+        <span><b>कर्मचारीलाई दैनिक 'मेरो काम' सारांश</b><span class="block text-xs text-slate-500">जरुरी वा ध्यान दिनुपर्ने काम भएका दिन मात्र — इमेलमा पूरा सूची र लिङ्क, SMS मा छोटो गन्ती।</span></span></label>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm pl-6">{% for k, v in roles %}<label class="flex items-center gap-1"><input type="checkbox" name="staff_roles" value="{{ k }}" {% if k in sel_roles %}checked{% endif %}> {{ v }}</label>{% endfor %}</div>
+      <label class="flex items-center gap-2 text-sm pl-6"><input type="checkbox" name="staff_sms_urgent" value="1" {% if S.staff_sms_urgent %}checked{% endif %}> जरुरी काम भएको दिन मात्र SMS (इमेल जहिले पनि)</label>
+      <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="rev_due_sms" value="1" class="mt-0.5" {% if S.rev_due_sms %}checked{% endif %}>
+        <span><b>राजस्व ठेकेदारलाई किस्ता सम्झना</b><span class="block text-xs text-slate-500">म्यादभन्दा अगाडि (सेटिङ → खरिद सीमाको "किस्ता सम्झाउने दिन")। मोबाइल/इमेल फर्म सूची वा अनलाइन दर्ताबाट लिइन्छ।</span></span></label>
+      <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="rev_late_sms" value="1" class="mt-0.5" {% if S.rev_late_sms %}checked{% endif %}>
+        <span><b>म्याद नाघेपछि ताकेता</b><span class="block text-xs text-slate-500">म्याद नाघेको १, ७, १५ र ३० दिनमा — विलम्ब शुल्कसहित।</span></span></label>
+    </div>
+    <button class="btn-primary"><i class="fas fa-floppy-disk"></i> सुरक्षित गर्नुहोस्</button>
+  </form>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <form method="post" class="card p-4 space-y-2">{% csrf_token %}<input type="hidden" name="act" value="test">
+      <p class="font-semibold text-slate-700 text-sm">परीक्षण</p>
+      <div class="flex gap-2"><input name="to" class="form-input" placeholder="९८XXXXXXXX वा इमेल" required><button class="btn-secondary" style="white-space:nowrap">पठाउनुहोस्</button></div>
+      <p class="text-[11px] text-slate-400">पहिले सेटिङ सुरक्षित गर्नुहोस्।</p>
+    </form>
+    <div class="card p-4 space-y-2">
+      <p class="font-semibold text-slate-700 text-sm">अहिले चलाउने</p>
+      <div class="flex flex-wrap gap-2">
+        <form method="post">{% csrf_token %}<input type="hidden" name="act" value="dry"><button class="btn-secondary">के पठाइन्छ हेर्ने</button></form>
+        <form method="post">{% csrf_token %}<input type="hidden" name="act" value="run"><button class="btn-primary" onclick="this.disabled=true;this.form.submit()">अहिले पठाउनुहोस्</button></form>
+      </div>
+      <p class="text-[11px] text-slate-400">आज पठाइसकेको फेरि जाँदैन।</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-slate-100">
+      <p class="font-semibold text-slate-700 text-sm">पठाइएका सूचना <span class="text-xs font-normal text-slate-500">· ३० दिनमा {{ stats.sent|default:0|npn }} पठाइयो, {{ stats.failed|default:0|npn }} असफल</span></p>
+      <form method="get" class="flex gap-2 text-sm">
+        <select name="channel" class="form-select" style="width:auto" onchange="this.form.submit()"><option value="">सबै</option><option value="sms" {% if f.channel == 'sms' %}selected{% endif %}>SMS</option><option value="email" {% if f.channel == 'email' %}selected{% endif %}>इमेल</option></select>
+        <select name="status" class="form-select" style="width:auto" onchange="this.form.submit()"><option value="">सबै अवस्था</option><option value="sent" {% if f.status == 'sent' %}selected{% endif %}>पठाइयो</option><option value="failed" {% if f.status == 'failed' %}selected{% endif %}>असफल</option></select>
+      </form>
+    </div>
+    <div class="overflow-x-auto"><table class="w-full text-sm">
+      <thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="px-3 py-2 text-left font-medium">मिति</th><th class="px-3 py-2 text-left font-medium">कसलाई</th><th class="px-3 py-2 text-left font-medium">प्रकार</th><th class="px-3 py-2 text-left font-medium">सन्देश</th><th class="px-3 py-2 text-left font-medium">अवस्था</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+      {% for x in page %}<tr>
+        <td class="px-3 py-2 whitespace-nowrap text-xs">{{ x.created_at|bs }}<br><span class="text-slate-400">{{ x.created_at|time:"H:i" }}</span></td>
+        <td class="px-3 py-2 text-xs">{{ x.name|default:"—" }}<br><span class="text-slate-500">{{ x.get_channel_display }} · {{ x.to }}</span></td>
+        <td class="px-3 py-2 text-xs">{% for k, v in KINDS.items %}{% if k == x.kind %}{{ v }}{% endif %}{% endfor %}</td>
+        <td class="px-3 py-2 text-xs" style="max-width:22rem">{% if x.subject %}<b>{{ x.subject }}</b><br>{% endif %}{{ x.body|truncatechars:160 }}</td>
+        <td class="px-3 py-2 text-xs">{% if x.status == 'sent' %}<span class="text-emerald-700">✓ पठाइयो</span>{% else %}<span class="text-rose-700">✗ {{ x.get_status_display }}</span><br><span class="text-slate-400">{{ x.error|truncatechars:80 }}</span>{% endif %}</td>
+      </tr>{% empty %}<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">अहिलेसम्म कुनै सूचना पठाइएको छैन।</td></tr>{% endfor %}
+      </tbody></table></div>
+    {% if page.has_other_pages %}<div class="flex justify-between px-4 py-3 text-sm">{% if page.has_previous %}<a href="?channel={{ f.channel }}&status={{ f.status }}&page={{ page.previous_page_number }}">← अघिल्लो</a>{% else %}<span></span>{% endif %}{% if page.has_next %}<a href="?channel={{ f.channel }}&status={{ f.status }}&page={{ page.next_page_number }}">अर्को →</a>{% endif %}</div>{% endif %}
+  </div>
+
+  <div class="card p-4 text-sm space-y-1">
+    <p class="font-semibold text-slate-700">सर्भरमा दैनिक चलाउने (cPanel → Cron Jobs, बिहान ९ बजे)</p>
+    <pre class="bg-slate-900 text-slate-100 rounded-lg p-3 text-xs overflow-x-auto">15 3 * * * cd /home/USER/BagmatiProjectManagement && /home/USER/virtualenv/.../bin/python manage.py send_alerts</pre>
+    <p class="text-xs text-slate-500">सर्भरको घडी UTC भए 03:15 = नेपालमा बिहान ९:००। ब्याकअपको cron जस्तै बाटो प्रयोग गर्नुहोस्।</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}भौतिक उपलब्धि प्रतिवेदन{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-start justify-between gap-3 mb-5">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-800">भौतिक उपलब्धि प्रतिवेदन</h1>
+    <p class="text-sm text-slate-500 mt-1">{% if fy_name %}आ.व. {{ fy_name|to_nepali_number }} · {% endif %}{{ project_count|to_nepali_number }} योजनाको उपलब्धि जोडिएको</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="?{{ qs }}{% if qs %}&{% endif %}export=xlsx" class="btn-secondary" hx-boost="false"><i class="fas fa-file-excel text-emerald-600"></i> Excel</a>
+    <button type="button" onclick="window.print()" class="btn-secondary"><i class="fas fa-print"></i> प्रिन्ट गर्नुहोस्</button>
+    {% if 'settings.outputs' in me.perms %}<a href="{% url 'output_settings' %}" class="btn-secondary"><i class="fas fa-gear"></i> सूचक</a>{% endif %}
+  </div>
+</div>
+
+<form method="get" class="card p-4 mb-5 print:hidden">
+  <div class="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
+    <div><label class="form-label">आर्थिक वर्ष</label>
+      <select name="fiscalyear" class="form-select"><option value="">सबै</option>
+        {% for y in fiscal_years %}<option value="{{ y.id }}" {% if f.fiscalyear == y.id|stringformat:'s' %}selected{% endif %}>{{ y.name|to_nepali_number }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">वडा</label>
+      <select name="ward" class="form-select"><option value="">सबै वडा</option>
+        {% for w in all_wards %}<option value="{{ w.id }}" {% if f.ward == w.id|stringformat:'s' %}selected{% endif %}>वडा {{ w.name }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">खरिद प्रकार</label>
+      <select name="procurement_type" class="form-select"><option value="">सबै</option>
+        {% for t in procurement_types %}<option value="{{ t.id }}" {% if f.procurement_type == t.id|stringformat:'s' %}selected{% endif %}>{{ t.name }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">कामको प्रकार</label>
+      <select name="category" class="form-select"><option value="">सबै</option>
+        {% for c in categories %}<option value="{{ c.id }}" {% if f.category == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <label class="flex items-center gap-2 text-sm text-slate-600 pb-2"><input type="checkbox" name="done" value="1" class="form-check" {% if f.done == '1' %}checked{% endif %}> अन्तिम मूल्याङ्कन भएका मात्र</label>
+    <button class="btn-primary"><i class="fas fa-filter"></i> हेर्नुहोस्</button>
+  </div>
+</form>
+
+{% for g in groups %}
+<section class="card mb-5 break-inside-avoid">
+  <div class="card-header"><h2 class="font-semibold text-slate-800">{{ g.cat.name }}</h2></div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead><tr class="bg-slate-50 text-xs text-slate-500 text-left">
+        <th class="px-4 py-2.5 font-medium">उपलब्धि</th>
+        <th class="px-3 py-2.5 font-medium text-right">जम्मा</th>
+        <th class="px-3 py-2.5 font-medium">एकाइ</th>
+        <th class="px-3 py-2.5 font-medium text-right">योजना</th>
+        {% for w in wards %}<th class="px-2 py-2.5 font-medium text-right whitespace-nowrap">वडा {{ w.name }}</th>{% endfor %}
+      </tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for r in g.rows %}
+        <tr class="align-top">
+          <td class="px-4 py-2.5">
+            <details>
+              <summary class="cursor-pointer text-slate-800 font-medium">{{ r.ind.name }}{% if not r.ind.is_active %} <span class="text-[10px] text-slate-400">(निष्क्रिय)</span>{% endif %}</summary>
+              <ul class="mt-2 space-y-1 text-xs text-slate-600">
+                {% for p, q in r.projects %}<li class="flex justify-between gap-3 border-b border-dashed border-slate-100 pb-1"><span>{{ p.name }} <span class="text-slate-400">· वडा {{ p.ward.name }}{% if p.fiscalyear %} · {{ p.fiscalyear.name|to_nepali_number }}{% endif %}</span></span><span class="font-medium whitespace-nowrap">{{ q|qty|to_nepali_number }} {{ r.ind.unit }}</span></li>{% endfor %}
+              </ul>
+            </details>
+          </td>
+          <td class="px-3 py-2.5 text-right font-bold text-brand-700 whitespace-nowrap">{{ r.total|qty|to_nepali_number }}</td>
+          <td class="px-3 py-2.5 text-slate-500 whitespace-nowrap">{{ r.ind.unit }}</td>
+          <td class="px-3 py-2.5 text-right">{{ r.count|to_nepali_number }}</td>
+          {% for v in r.ward_values %}<td class="px-2 py-2.5 text-right text-slate-600">{% if v %}{{ v|qty|to_nepali_number }}{% else %}<span class="text-slate-300">—</span>{% endif %}</td>{% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% empty %}
+<div class="card p-10 text-center text-slate-400">
+  <i class="fas fa-ruler-combined text-3xl mb-2 block text-slate-300"></i>
+  यो छनोटमा कुनै योजनाको भौतिक उपलब्धि भरिएको छैन।<br>
+  <span class="text-xs">अन्तिम मूल्याङ्कन गर्दा वा workflow को “भौतिक उपलब्धि” बटनबाट भर्नुहोस्।</span>
+</div>
+{% endfor %}
+{% endblock %}

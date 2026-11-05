@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% load nepali_filters %}
+{% load nepali_date %}
+{% block title %}अन्तिम भुक्तानी{% endblock %}
+
+{% block extra_head %}
+<style>
+  .compact-form .form-label { font-size: 12px; margin-bottom: 3px; }
+  .compact-form .form-input,
+  .compact-form .form-select,
+  .compact-form .form-textarea { font-size: 12.5px; padding: 7px 10px; }
+  .compact-form .section-title { font-size: 11px; margin-bottom: 10px; }
+  .compact-form label.text-sm { font-size: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+
+  <div>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">अन्तिम भुक्तानी विवरण (Final Payment)</h1>
+    <p class="text-sm text-slate-500 mt-0.5">ठेक्काको अन्तिम भुक्तानी हिसाब गर्नुहोस्</p>
+  </div>
+
+  <div class="card compact-form">
+    <form method="post">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-file-contract"></i> ठेक्का / योजना</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-1">
+              <label class="form-label">योजना / ठेक्का</label>
+              <select id="contractSelect" class="form-select select2 w-full" onchange="fillContractInfo(this)" required>
+                <option value="">-- योजना / ठेक्का छान्नुहोस् --</option>
+                {% for c in contracts %}
+                <option value="{{ c.id }}"
+                        data-bidno="{{ c.sealed_bid.bidding_number }}"
+                        data-amount="{{ c.sealed_bid.bidding_amount }}"
+                        data-advance="{{ c.total_advance|default:0 }}"
+                        data-has-running="{% if c.has_running_bill %}1{% else %}0{% endif %}"
+                        data-running-total="{{ c.running_bill_total }}"
+                        data-eval-amount="{{ c.latest_eval_amount }}">
+                  {{ c.sealed_bid.project.name }} — {{ c.sealed_bid.bidding_number }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="form-label">ठेक्का नं</label>
+              <input type="text" id="bidding_number" class="form-input" readonly>
+            </div>
+            <div>
+              <label class="form-label">कबोल रकम</label>
+              <input type="text" id="bidding_amount" class="form-input" readonly>
+            </div>
+            <input type="hidden" name="contract_id" id="contract_id">
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-money-bill-wave"></i> अग्रिम भुक्तानी</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+              <label class="form-label text-rose-600">कुल अग्रिम भुक्तानी रकम</label>
+              <input type="number" step="0.01" id="total_advance" name="total_advance" class="form-input font-semibold text-rose-600 calc-field" readonly>
+            </div>
+            <div class="flex items-center gap-2 pb-2.5">
+              <input class="form-check" type="checkbox" id="editAdvanceToggle" onchange="toggleAdvanceEdit()">
+              <label for="editAdvanceToggle" class="text-sm font-medium text-amber-600">अग्रिम भुक्तानी सच्याउनुहोस्</label>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-chart-line"></i> मूल्याङ्कन तथा रनिङ बिल विवरण</h2>
+          <div id="runningBillWrap" class="hidden mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="form-label text-rose-600">कुल रनिङ बिल भुक्तानी रकम</label>
+                <input type="text" id="total_running_bill_amount" name="total_running_bill_amount"
+                       class="form-input font-semibold text-rose-600" readonly>
+                <p class="form-hint text-xs text-slate-400 mt-1">यस ठेक्कामा पहिले नै भुक्तानी भइसकेको रनिङ बिलहरूको जम्मा रकम</p>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">कुल मूल्याङ्कन रकम</label>
+              <input type="number" step="0.01" id="total_evaluation_amount" name="total_evaluation_amount"
+                     class="form-input calc-field" required>
+              <p class="form-hint text-xs text-slate-400 mt-1">रनिङ बिल लिइसकेको भए स्वतः भरिन्छ, अन्यथा स्वयं प्रविष्टि गर्नुहोस्</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-receipt"></i> कर कट्टी विवरण</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label class="form-label">अग्रिम कर</label>
+              <input type="number" step="0.01" name="agrim_tax" class="form-input calc-field" value="0">
+            </div>
+            <div>
+              <label class="form-label">VAT कट्टी</label>
+              <input type="number" step="0.01" name="vat_deduction" class="form-input calc-field" value="0">
+            </div>
+            <div>
+              <label class="form-label">धरौटी कट्टी</label>
+              <input type="number" step="0.01" name="dharauti_deduction" class="form-input calc-field" value="0">
+            </div>
+            <div>
+              <label class="form-label">बहाल कर (यदि भए)</label>
+              <input type="number" step="0.01" name="bahal_tax" class="form-input calc-field" value="0">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-circle-check"></i> अन्तिम भुक्तानी</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label text-emerald-600 flex items-center justify-between">
+                <span>खुद भुक्तानी रकम</span>
+                <button type="button" onclick="resetFinalAmount()" class="text-[11px] font-medium text-brand-600 hover:underline normal-case">
+                  <i class="fas fa-rotate-left"></i> पुनः गणना
+                </button>
+              </label>
+              <input type="number" step="0.01" id="final_amount" name="final_amount" class="form-input font-bold text-emerald-600" required>
+              <p class="form-hint text-xs text-slate-400 mt-1">स्वतः गणना हुन्छ, आवश्यक परे सच्याउन सकिन्छ</p>
+            </div>
+            <div>
+              <label class="form-label">भुक्तानी मिति</label>
+              <input type="text" name="payment_date" class="form-input nepali-date" required>
+            </div>
+            <div>
+              <label class="form-label">कैफियत</label>
+              <input type="text" name="remarks" class="form-input" placeholder="Remarks (optional)">
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> Final Payment Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+let biddingAmount = 0;
+let hasRunningBill = false;
+let runningBillTotal = 0;
+let finalManuallyEdited = false;
+
+const runningBillWrap = document.getElementById("runningBillWrap");
+const totalRunningField = document.getElementById("total_running_bill_amount");
+const evalField = document.getElementById("total_evaluation_amount");
+const finalAmountField = document.getElementById("final_amount");
+
+function fillContractInfo(select) {
+  const opt = select.options[select.selectedIndex];
+  biddingAmount = parseFloat(opt.dataset.amount) || 0;
+  const advance = parseFloat(opt.dataset.advance) || 0;
+  hasRunningBill = opt.dataset.hasRunning === "1";
+  runningBillTotal = parseFloat(opt.dataset.runningTotal) || 0;
+  const latestEvalAmount = parseFloat(opt.dataset.evalAmount) || 0;
+
+  document.getElementById("bidding_number").value = opt.dataset.bidno || "";
+  document.getElementById("bidding_amount").value = biddingAmount.toFixed(2);
+  document.getElementById("total_advance").value = advance.toFixed(2);
+  document.getElementById("contract_id").value = opt.value;
+
+  if (hasRunningBill) {
+    runningBillWrap.classList.remove("hidden");
+    totalRunningField.value = runningBillTotal.toFixed(2);
+    evalField.value = latestEvalAmount.toFixed(2);
+  } else {
+    runningBillWrap.classList.add("hidden");
+    totalRunningField.value = "0.00";
+    evalField.value = "";
+  }
+
+  finalManuallyEdited = false;
+  calculateFinal();
+}
+
+function toggleAdvanceEdit() {
+  const advField = document.getElementById("total_advance");
+  advField.readOnly = !advField.readOnly;
+  calculateFinal();
+}
+
+function resetFinalAmount() {
+  finalManuallyEdited = false;
+  calculateFinal();
+}
+
+// Fields that feed the auto-calculation (evaluation amount, advance, taxes)
+const calcFields = document.querySelectorAll(".calc-field");
+
+function calculateFinal() {
+  if (finalManuallyEdited) return;
+
+  const evalAmount = parseFloat(evalField.value) || 0;
+  const advance = parseFloat(document.getElementById("total_advance").value) || 0;
+
+  // 🔹 रनिङ बिल लिइसकेको भए: मूल्याङ्कन रकम - रनिङ बिल रकम
+  // अन्यथा: मूल्याङ्कन रकम - अग्रिम भुक्तानी रकम
+  const base = hasRunningBill ? (evalAmount - runningBillTotal) : (evalAmount - advance);
+
+  let taxes = 0;
+  document.querySelectorAll('input[name="agrim_tax"], input[name="vat_deduction"], input[name="dharauti_deduction"], input[name="bahal_tax"]')
+    .forEach(f => { taxes += parseFloat(f.value) || 0; });
+
+  const finalPay = base - taxes;
+  finalAmountField.value = finalPay > 0 ? finalPay.toFixed(2) : "0.00";
+}
+
+calcFields.forEach(f => { f.addEventListener("input", calculateFinal); });
+finalAmountField.addEventListener("input", () => { finalManuallyEdited = true; });
+</script>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}भुक्तानी विवरण{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <div class="flex items-center justify-between flex-wrap gap-2">
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">उपभोक्ता समितिको विवरण (भुक्तानी भएका आयोजनाहरू)</h1>
+    <a href="{% url 'download_usercommittee_payments_excel' %}" hx-boost="false" class="btn-success">
+      <i class="fas fa-file-excel"></i> Download Excel
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>S.N.</th>
+            <th>आयोजना</th>
+            <th>उपभोक्ता समितिको नाम</th>
+            <th>अध्यक्षको नाम</th>
+            <th>सम्पर्क नम्बर</th>
+            <th>Ward</th>
+            <th>Budget</th>
+            <th>FY</th>
+            <th class="text-center">भुक्तानी स्थिति</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in final_payments %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ i.project.name }}</td>
+            <td class="font-semibold text-slate-800">{{ i.project.user_committee.name }}</td>
+            <td>{{ i.project.user_committee.chairman_name }}</td>
+            <td>{{ i.project.user_committee.chairman_mobile }}</td>
+            <td>{{ i.project.ward.name }}</td>
+            <td>{{ i.project.budget }}</td>
+            <td>{{ i.project.fiscalyear.name }}</td>
+            <td class="text-center">
+              <span class="badge bg-emerald-100 text-emerald-700">भुक्तानी भयो</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

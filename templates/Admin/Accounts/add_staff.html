@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}कर्मचारी दर्ता{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-4">
+
+  <div>
+    <a href="{% url 'manage_staff' %}" class="text-sm text-brand-700 hover:underline"><i class="fas fa-arrow-left"></i> कर्मचारी सूची</a>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800 mt-1">नयाँ कर्मचारी दर्ता</h1>
+    <p class="text-sm text-slate-500 mt-0.5">नयाँ प्रयोगकर्ता / कर्मचारी थप्नुहोस् — सुरक्षित भएपछि कर्मचारी सूचीमा देखिन्छ।</p>
+  </div>
+
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-id-card"></i> आधारभूत विवरण</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">नाम</label>
+              <input type="text" name="name" class="form-input" required>
+            </div>
+            <div>
+              <label class="form-label">मोबाइल नं</label>
+              <input type="text" name="mobile" class="form-input" required>
+            </div>
+            <div>
+              <label class="form-label">पासवर्ड</label>
+              <input type="password" name="password" class="form-input" required>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-user-tag"></i> पद / भूमिका</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">पद / भूमिका</label>
+              <select name="user_type" class="form-select select2" onchange="toggleWard(this.value)" required>
+                <option value="">-- छान्नुहोस् --</option>
+                <option value="1">ADMIN</option>
+                <option value="2">CAO</option>
+                <option value="3">PLANNING OFFICER</option>
+                <option value="4">ENGINEER</option>
+                <option value="5">WARD STAFF</option>
+                <option value="6">WARD SACHIB (वडा सचिव)</option>
+                <option value="7">WARD ENGINEER (वडा इन्जिनियर)</option>
+                <option value="8">PALIKA ENGINEER (पालिका इन्जिनियर)</option>
+                <option value="9">WARD CHAIRPERSON (वडा अध्यक्ष)</option>
+                <option value="10">ACCOUNT OFFICER (लेखा अधिकृत)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="wardBox" class="hidden">
+          <h2 class="section-title"><i class="fas fa-map-location-dot"></i> खटाइएको वडा</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <select name="wards" multiple class="form-select select2 w-full">
+                {% for w in wards %}
+                <option value="{{ w.id }}">{{ w.name }}</option>
+                {% endfor %}
+              </select>
+              <p class="form-hint">(Ctrl / Shift थिचेर धेरै वडा छान्न सक्नुहुन्छ)</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="sachibWardBox" class="hidden">
+          <h2 class="section-title"><i class="fas fa-map-location-dot"></i> जिम्मेवारी भएको वडा (वडा सचिव / वडा अध्यक्ष)</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <select name="sachib_ward" class="form-select select2 w-full">
+                <option value="">-- वडा छान्नुहोस् --</option>
+                {% for w in wards %}
+                <option value="{{ w.id }}">{{ w.name }}</option>
+                {% endfor %}
+              </select>
+              <p class="form-hint">(वडा सचिव वा वडा अध्यक्ष एक पटकमा एउटै वडाको जिम्मेवारीमा हुन्छन्)</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="engineerWardBox" class="hidden">
+          <h2 class="section-title"><i class="fas fa-map-location-dot"></i> वडा इन्जिनियर भएको वडा</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <select name="engineer_ward" class="form-select select2 w-full">
+                <option value="">-- वडा छान्नुहोस् --</option>
+                {% for w in wards %}
+                <option value="{{ w.id }}">{{ w.name }}</option>
+                {% endfor %}
+              </select>
+              <p class="form-hint">(वडा इन्जिनियर एक पटकमा एउटै वडाको जिम्मेवारीमा हुन्छन्)</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> Save Staff
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function toggleWard(value) {
+  document.getElementById("wardBox").classList.toggle("hidden", value !== "5");
+  document.getElementById("sachibWardBox").classList.toggle("hidden", value !== "6" && value !== "9");
+  document.getElementById("engineerWardBox").classList.toggle("hidden", value !== "7");
+}
+</script>
+{% endblock %}

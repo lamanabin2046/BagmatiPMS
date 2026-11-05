@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load nepali_date %}
+{% load nepali_filters %}
+{% block title %}अन्तिम विल प्रवेष्टी{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+
+  <div class="flex items-center gap-2 rounded-xl border-2 border-rose-300 bg-rose-50 text-rose-600 font-semibold px-4 py-3">
+    <i class="fas fa-triangle-exclamation"></i> आयोजनाको अन्तिम विल तयार गर्नुहोस ।
+  </div>
+
+  <div class="card">
+    <form action="{% url 'add_quatation_final_payment_sidebar' %}" method="post" id="add_project_form">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-building"></i> योजना विवरण</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">टिप्पणी मिति</label>
+              <input type="text" class="form-input nepali-date date-required-check" name="application_date" required placeholder="टिप्पणी मिति">
+            </div>
+            <div class="md:col-span-1">
+              <label class="form-label" for="id_project">योजनाको नाम</label>
+              <select class="form-select w-full" name="id_project" id="id_project">
+                <option value="" selected disabled>योजना छान्नुहोस</option>
+                {% for i in quatations %}
+                <option value="{{ i.id }}" data-cost-estimate="{{ i.cost_estimate }}">{{ i.project.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="cost_estimate">लागत अनुमान</label>
+              <input type="text" class="form-input" id="cost_estimate" name="cost_estimate" placeholder="जम्मा मुल्यांकन रकम" readonly>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-magnifying-glass-chart"></i> प्राविधिक मुल्यांकन गर्दा</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">जम्मा मुल्यांकन रकम</label>
+              <input type="text" class="form-input" name="totalValuation" id="totalValuation" placeholder="total valuation" required>
+            </div>
+            <div>
+              <label class="form-label">रिटेन्सन कट्टी रकम</label>
+              <input type="text" class="form-input" name="retension" id="retension" placeholder="रिटेन्सन कट्टी रकम">
+            </div>
+            <div>
+              <label class="form-label">अग्रीम कर कट्टी</label>
+              <input type="text" class="form-input" name="taxdeduction" id="taxdeduction" placeholder="अग्रीम कर कट्टी रकम" required>
+            </div>
+            <div>
+              <label class="form-label">कार्यालयले गर्ने भुक्तानी रकम</label>
+              <input type="text" class="form-input" name="finalpayment" id="finalpayment" placeholder="भुक्तानी रकम" required>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" onclick="validateForm(event)" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+  $(document).ready(function () {
+    $("#id_project").select2({ width: '100%' });
+  });
+
+  $("#id_project").change(function () {
+    const url = $("#add_project_form").attr("data-user-cortribution-url");
+    const projectid = $(this).val();
+    $.ajax({
+      url: url,
+      data: { projectid: projectid },
+      success: function (data) { $("#user_contribution").val(data); },
+    });
+  });
+
+  $("#id_project").change(function () {
+    const url = $("#add_project_form").attr("data-contingency-url");
+    const projectid = $(this).val();
+    $.ajax({
+      url: url,
+      data: { projectid: projectid },
+      success: function (data) { $("#contingency").val(data); },
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var totalValuationInput = document.getElementById("totalValuation");
+    var retensionInput = document.getElementById("retension");
+    var taxDeductionInput = document.getElementById("taxdeduction");
+    var finalPaymentInput = document.getElementById("finalpayment");
+
+    totalValuationInput.addEventListener("input", function () {
+      var totalValuation = parseFloat(totalValuationInput.value);
+      if (!isNaN(totalValuation)) {
+        var retension = (totalValuation * 0.05) / 1.13;
+        retensionInput.value = retension.toFixed(2);
+        var taxDeduction = (totalValuation * 0.015) / 1.13;
+        taxDeductionInput.value = taxDeduction.toFixed(2);
+        var finalPayment = totalValuation - retension - taxDeduction;
+        finalPaymentInput.value = finalPayment.toFixed(2);
+      } else {
+        retensionInput.value = "";
+        taxDeductionInput.value = "";
+        finalPaymentInput.value = "";
+      }
+    });
+  });
+
+  $(document).ready(function () {
+    $("#id_project").change(function () {
+      var quotationId = $(this).val();
+      if (quotationId) {
+        $.ajax({
+          url: "/ajax/get-cost-estimate/",
+          data: { quotation_id: quotationId },
+          success: function (data) {
+            if (data.cost_estimate) {
+              $("#cost_estimate").val(data.cost_estimate);
+            } else {
+              $("#cost_estimate").val("Error fetching cost estimate");
+            }
+          },
+          error: function () {
+            $("#cost_estimate").val("Error fetching cost estimate");
+          },
+        });
+      }
+    });
+  });
+</script>
+{% endblock %}

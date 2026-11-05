@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Project Management System{% endblock %} · {{ palika.full_name|default:'Palika PMS' }}</title>
+  <link rel="shortcut icon" href="{% static 'assets/img/logonepal.png' %}">
+
+  <!-- HTMX: page changes and form submits without full reloads (bundled locally) -->
+  <script src="{% static 'assets/js/htmx-1.9.12.min.js' %}"></script>
+  <meta name="htmx-config" content='{"historyCacheSize": 0, "refreshOnHistoryMiss": true, "defaultSwapStyle": "innerHTML", "scrollIntoViewOnBoost": true, "allowScriptTags": false}'>
+  <!-- Chart.js is loaded once here (dashboards used to load it per page) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind (JIT, no build step) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans Devanagari', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2fb', 100: '#dce4f6', 200: '#bccaee', 300: '#92a8e1',
+              400: '#6380cf', 500: '#3f5fbd', 600: '#2a47a3', 700: '#223a8b',
+              800: '#1e326f', 900: '#1b2b5c', 950: '#121d40',
+            },
+            navy: { DEFAULT: '#14224f', light: '#1f3266', dark: '#0f1a3d' },
+          },
+          boxShadow: {
+            card: '0 1px 2px 0 rgba(16, 24, 40, .05)',
+            soft: '0 4px 24px -4px rgba(16, 24, 40, .08)',
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Shared form / button / card component classes (Tailwind Play CDN @layer support) -->
+  <style type="text/tailwindcss">
+    @layer components {
+      .form-label { @apply block text-sm font-medium text-slate-700 mb-1; }
+      .form-input { @apply w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition disabled:bg-slate-100 disabled:text-slate-400 read-only:bg-slate-100 read-only:text-slate-500; }
+      .form-select { @apply form-input pr-8 read-only:bg-white read-only:text-slate-800 disabled:bg-slate-100 disabled:text-slate-400; }  /* <select> सधैँ :read-only हुन्छ */
+      .form-textarea { @apply form-input; }
+      .form-hint { @apply text-xs text-slate-400 mt-1; }
+      .form-check { @apply w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30; }
+      .section-title { @apply text-xs font-semibold uppercase tracking-wide text-brand-600 mb-3 flex items-center gap-2; }
+      .btn-primary { @apply inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm shadow-brand-600/20 transition; }
+      .btn-secondary { @apply inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold px-5 py-2.5 rounded-lg border border-slate-300 transition; }
+      .btn-danger { @apply inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm transition; }
+      .btn-success { @apply inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm transition; }
+      .card { @apply bg-white rounded-xl border border-slate-200 shadow-card; }
+      .avatar-initials { @apply inline-flex items-center justify-center rounded-full font-semibold tracking-wide; }
+      .card-header { @apply px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3; }
+      .badge { @apply inline-flex items-center rounded-full text-xs font-medium px-2.5 py-1; }
+      .btn-chip { @apply inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition; }
+      .btn-chip-brand { @apply btn-chip border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100; }
+      .btn-chip-amber { @apply btn-chip border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100; }
+      .btn-chip-emerald { @apply btn-chip border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100; }
+      .btn-chip-slate { @apply btn-chip border-slate-200 bg-white text-slate-600 hover:bg-slate-50; }
+      .btn-chip-rose { @apply btn-chip border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100; }
+      .btn-icon { @apply inline-flex items-center justify-center w-8 h-8 rounded-lg border transition text-sm; }
+      .btn-icon-amber { @apply btn-icon border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-300; }
+      .btn-icon-emerald { @apply btn-icon border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300; }
+      .btn-icon-slate { @apply btn-icon border-slate-200 bg-white text-slate-400 cursor-not-allowed; }
+      .table-shell thead tr { @apply text-left text-xs uppercase tracking-wide text-slate-500 bg-slate-50; }
+      .table-shell th { @apply px-4 py-3 font-medium whitespace-nowrap; }
+      .table-shell td { @apply px-4 py-3 text-slate-700; }
+      .table-shell tbody tr { @apply border-t border-slate-100 hover:bg-slate-50; }
+    }
+  </style>
+
+  <!-- Icons -->
+  <!-- Font Awesome 6 (also understands the old v5 icon names used by older pages) -->
+  <link rel="stylesheet" href="{% static 'assets/plugins/fontawesome6/css/all.min.css' %}">
+
+  <!-- Lucide outline icons (bundled locally) -->
+  <script src="{% static 'assets/js/lucide-0.468.0.min.js' %}"></script>
+
+  <!-- jQuery (required by select2 / dataTables / nepali datepicker) -->
+  <script src="{% static 'assets/js/jquery-3.6.0.min.js' %}"></script>
+
+  <!-- Select2 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+  <!-- loaded once here (not at the end of <body>) so HTMX page changes do not reload them -->
+  <script src="{% static 'assets/plugins/datatables/datatables.min.js' %}"></script>
+  <script src="{% static 'assets/js/nepali.datepicker.v3.7.min.js' %}"></script>
+
+  <!-- DataTables -->
+  <link rel="stylesheet" href="{% static 'assets/plugins/datatables/datatables.min.css' %}">
+
+  <!-- Nepali date picker -->
+  <link href="{% static 'assets/css/nepali.datepicker.v3.7.min.css' %}" rel="stylesheet" type="text/css">
+
+  <!-- SweetAlert2 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.1.4/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.1.4/dist/sweetalert2.all.min.js"></script>
+
+  <style>
+    html, body { font-family: 'Inter', 'Noto Sans Devanagari', sans-serif; }
+
+    /* ---------- Slim scrollbars ---------- */
+    .slim-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .slim-scroll::-webkit-scrollbar-track { background: transparent; }
+    .slim-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 999px; }
+    .slim-scroll-light::-webkit-scrollbar-thumb { background: rgba(15,23,42,.18); }
+
+    /* ---------- Sidebar collapsed (desktop mini mode) ---------- */
+    .mini-sidebar #sidebar { width: 4.5rem; }
+    .mini-sidebar #sidebar .sidebar-label,
+    .mini-sidebar #sidebar .sidebar-section-label,
+    .mini-sidebar #sidebar .menu-arrow,
+    .mini-sidebar #sidebar .sidebar-brand-text { display: none !important; }
+    .mini-sidebar #sidebar .submenu-panel { display: none !important; }
+    .mini-sidebar #main-region { margin-left: 4.5rem; }
+    #main-region { transition: margin-left .2s ease; }
+    #sidebar { transition: width .2s ease, transform .2s ease; }
+
+    /* ---------- Sidebar links (navy theme) ---------- */
+    #sidebar .nav-link-item {
+      display: flex; align-items: center; gap: .75rem; padding: .55rem .65rem; border-radius: .5rem;
+      font-size: .9rem; font-weight: 500; color: #e2e8f0; transition: background-color .15s, color .15s;
+    }
+    #sidebar .nav-link-item:hover { background: rgba(255,255,255,.06); color: #fff; }
+    #sidebar .nav-link-item.active { background: #24386f; color: #fff; }
+    #sidebar .nav-icon { width: 1.15rem; height: 1.15rem; flex-shrink: 0; stroke-width: 1.75; color: #cbd5e1; }
+    #sidebar .nav-link-item.active .nav-icon, #sidebar .nav-link-item:hover .nav-icon { color: #fff; }
+    #sidebar .menu-arrow { width: .95rem; height: .95rem; color: #94a3b8; transition: transform .15s; }
+    #sidebar .submenu-link {
+      display: flex; align-items: center; gap: .6rem; padding: .45rem .6rem; border-radius: .45rem;
+      font-size: .82rem; color: #cbd5e1; transition: background-color .15s, color .15s;
+    }
+    #sidebar .submenu-link:hover { background: rgba(255,255,255,.06); color: #fff; }
+    #sidebar .submenu-link.active { background: #24386f; color: #fff; }
+    #sidebar .sub-icon { width: 1rem; height: 1rem; flex-shrink: 0; stroke-width: 1.75; color: #94a3b8; }
+    #sidebar .submenu-link.active .sub-icon { color: #fff; }
+    .mini-sidebar #sidebar .nav-link-item { justify-content: center; }
+
+    /* ---------- Select2 re-skin to match inputs ---------- */
+    .select2-container .select2-selection--single {
+      height: 42px !important; border-radius: .5rem !important; border-color: #cbd5e1 !important;
+      display: flex; align-items: center; padding: 0 .5rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 40px !important; color: #1e293b; }
+    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 40px !important; }
+    .select2-container--default.select2-container--focus .select2-selection--single,
+    .select2-container--default .select2-selection--single:focus { border-color: #3b76f6 !important; box-shadow: 0 0 0 3px rgba(59,118,246,.15); }
+
+    /* ---------- DataTables re-skin ---------- */
+    div.dataTables_wrapper div.dataTables_filter input,
+    div.dataTables_wrapper div.dataTables_length select {
+      border: 1px solid #cbd5e1; border-radius: .5rem; padding: .35rem .6rem; font-size: .85rem;
+    }
+    div.dataTables_wrapper div.dataTables_paginate .paginate_button {
+      border-radius: .375rem !important; margin-left: 2px; font-size: .8rem; padding: .3rem .65rem !important;
+    }
+    div.dataTables_wrapper div.dataTables_paginate .paginate_button.current {
+      background: #223a8b !important; color: #fff !important; border-color: #223a8b !important;
+    }
+    div.dataTables_wrapper div.dataTables_info {
+      font-size: .8rem; color: #64748b;
+    }
+    table.dataTable thead th { border-bottom: 1px solid #e2e8f0 !important; }
+
+    /* ---------- Table card spacing (gives the table room from the card edges) ---------- */
+    .card .overflow-x-auto { padding: .875rem 1.25rem; }
+
+    /* ---------- Print ---------- */
+    @media print {
+      #sidebar, #app-header, #app-footer, .no-print { display: none !important; }
+      #main-region { margin-left: 0 !important; }
+      main { padding: 0 !important; }
+    }
+
+    /* ---------- नेपाली मिति फिल्ड: क्यालेन्डरबाट छान्न readonly हुन्छ, तर सामान्य (सेतो) फिल्डजस्तै देखिने ---------- */
+    input.nepali-date[readonly]:not(:disabled) {
+      background-color: #fff !important; color: #1e293b !important; cursor: pointer;
+    }
+    input.nepali-date[readonly]:not(:disabled)::placeholder { color: #94a3b8; }
+    input.nepali-date:disabled { background-color: #f1f5f9 !important; color: #94a3b8 !important; cursor: not-allowed; }
+
+    @keyframes fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fade-in .35s ease-out; }
+  </style>
+
+</head>
+<body class="bg-[#f6f7fb] text-slate-800 antialiased"
+      hx-boost="true"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+
+  <!-- top progress bar shown while HTMX loads a page -->
+  <div id="htmx-progress" class="fixed top-0 left-0 h-0.5 bg-brand-500 z-[100] transition-all duration-300" style="width:0;opacity:0"></div>
+
+  {% block extra_head %}{% endblock %}
+
+  <div class="min-h-screen flex">
+
+    <!-- Mobile overlay -->
+    <div id="sidebarOverlay" onclick="toggleMobileSidebar()"
+         class="fixed inset-0 bg-slate-900/50 z-30 hidden md:hidden"></div>
+
+    {% include 'includes/sidebar.html' %}
+
+    <div id="main-region" class="flex-1 flex flex-col min-h-screen md:ml-64 min-w-0">
+      {% include 'includes/header.html' %}
+
+      <main class="flex-1 p-4 md:p-6 max-w-[1600px] w-full mx-auto">
+        {% include 'includes/messages.html' %}
+        <div class="animate-fade-in">
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+
+      {% include 'includes/footer.html' %}
+    </div>
+  </div>
+
+  {# page-wide modal: HTMX actions with hx-target="#app-modal-body" open here #}
+  <div id="app-modal" class="fixed inset-0 z-[60] hidden" aria-modal="true" role="dialog">
+    <div class="absolute inset-0 bg-slate-900/50" onclick="closeAppModal()"></div>
+    <div class="relative h-full w-full flex items-center justify-center p-2 sm:p-6 pointer-events-none">
+      <div id="app-modal-body" class="relative pointer-events-auto bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[94vh] overflow-hidden"></div>
+    </div>
+  </div>
+
+
+  <script>
+    // Mobile sidebar toggle
+    function toggleMobileSidebar() {
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+      document.getElementById('sidebarOverlay').classList.toggle('hidden');
+    }
+    // Desktop mini/collapsed sidebar toggle
+    function toggleMiniSidebar() {
+      document.body.classList.toggle('mini-sidebar');
+    }
+    // Page-wide modal
+    function openAppModal() { document.getElementById('app-modal').classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
+    function closeAppModal() {
+      var m = document.getElementById('app-modal'); if (!m) return;
+      m.classList.add('hidden'); document.body.classList.remove('overflow-hidden');
+      document.getElementById('app-modal-body').innerHTML = '';
+    }
+    // document viewer inside the modal (image or PDF)
+    function viewDoc(url, isPdf, title) {
+      var v = document.getElementById('doc-viewer'); if (!v) { window.open(url, '_blank'); return; }
+      var img = document.getElementById('doc-viewer-img'), pdf = document.getElementById('doc-viewer-pdf');
+      document.getElementById('doc-viewer-title').textContent = title || '';
+      document.getElementById('doc-viewer-open').href = url;
+      img.classList.toggle('hidden', isPdf); pdf.classList.toggle('hidden', !isPdf);
+      if (isPdf) { pdf.src = url; img.src = ''; } else { img.src = url; pdf.src = 'about:blank'; }
+      v.classList.remove('hidden'); v.classList.add('flex');
+    }
+    function closeDoc() {
+      var v = document.getElementById('doc-viewer'); if (!v) return;
+      v.classList.add('hidden'); v.classList.remove('flex');
+      document.getElementById('doc-viewer-pdf').src = 'about:blank';
+    }
+    // Generic dropdown toggle (header user menu, notifications, submenus)
+    function toggleDropdown(id) {
+      document.querySelectorAll('[data-dropdown-panel]').forEach(function (el) {
+        if (el.id !== id) el.classList.add('hidden');
+      });
+      document.getElementById(id).classList.toggle('hidden');
+    }
+
+    // This script runs again after every HTMX page change, so set up
+    // document-wide listeners only once.
+    if (!window.__pmsInit) {
+      window.__pmsInit = true;
+
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-dropdown-toggle]') && !e.target.closest('[data-dropdown-panel]')) {
+          document.querySelectorAll('[data-dropdown-panel]').forEach(function (el) { el.classList.add('hidden'); });
+        }
+      });
+
+      // ---- progress bar ----
+      var bar = function () { return document.getElementById('htmx-progress'); };
+      document.addEventListener('htmx:beforeRequest', function () {
+        var b = bar(); if (b) { b.style.opacity = '1'; b.style.width = '70%'; }
+      });
+      document.addEventListener('htmx:afterRequest', function () {
+        var b = bar(); if (b) { b.style.width = '100%'; setTimeout(function () { b.style.opacity = '0'; b.style.width = '0'; }, 250); }
+      });
+
+      // ---- modal: open when content arrives, Esc closes ----
+      document.addEventListener('htmx:afterSwap', function (evt) {
+        if (evt.detail.target && evt.detail.target.id === 'app-modal-body') { openAppModal(); }
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        var v = document.getElementById('doc-viewer');
+        if (v && !v.classList.contains('hidden')) { closeDoc(); } else { closeAppModal(); }
+      });
+
+      // ---- responses that are not normal app pages ----
+      document.addEventListener('htmx:beforeSwap', function (evt) {
+        // small HTMX partials (panel forms, modal): show 400/403 messages in place
+        if (evt.detail.target !== document.body) {
+          var st = evt.detail.xhr.status;
+          if (st === 400 || st === 403) { evt.detail.shouldSwap = true; evt.detail.isError = false; }
+          return;
+        }
+        var xhr = evt.detail.xhr;
+        var type = (xhr.getResponseHeader('Content-Type') || '').toLowerCase();
+        var verb = (evt.detail.requestConfig && evt.detail.requestConfig.verb) || 'get';
+        var url = xhr.responseURL || evt.detail.pathInfo.requestPath;
+
+        // file downloads (Excel etc.): let the browser handle them
+        if (type && type.indexOf('text/html') === -1) {
+          evt.detail.shouldSwap = false;
+          if (verb === 'get') { window.location.href = url; }
+          return;
+        }
+        // print pages, the login page and error pages have their own layout:
+        // show them as a normal full page instead of inside this layout
+        if (xhr.responseText.indexOf('id="main-region"') === -1) {
+          evt.detail.shouldSwap = false;
+          if (verb === 'get' && xhr.status < 400) {
+            window.location.href = url;
+          } else {
+            document.open(); document.write(xhr.responseText); document.close();
+          }
+          return;
+        }
+        // show Django form/validation pages even when the status is 4xx
+        if (xhr.status >= 400) { evt.detail.shouldSwap = true; evt.detail.isError = false; }
+      });
+
+      // ---- run the new page's <script>s after an HTMX page change ----
+      // HTMX's own script handling would re-declare top-level const/let on the
+      // second visit to a page ("already declared"), so each inline script runs
+      // in its own block, and an external script is loaded only once.
+      window.__pmsLoadedSrc = window.__pmsLoadedSrc || new Set(
+        Array.prototype.map.call(document.querySelectorAll('script[src]'), function (s) { return s.src; }));
+      var JS_TYPES = ['', 'text/javascript', 'application/javascript', 'module'];
+      document.addEventListener('htmx:afterSwap', function (evt) {
+        if (evt.detail.target !== document.body) return;
+        var scripts = Array.prototype.slice.call(document.body.querySelectorAll('script'));
+        (function runNext(i) {
+          if (i >= scripts.length) return;
+          var old = scripts[i];
+          var type = (old.getAttribute('type') || '').toLowerCase();
+          if (JS_TYPES.indexOf(type) === -1) return runNext(i + 1);
+          var el = document.createElement('script');
+          if (old.src) {
+            if (window.__pmsLoadedSrc.has(old.src)) return runNext(i + 1);
+            window.__pmsLoadedSrc.add(old.src);
+            el.src = old.src;
+            el.onload = el.onerror = function () { runNext(i + 1); };
+            old.parentNode.replaceChild(el, old);
+          } else {
+            el.textContent = '{\n' + old.textContent + '\n}';
+            old.parentNode.replaceChild(el, old);
+            runNext(i + 1);
+          }
+        })(0);
+      });
+
+      // icons inside small HTMX partials (panels, forms)
+      document.addEventListener('htmx:afterSettle', function () {
+        if (window.lucide) { lucide.createIcons(); }
+        setTimeout(function () { if (window.__pmsCrumb) { window.__pmsCrumb(); } }, 0);
+      });
+
+      // network failure: fall back to a normal page load
+      document.addEventListener('htmx:sendError', function (evt) {
+        var path = evt.detail.pathInfo && evt.detail.pathInfo.requestPath;
+        if (path) { window.location.href = path; }
+      });
+
+      // ---- live filters: <form method="get" data-live-filter> submits on every change ----
+      document.addEventListener('change', function (e) {
+        var form = e.target.closest('form[data-live-filter]');
+        if (form && e.target.matches('select, input[type=date], input[type=checkbox], input[type=radio]')) {
+          form.requestSubmit();
+        }
+      });
+    }
+
+    $(document).ready(function () {
+      $('.select2').select2({ width: '100%' });
+      // skip tables whose only row is an "empty" message spanning all columns (DataTables cannot read those)
+      $('table[data-table="true"]').each(function () {
+        if (!$(this).find('tbody td[colspan]').length && !$.fn.DataTable.isDataTable(this)) { $(this).DataTable(); }
+      });
+
+      window.__initNepaliDates(document);
+    });
+
+    // नेपाली मिति छान्ने (class="nepali-date") — पेज लोड र HTMX ले ल्याएका फारम (workflow panel, modal) दुवैमा
+    window.__initNepaliDates = function (root) {
+      if (!root || !root.querySelectorAll) return;
+      var list = root.querySelectorAll('input.nepali-date:not([data-ndp])');
+      Array.prototype.forEach.call(list, function (el) {
+        if (typeof el.nepaliDatePicker !== 'function') return;
+        el.setAttribute('data-ndp', '1');
+        el.nepaliDatePicker({ ndpYear: true, ndpMonth: true, readOnlyInput: true });
+      });
+    };
+    // पात्रो स्क्रिन बाहिर नजाओस् (workflow panel जस्ता तेर्सो scroll हुने ठाउँमा पनि)
+    if (!window.__ndpClampHook) {
+      window.__ndpClampHook = true;
+      var clampNdp = function (input) {
+        setTimeout(function () {
+          var box = document.getElementById('ndp-nepali-box');
+          if (!box || box.offsetParent === null) return;
+          var r = box.getBoundingClientRect(), ir = input.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = window.innerHeight;
+          var left = Math.min(Math.max(8, ir.left), vw - r.width - 8);
+          var top = ir.bottom + 4;
+          if (top + r.height > vh - 8 && ir.top - r.height - 4 > 8) { top = ir.top - r.height - 4; }
+          box.style.left = (left + window.scrollX) + 'px';
+          box.style.top = (top + window.scrollY) + 'px';
+        }, 20);
+      };
+      document.addEventListener('click', function (e) { var i = e.target.closest && e.target.closest('input.nepali-date'); if (i) clampNdp(i); }, true);
+      document.addEventListener('focusin', function (e) { if (e.target.matches && e.target.matches('input.nepali-date')) clampNdp(e.target); });
+    }
+    if (!window.__ndpSwapHook) {
+      window.__ndpSwapHook = true;
+      document.addEventListener('htmx:afterSwap', function (evt) {
+        window.__initNepaliDates(document);
+      });
+    }
+
+    // ---- outline icons, breadcrumb and clock (run after every page change) ----
+    if (window.lucide) { lucide.createIcons(); }
+    (function () {
+      // breadcrumb: ड्यासबोर्ड > <page title>; on the home page itself only ड्यासबोर्ड
+      window.__pmsCrumb = function () {
+        var cur = document.getElementById('crumb-current'); if (!cur) return;
+        var home = cur.parentNode.querySelector('a'), sep = cur.parentNode.querySelector('#crumb-sep, svg');
+        var title = (document.title.split(' · ')[0] || '').trim();
+        var atHome = /dashboard|ड्यासबोर्ड/i.test(title) || (home && home.pathname === location.pathname);
+        cur.textContent = atHome ? 'ड्यासबोर्ड' : title;
+        [home, sep].forEach(function (el) { if (el) el.style.display = atHome ? 'none' : ''; });
+      };
+      window.__pmsCrumb(); setTimeout(window.__pmsCrumb, 0);
+      var ND = '०१२३४५६७८९';
+      function np(n) { return String(n).replace(/[0-9]/g, function (d) { return ND[d]; }); }
+      function tick() {
+        var el = document.getElementById('np-clock'); if (!el) return;
+        var d = new Date(), h = d.getHours(), m = d.getMinutes();
+        var ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+        el.textContent = np(h) + ':' + np(m < 10 ? '0' + m : m) + ' ' + ap;
+      }
+      tick();
+      clearInterval(window.__pmsClock);
+      window.__pmsClock = setInterval(tick, 20000);
+    })();
+
+    // Session timeout: one timer, restarted on every page change
+    clearTimeout(window.__pmsSessionTimer);
+    window.__pmsSessionTimer = setTimeout(function () { window.location.href = '{% url "login" %}'; }, 60 * 60 * 1000);
+  </script>
+
+  {% block script %}{% endblock %}
+<script src="{% static 'assets/js/camera-upload.js' %}"></script>
+<script>/* ?print=1 — प्रतिवेदनहरूबाट "PDF / छाप्ने": पेज खुलेपछि छाप्ने झ्याल */
+  (function () { try { if (new URLSearchParams(location.search).get('print') === '1') {
+    window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 600); }); } } catch (e) {} })();</script>
+</body>
+</html>

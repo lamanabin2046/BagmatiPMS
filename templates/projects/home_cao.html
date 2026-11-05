@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}ड्यासबोर्ड — प्रमुख प्रशासकीय अधिकृत{% endblock %}
+{% block content %}
+<div class="space-y-5">
+  {% with role_label="प्रमुख प्रशासकीय अधिकृत (CAO)" %}
+  {% include 'projects/_home_greet.html' with intro="प्रशासनिक निर्णय, खरिद सम्झौता र वित्तीय उत्तरदायित्वको निगरानी — स्वीकृति पर्खिरहेका फाइल पहिले।" actions=actions %}
+  {% endwith %}
+
+  {# ---------- KPI ---------- #}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="card p-4"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">कुल विनियोजित बजेट</span><span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center"><i data-lucide="wallet" class="w-4 h-4"></i></span></div>
+      <p class="mt-2 text-lg font-bold text-slate-800">रु. {{ d.allocated|money:0 }}</p><p class="text-[11px] text-teal-700">{{ d.count|npn }} योजना</p></div>
+    <div class="card p-4"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">कुल वित्तीय खर्च</span><span class="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center"><i data-lucide="trending-up" class="w-4 h-4"></i></span></div>
+      <div class="mt-2 flex items-baseline justify-between"><span class="text-lg font-bold text-slate-800">रु. {{ d.spent|money:0 }}</span><span class="text-xs font-bold text-teal-700">{{ d.spent_pct|npn }}%</span></div>
+      <div class="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden"><div class="bg-teal-600 h-2 rounded-full" style="width: {% if d.spent_pct > 100 %}100{% else %}{{ d.spent_pct }}{% endif %}%"></div></div></div>
+    <div class="card p-4"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">दायित्व / प्रतिबद्धता</span><span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center"><i data-lucide="file-signature" class="w-4 h-4"></i></span></div>
+      <p class="mt-2 text-lg font-bold text-slate-800">रु. {{ d.committed|money:0 }}</p><p class="text-[11px] text-slate-500"><b>{{ d.committed_pct|npn }}%</b> सम्झौता भइसकेको</p></div>
+    <a href="{% url 'my_work' %}" class="card p-4 border-l-4 !border-l-rose-500 hover:shadow-md transition"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">स्वीकृति बाँकी फाइल</span><span class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center"><i data-lucide="bell-ring" class="w-4 h-4"></i></span></div>
+      <div class="mt-2 flex items-center justify-between"><div><p class="text-lg font-bold text-rose-700">{{ x.approval_count|npn }} वटा</p><p class="text-[11px] text-slate-500">तुरुन्त निर्णय आवश्यक</p></div>
+      {% if x.approval_count %}<span class="badge bg-rose-600 text-white">उच्च प्राथमिकता</span>{% endif %}</div></a>
+    <div class="card p-4"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">म्याद नाघेका / ढिलाइ</span><span class="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center"><i data-lucide="calendar-days" class="w-4 h-4"></i></span></div>
+      <div class="mt-2 flex items-center justify-between"><div><p class="text-lg font-bold text-amber-700">{{ x.overdue_count|npn }} वटा</p><p class="text-[11px] text-slate-500">म्याद थप / कारबाही</p></div>
+      {% if x.overdue_count %}<span class="badge bg-amber-100 text-amber-800">समीक्षाधीन</span>{% endif %}</div></div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+    <div class="lg:col-span-8 space-y-5">
+      {# ---------- मेरो स्वीकृति बाँकी ---------- #}
+      <section class="card p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-brand-700 text-white flex items-center justify-center"><i data-lucide="list-checks" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">मेरो स्वीकृति बाँकी फाइलहरू</h2><p class="text-xs text-slate-500">प्रमुख प्रशासकीय अधिकृत तहबाट स्वीकृति आवश्यक</p></div></div>
+          <span class="self-start sm:self-center badge bg-rose-50 text-rose-700 font-bold">{{ x.approval_count|npn }} कार्य बाँकी</span>
+        </div>
+        <div class="overflow-x-auto -mx-5 px-5">
+          <table class="w-full text-left min-w-[680px] text-sm">
+            <thead><tr class="bg-slate-50 text-xs text-slate-500"><th class="py-2.5 px-3 rounded-l-lg font-medium">योजना / फाइल</th><th class="py-2.5 px-3 font-medium">प्रकार</th><th class="py-2.5 px-3 font-medium">वडा</th><th class="py-2.5 px-3 text-right font-medium">रकम (रु.)</th><th class="py-2.5 px-3 font-medium">पर्खिरहेको</th><th class="py-2.5 px-3 text-right rounded-r-lg font-medium">कार्य</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+              {% for r in x.approvals|slice:":8" %}
+              <tr class="hover:bg-slate-50/60">
+                <td class="py-3 px-3"><p class="font-semibold text-slate-800">{{ r.name }}</p><p class="text-[11px] text-slate-400">{{ r.label }}</p></td>
+                <td class="py-3 px-3"><span class="badge {% if r.kind == 'uc' %}bg-teal-50 text-teal-800{% elif r.kind == 'bid' %}bg-slate-100 text-slate-700{% elif r.kind == 'app' %}bg-indigo-50 text-indigo-700{% else %}bg-amber-50 text-amber-800{% endif %}">{{ r.kind_label }}</span></td>
+                <td class="py-3 px-3 text-xs">{% if r.ward %}वडा {{ r.ward|npn }}{% else %}पालिका{% endif %}</td>
+                <td class="py-3 px-3 text-right font-semibold">{{ r.budget|money:0 }}</td>
+                <td class="py-3 px-3 text-xs {% if r.waiting and r.waiting >= 5 %}text-rose-600{% elif r.waiting and r.waiting >= 2 %}text-amber-700{% else %}text-slate-500{% endif %}">{% if r.waiting is not None %}<i class="fas fa-clock"></i> {% if r.waiting == 0 %}आज{% else %}{{ r.waiting|npn }} दिन अघि{% endif %}{% else %}—{% endif %}</td>
+                <td class="py-3 px-3 text-right"><a href="{{ r.url }}" class="inline-flex px-2.5 py-1.5 rounded-lg bg-brand-700 text-white text-xs font-semibold hover:bg-brand-800">हेर्नुहोस् र स्वीकृत</a></td>
+              </tr>
+              {% empty %}<tr><td colspan="6" class="py-8 text-center text-slate-400">अहिले स्वीकृति बाँकी छैन।</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if x.approval_count > 8 %}<div class="flex items-center justify-between text-xs text-slate-500"><span>अन्य {{ x.approval_count|add:"-8"|npn }} फाइल</span><a href="{% url 'my_work' %}" class="text-brand-700 font-semibold">सबै {{ x.approval_count|npn }} फाइल हेर्नुहोस् →</a></div>{% endif %}
+      </section>
+
+      {# ---------- खरिद विधि अनुसार ---------- #}
+      <section class="card p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">खरिद विधि अनुसार बजेट र खर्च</h2><p class="text-xs text-slate-500">विनियोजित बजेट र वास्तविक भुक्तानीको तुलना</p></div></div>
+          <div class="flex items-center gap-3 text-[11px] text-slate-500"><span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-brand-700/30"></span>विनियोजन</span><span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-teal-600"></span>खर्च</span></div>
+        </div>
+        <div class="space-y-4">
+          {% for m in x.methods %}
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-center justify-between gap-1 text-xs"><span class="font-semibold text-slate-800">{{ forloop.counter|npn }}. {{ m.label }} <span class="font-normal text-slate-400">({{ m.n|npn }} योजना)</span></span>
+              <span class="text-slate-500">रु. {{ m.spent|money:0 }} / रु. {{ m.allocated|money:0 }} (<b class="text-teal-700">{{ m.pct|npn }}% खर्च</b>)</span></div>
+            <div class="relative w-full h-4 bg-slate-100 rounded-full overflow-hidden"><div class="absolute inset-y-0 left-0 bg-brand-700/25 rounded-full" style="width: 100%"></div>
+              <div class="absolute inset-y-0 left-0 bg-teal-600 rounded-full" style="width: {% if m.pct > 100 %}100{% else %}{{ m.pct }}{% endif %}%"></div></div>
+          </div>
+          {% empty %}<p class="text-sm text-slate-400 text-center py-4">यस आ.व. मा योजना छैन।</p>{% endfor %}
+        </div>
+      </section>
+
+      {# ---------- वडागत ---------- #}
+      <section class="card p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center"><i data-lucide="building-2" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">वडागत वित्तीय प्रगति सारांश</h2><p class="text-xs text-slate-500">वडाअनुसार योजना, विनियोजन र खर्च</p></div></div>
+          <a href="{% url 'uc_report_summary' %}?fiscalyear={{ fy.id }}&export=xlsx" hx-boost="false" class="p-2 rounded-lg text-brand-700 hover:bg-slate-100" title="Excel डाउनलोड"><i class="fas fa-download"></i></a>
+        </div>
+        <div class="overflow-x-auto -mx-5 px-5">
+          <table class="w-full text-left min-w-[620px] text-sm">
+            <thead><tr class="bg-slate-50 text-xs text-slate-500"><th class="py-2.5 px-3 rounded-l-lg font-medium">वडा</th><th class="py-2.5 px-3 text-center font-medium">योजना</th><th class="py-2.5 px-3 text-right font-medium">विनियोजन (रु.)</th><th class="py-2.5 px-3 text-right font-medium">खर्च (रु.)</th><th class="py-2.5 px-3 text-center font-medium">प्रगति %</th><th class="py-2.5 px-3 text-center rounded-r-lg font-medium">स्थिति</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+              {% for w in x.wards %}
+              <tr class="hover:bg-slate-50/60">
+                <td class="py-2.5 px-3 font-semibold">{% if w.name == 'पालिका' %}पालिका स्तर{% else %}वडा नं. {{ w.name|npn }}{% endif %}</td>
+                <td class="py-2.5 px-3 text-center">{{ w.n|npn }}</td><td class="py-2.5 px-3 text-right">{{ w.allocated|money:0 }}</td><td class="py-2.5 px-3 text-right">{{ w.spent|money:0 }}</td>
+                <td class="py-2.5 px-3 text-center font-bold {% if w.pct < 30 %}text-amber-700{% else %}text-teal-700{% endif %}">{{ w.pct|npn }}%</td>
+                <td class="py-2.5 px-3 text-center"><span class="badge {{ w.tone }}">{{ w.status }}</span></td>
+              </tr>
+              {% empty %}<tr><td colspan="6" class="py-6 text-center text-slate-400">डाटा छैन।</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="lg:col-span-4 space-y-5">
+      {# ---------- बैंक ग्यारेन्टी ---------- #}
+      {% if guarantees %}
+      <section class="card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center"><i data-lucide="shield-half" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">बैंक ग्यारेन्टी म्याद सतर्कता</h2><p class="text-xs text-slate-500">समयमै म्याद थप वा जफत</p></div></div>
+          {% if guarantees.rows %}<span class="badge bg-rose-600 text-white">{{ guarantees.rows|length|npn }}</span>{% endif %}
+        </div>
+        <div class="space-y-2.5">
+          {% for g in guarantees.rows %}
+          <a href="{{ g.url }}" class="block p-3 rounded-xl transition {% if g.days <= 7 %}bg-rose-50/70 hover:bg-rose-50{% elif g.days <= 30 %}bg-amber-50 hover:bg-amber-100{% else %}bg-slate-50 hover:bg-slate-100{% endif %}">
+            <div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="text-xs font-bold text-slate-800 truncate">{{ g.party|default:g.bank }}</p><p class="text-[11px] text-slate-500 truncate">{{ g.p.name }}</p></div>
+              <span class="badge shrink-0 {% if g.days <= 7 %}bg-rose-600 text-white{% elif g.days <= 30 %}bg-amber-200 text-amber-900{% else %}bg-slate-200 text-slate-600{% endif %}">{% if g.days == 0 %}आज{% else %}{{ g.days|npn }} दिन बाँकी{% endif %}</span></div>
+            <div class="flex items-center justify-between mt-1.5 text-[11px] text-slate-500"><span>{% if g.which == 'pg' %}कार्यसम्पादन (PG){% else %}अग्रिम (APG){% endif %} · {{ g.bank|default:'—' }}</span><b class="text-slate-800">रु. {{ g.amount|money:0 }}</b></div>
+          </a>
+          {% empty %}<p class="text-sm text-slate-400 text-center py-4">बहाल बैंक ग्यारेन्टी छैन।</p>{% endfor %}
+          {% if guarantees.expired %}<a href="{{ guarantees.expired_url }}" class="block text-xs text-rose-700"><i class="fas fa-triangle-exclamation"></i> {{ guarantees.expired|npn }} ग्यारेन्टीको म्याद सकिइसक्यो →</a>{% endif %}
+        </div>
+      </section>
+      {% endif %}
+
+      {# ---------- धरौटी ---------- #}
+      <section class="card p-5 space-y-3">
+        <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center"><i data-lucide="hand-coins" class="w-4 h-4"></i></span>
+          <div><h2 class="text-base font-bold text-slate-800">धरौटी फिर्ता विवरण</h2><p class="text-xs text-slate-500">त्रुटि सच्याउने अवधि सकिएका योजना</p></div></div>
+        <div class="p-3 rounded-xl bg-slate-50 flex items-center justify-between"><span class="text-xs text-slate-500">फिर्ता प्रक्रिया योग्य कुल रकम</span><b class="text-base text-brand-800">रु. {{ retention.held|money:0 }}</b></div>
+        <div class="divide-y divide-slate-100">
+          {% for r in retention.rows %}
+          <a href="{% url 'retention_list' %}?fiscalyear=all&open={{ r.p.id }}" class="flex items-center justify-between gap-2 py-2.5 hover:bg-slate-50 -mx-2 px-2 rounded-lg">
+            <div class="min-w-0"><p class="text-xs font-semibold text-slate-800 truncate">{{ r.p.name }}</p><p class="text-[11px] text-slate-500">{% if r.due_bs %}अवधि सकिएको: {{ r.due_bs }} · {% endif %}रु. {{ r.held|money:0 }}</p></div>
+            <span class="badge shrink-0 {% if r.status == 'due' %}bg-amber-50 text-amber-800{% else %}bg-teal-50 text-teal-800{% endif %} !text-[10px]">{{ r.status_label }}</span>
+          </a>
+          {% empty %}<p class="text-sm text-slate-400 text-center py-3">फिर्ता योग्य धरौटी छैन।</p>{% endfor %}
+        </div>
+        {% if retention.n > 4 %}<a href="{% url 'retention_list' %}" class="text-xs text-brand-700 font-semibold">सबै {{ retention.n|npn }} हेर्नुहोस् →</a>{% endif %}
+      </section>
+
+      {# ---------- राजस्व ---------- #}
+      <section class="card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center"><i data-lucide="landmark" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">राजस्व असुली</h2><p class="text-xs text-slate-500">राजस्व ठेक्का र असुली प्रगति</p></div></div>
+          <b class="text-lg text-teal-700">{{ d.revenue.pct|npn }}%</b>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 space-y-2">
+          <div class="flex items-center justify-between text-[11px] text-slate-500"><span>सम्झौता: रु. {{ d.revenue.contract|money:0 }}</span><b class="text-slate-800">असुली: रु. {{ d.revenue.collected|money:0 }}</b></div>
+          <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden"><div class="bg-teal-600 h-full rounded-full" style="width: {% if d.revenue.pct > 100 %}100{% else %}{{ d.revenue.pct }}{% endif %}%"></div></div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2 rounded-lg bg-white"><p class="text-[11px] text-slate-500">बाँकी</p><p class="text-xs font-bold text-slate-800">रु. {{ d.revenue.outstanding|money:0 }}</p></div>
+            <div class="p-2 rounded-lg bg-white"><p class="text-[11px] text-slate-500">म्याद नाघेको</p><p class="text-xs font-bold {% if d.revenue.overdue %}text-rose-700{% else %}text-slate-800{% endif %}">रु. {{ d.revenue.overdue|money:0 }}</p></div>
+          </div>
+        </div>
+        <a href="{% url 'revenue_list' %}?fiscalyear={{ fy.id }}" class="text-xs text-brand-700 font-semibold">राजस्व आम्दानी →</a>
+      </section>
+    </div>
+  </div>
+  <p class="text-[11px] text-slate-400">अङ्क खरिद तथा भुक्तानी अभिलेखबाट (मुख्य ड्यासबोर्डकै हिसाब); ५ मिनेटसम्म cache — फारम सुरक्षित हुँदा आफैँ ताजा हुन्छ।</p>
+</div>
+{% endblock %}

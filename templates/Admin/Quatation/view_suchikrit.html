@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}सुचिकृत विवरण{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">योजनाको विवरण</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>क्रस</th>
+            <th>फर्मको नाम</th>
+            <th>फर्मको ठेगाना</th>
+            <th>प्रोपाइटर</th>
+            <th>सम्पर्क</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in suchikrit %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ i.firm_name }}</td>
+            <td>{{ i.firm_address }}</td>
+            <td>{{ i.firm_owner }}</td>
+            <td>{{ i.firm_contact }}</td>
+            <td>
+              <a href="" class="btn-chip-emerald"><i class="fas fa-pen"></i></a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-4 border-t border-slate-100 flex justify-end">
+      <a href="" class="btn-success"><i class="fas fa-file-excel"></i> Download In Excel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

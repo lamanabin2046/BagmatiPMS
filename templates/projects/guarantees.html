@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+{% include 'reports/_head.html' with report_title=title %}
+
+{# ---------- स्थितिअनुसार ---------- #}
+{% with base='?kind='|add:f.kind|add:'&fiscalyear='|add:f.fiscalyear|add:'&ward='|add:f.ward|add:'&q='|add:f.q %}
+<div class="no-print grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+  <a href="{{ base }}&status=expired" class="card p-4 hover:shadow-soft {% if f.status == 'expired' %}ring-2 ring-rose-500{% endif %} {% if counts.expired %}bg-rose-50/60{% endif %}">
+    <p class="text-xs text-slate-500"><i class="fas fa-circle-xmark text-rose-600"></i> म्याद सकिएको</p>
+    <p class="text-2xl font-bold text-rose-700">{{ counts.expired|npn }}</p></a>
+  <a href="{{ base }}&status=expiring" class="card p-4 hover:shadow-soft {% if f.status == 'expiring' %}ring-2 ring-amber-500{% endif %} {% if counts.expiring %}bg-amber-50/60{% endif %}">
+    <p class="text-xs text-slate-500"><i class="fas fa-hourglass-half text-amber-600"></i> {{ warn_days|npn }} दिनभित्र सकिने</p>
+    <p class="text-2xl font-bold text-amber-700">{{ counts.expiring|npn }}</p></a>
+  <a href="{{ base }}" class="card p-4 hover:shadow-soft {% if not f.status %}ring-2 ring-brand-500{% endif %}">
+    <p class="text-xs text-slate-500"><i class="fas fa-shield-halved text-brand-600"></i> बहाल (सबै)</p>
+    <p class="text-2xl font-bold text-slate-800">{{ counts.active|add:counts.expiring|add:counts.expired|npn }}</p></a>
+  <a href="{{ base }}&status=closed" class="card p-4 hover:shadow-soft {% if f.status == 'closed' %}ring-2 ring-emerald-500{% endif %}">
+    <p class="text-xs text-slate-500"><i class="fas fa-circle-check text-emerald-600"></i> {% if which == 'pg' %}फिर्ता भइसकेको{% else %}अन्तिम बिलमा समायोजन भएको{% endif %}</p>
+    <p class="text-2xl font-bold text-slate-800">{{ counts.closed|npn }}</p></a>
+</div>
+{% endwith %}
+
+<form method="get" class="no-print card p-4 mb-5" data-live-filter>
+  <input type="hidden" name="status" value="{{ f.status }}">
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
+    {% if show_kind %}
+    <div><label class="form-label">खरिद विधि</label>
+      <select name="kind" class="form-select"><option value="">सबै</option>
+        <option value="bid" {% if f.kind == 'bid' %}selected{% endif %}>बोलपत्र ठेक्का</option>
+        <option value="quot" {% if f.kind == 'quot' %}selected{% endif %}>दरभाउपत्र खरिद</option></select></div>
+    {% endif %}
+    <div><label class="form-label">आर्थिक वर्ष</label>
+      <select name="fiscalyear" class="form-select"><option value="">सबै</option>
+        {% for y in fiscal_years %}<option value="{{ y.id }}" {% if f.fiscalyear == y.id|stringformat:'s' %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">वडा</label>
+      <select name="ward" class="form-select"><option value="">सबै वडा</option>
+        {% for w in all_wards %}<option value="{{ w.id }}" {% if f.ward == w.id|stringformat:'s' %}selected{% endif %}>वडा नं. {{ w.name }}</option>{% endfor %}</select></div>
+    <div class="{% if show_kind %}col-span-2{% else %}md:col-span-3{% endif %}"><label class="form-label">योजना, बैंक, जमानत नं. वा व्यवसायी</label>
+      <input type="search" name="q" value="{{ f.q }}" class="form-input" placeholder="खोज्नुहोस्..."></div>
+  </div>
+</form>
+
+<section class="card">
+  <div class="overflow-x-auto">
+    <table class="w-full text-[13px]">
+      <thead><tr class="bg-slate-50 text-[11px] text-slate-500">
+        <th class="px-3 py-3 text-left font-medium">क्र.सं.</th>
+        <th class="px-3 py-3 text-left font-medium min-w-[16rem]">योजनाको नाम</th>
+        <th class="px-3 py-3 text-left font-medium">बैंक</th>
+        <th class="px-3 py-3 text-right font-medium">रकम (रु.)</th>
+        <th class="px-3 py-3 text-left font-medium">जमानत नम्बर</th>
+        <th class="px-3 py-3 text-left font-medium">जारी मिति</th>
+        <th class="px-3 py-3 text-left font-medium">म्याद सकिने मिति</th>
+        <th class="px-3 py-3 text-right font-medium">बाँकी दिन</th>
+        <th class="px-3 py-3 text-left font-medium no-print"></th>
+      </tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for r in rows %}
+        <tr class="align-top {% if r.status == 'expired' %}bg-rose-50/50{% elif r.status == 'expiring' %}bg-amber-50/50{% endif %}">
+          <td class="px-3 py-2.5 text-slate-400">{{ forloop.counter|npn }}</td>
+          <td class="px-3 py-2.5">
+            <span class="font-medium text-slate-800">{{ r.p.name }}</span>
+            <span class="block text-[11px] text-slate-400">{{ r.party|default:'—' }}{% if show_kind %} · {{ r.kind_label }}{% endif %} · वडा नं. {{ r.p.ward.name|default:'—' }}</span>
+          </td>
+          <td class="px-3 py-2.5">{{ r.bank }}</td>
+          <td class="px-3 py-2.5 text-right whitespace-nowrap font-medium">{{ r.amount|money }}{% if r.against %}<span class="block text-[10px] font-normal text-slate-400">{% if which == 'pg' %}सम्झौता{% else %}अग्रिम{% endif %} रु. {{ r.against|money:0 }}</span>{% endif %}</td>
+          <td class="px-3 py-2.5 whitespace-nowrap">{{ r.number }}</td>
+          <td class="px-3 py-2.5 whitespace-nowrap">{{ r.issue_bs|default:'—' }}</td>
+          <td class="px-3 py-2.5 whitespace-nowrap">{{ r.expiry_bs|default:'—' }}{% if r.extended %}<span class="block text-[10px] text-violet-600">म्याद थपिएको</span>{% endif %}</td>
+          <td class="px-3 py-2.5 text-right whitespace-nowrap">
+            {% if r.status == 'closed' %}<span class="badge bg-emerald-50 text-emerald-700">{% if which == 'pg' %}फिर्ता{% else %}समायोजन{% endif %}</span>
+            {% elif r.days is None %}—
+            {% elif r.days < 0 %}<span class="badge bg-rose-100 text-rose-700">{{ r.days|stringformat:'d'|cut:'-'|npn }} दिन नाघेको</span>
+            {% elif r.days <= warn_days %}<span class="badge bg-amber-100 text-amber-800">{{ r.days|npn }} दिन</span>
+            {% else %}<span class="text-slate-700">{{ r.days|npn }} दिन</span>{% endif %}
+          </td>
+          <td class="px-3 py-2.5 no-print">
+            <div class="flex flex-wrap justify-end gap-1">
+              {% for label, url, new_tab in r.actions %}
+              <a href="{{ url }}" {% if new_tab %}target="_blank" rel="noopener"{% endif %} class="{% if label == 'म्याद थप' and r.status != 'active' %}btn-chip-brand{% else %}btn-chip-slate{% endif %} whitespace-nowrap">{% if new_tab %}<i class="fas fa-print"></i> {% endif %}{{ label }}</a>
+              {% endfor %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" class="px-3 py-12 text-center text-slate-400"><i class="fas fa-building-columns text-3xl text-slate-300 block mb-2"></i> यो छनोटमा कुनै बैंक ग्यारेन्टी छैन।</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if rows %}
+      <tfoot><tr class="bg-slate-50 font-semibold border-t-2 border-slate-200">
+        <td class="px-3 py-2.5" colspan="3">जम्मा ({{ rows|length|npn }} वटा)</td>
+        <td class="px-3 py-2.5 text-right whitespace-nowrap">{{ total|money }}</td><td colspan="5"></td>
+      </tr></tfoot>
+      {% endif %}
+    </table>
+  </div>
+</section>
+<p class="text-[11px] text-slate-500 mt-3">
+  {% if which == 'pg' %}कार्यसम्पादन जमानत: बोलपत्र ठेक्काको सम्झौताका बेला राखिने; म्याद थप भए पछिल्लो म्याद देखिन्छ; धरौटी फिर्ता भएपछि “फिर्ता” मानिन्छ।
+  {% else %}अग्रिम भुक्तानी जमानत: बोलपत्र र दरभाउपत्रमा अग्रिम (पेश्की) दिँदा राखिने; अन्तिम बिलमा अग्रिम समायोजन भएपछि “समायोजन” मानिन्छ।{% endif %}
+  {{ warn_days|npn }} दिनभित्र सकिने र सकिएका माथि देखिन्छन्।
+</p>
+{% endblock %}

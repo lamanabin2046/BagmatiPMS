@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Quotation Details{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">Quotation Details</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>S.N.</th>
+            <th>योजना</th>
+            <th>बजेट</th>
+            <th>लागत अनुमान</th>
+            <th>सम्झौता रकम</th>
+            <th>निर्माण व्यवसायी</th>
+            <th>सम्झौता मिति</th>
+            <th>कार्यसम्पन्न मिति</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for quation in quations %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ quation.project_name }}</td>
+            <td>{{ quation.budget }}</td>
+            <td>{{ quation.cost_estimate }}</td>
+            <td>{{ quation.lowest_price }}</td>
+            <td>{{ quation.lowest_firm_name }}</td>
+            <td>{{ quation.agreement_date }}</td>
+            <td>{{ quation.expire_date }}</td>
+            <td>
+              <a href="" class="btn-chip-rose"><i class="fas fa-pen"></i> EDIT</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load nepali_filters %}
+{% block title %}Advance Bank Guarantee विवरण{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">Advance Bank Guarantee विवरण</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>क्र.सं.</th>
+            <th>आयोजना</th>
+            <th>ठेक्का नं.</th>
+            <th>निर्माण व्यवसायी</th>
+            <th class="text-right">अग्रिम भुक्तानी</th>
+            <th class="text-right">BG रकम</th>
+            <th>बैंक</th>
+            <th>BG नं.</th>
+            <th>म्याद</th>
+            <th class="text-center">बाँकी दिन</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for bg in advance_bgs %}
+          <tr class="{% if bg.is_expired %}bg-rose-50{% elif bg.days_left <= 30 %}bg-amber-50{% endif %}">
+            <td>{{ forloop.counter }}</td>
+            <td>{{ bg.advance_payment.contract.sealed_bid.project.name }}</td>
+            <td>{{ bg.advance_payment.contract.sealed_bid.bidding_number }}</td>
+            <td>{{ bg.advance_payment.contract.sealed_bid.bidder_name_nepali }}</td>
+            <td class="text-right">{{ bg.advance_payment.approved_amount }}</td>
+            <td class="text-right">{{ bg.guaranteed_amount }}</td>
+            <td>{{ bg.bank_name }}</td>
+            <td>{{ bg.guarantee_number }}</td>
+            <td>{{ bg.expiry_date }}</td>
+            <td class="text-center">
+              {% if bg.is_expired %}
+              <span class="badge bg-rose-100 text-rose-700">समाप्त</span>
+              {% elif bg.days_left < 10 %}
+              <span class="badge bg-rose-100 text-rose-700">{{ bg.days_left }} दिन</span>
+              {% else %}
+              <span class="badge bg-emerald-100 text-emerald-700">{{ bg.days_left }} दिन</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="10" class="text-center text-slate-400 py-6">कुनै Advance Bank Guarantee फेला परेन।</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

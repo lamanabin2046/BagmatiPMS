@@ -1,0 +1,39 @@
+{% comment %}क्षेत्र / उपक्षेत्र — उपक्षेत्रको सूची छानिएको क्षेत्रअनुसार. चाहिने: sectors, (ऐच्छिक) project, required{% endcomment %}
+<div>
+  <label class="form-label">क्षेत्र {% if required %}<span class="text-rose-500">*</span>{% endif %}</label>
+  <select name="sector" id="f-sector" class="form-select w-full" {% if required %}required{% endif %}>
+    <option value="">— क्षेत्र छान्नुहोस् —</option>
+    {% for s in sectors %}<option value="{{ s.id }}" {% if project.sector_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+  </select>
+</div>
+<div>
+  <label class="form-label">उपक्षेत्र</label>
+  <select name="subsector" id="f-subsector" class="form-select w-full" data-current="{{ project.subsector_id|default:'' }}">
+    <option value="">— पहिले क्षेत्र छान्नुहोस् —</option>
+  </select>
+</div>
+<script>
+(function () {
+  var tree = {};
+  {% for s in sectors %}tree["{{ s.id }}"] = [{% for x in s.subsectors.all %}{% if x.is_active or x.id == project.subsector_id %}[{{ x.id }}, "{{ x.name|escapejs }}"],{% endif %}{% endfor %}];
+  {% endfor %}
+  var sec = document.getElementById('f-sector'), sub = document.getElementById('f-subsector');
+  if (!sec || !sub) return;
+  function fill() {
+    var cur = sub.value || sub.dataset.current, items = tree[sec.value] || [];
+    sub.innerHTML = '';
+    var first = document.createElement('option'); first.value = '';
+    first.textContent = sec.value ? '— उपक्षेत्र छान्नुहोस् —' : '— पहिले क्षेत्र छान्नुहोस् —';
+    sub.appendChild(first);
+    items.forEach(function (it) {
+      var o = document.createElement('option'); o.value = it[0]; o.textContent = it[1];
+      if (String(it[0]) === String(cur)) o.selected = true;
+      sub.appendChild(o);
+    });
+    sub.disabled = !sec.value;
+    sub.dataset.current = '';
+  }
+  sec.addEventListener('change', function () { sub.value = ''; fill(); });
+  fill();
+})();
+</script>

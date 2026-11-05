@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}स्वीकृती बोलपत्र विवरण{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">योजनाको विवरण</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+    
+            <th>ठे.न.</th>
+            <th>आयोजनाको नाम</th>
+            <th>निर्माण व्यवसायी</th>
+            <th>बजेट</th>
+            <th>कबोल रकम</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in bidding %}
+          <tr>
+           
+            <td>{{ i.bidding_number }}</td>
+            <td>{{ i.project.name }}</td>
+            <td>{{ i.bidder_name_nepali }}</td>
+            <td>{{ i.budget }}</td>
+            <td>{{ i.bidding_amount }}</td>
+            <td>
+              <div class="flex items-center gap-2">
+                <a href="{% url 'print_contract_tippani' i.id %}" class="btn-icon-amber" title="बोलपत्र स्वीकृत टिप्पणी">
+                  <i class="fas fa-file-alt"></i>
+                </a>
+                <a href="{% url 'print_contract_invite' i.id %}" class="btn-icon-amber" title="सम्झौताका लागी पत्र">
+                  <i class="fas fa-envelope"></i>
+                </a>
+                <a href="{% url 'add_pg_bank_detail' i.id %}" class="btn-icon-emerald" title="PG को विवरण प्रवेष्टी">
+                  <i class="fas fa-landmark"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-4 border-t border-slate-100 flex justify-end">
+      <a href="" class="btn-success"><i class="fas fa-file-excel"></i> Download In Excel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

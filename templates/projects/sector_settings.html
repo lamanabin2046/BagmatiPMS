@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}क्षेत्र / उपक्षेत्र{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">क्षेत्र / उपक्षेत्र</h1>
+      <p class="text-sm text-slate-500 mt-0.5">योजना दर्ता गर्दा छानिने क्षेत्र र उपक्षेत्र। प्रयोग भइसकेका हटाउन मिल्दैन — निष्क्रिय गर्दा नयाँ योजनामा देखिँदैन।</p>
+    </div>
+    <form method="post" class="flex gap-2">
+      {% csrf_token %}<input type="hidden" name="action" value="add_sector">
+      <input type="text" name="name" class="form-input !w-64" placeholder="नयाँ क्षेत्रको नाम" required>
+      <button class="btn-primary whitespace-nowrap"><i class="fas fa-plus"></i> क्षेत्र</button>
+    </form>
+  </div>
+
+  {% for row in rows %}
+  {% with s=row.s %}
+  <section class="card {% if not s.is_active %}opacity-60{% endif %}">
+    <div class="card-header flex-wrap gap-2">
+      <form method="post" class="flex items-center gap-2 flex-1 min-w-[16rem]">
+        {% csrf_token %}<input type="hidden" name="action" value="rename_sector"><input type="hidden" name="id" value="{{ s.id }}">
+        <span class="w-7 h-7 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center text-xs font-bold shrink-0">{{ forloop.counter|npn }}</span>
+        <input type="text" name="name" value="{{ s.name }}" class="form-input !py-1.5 font-semibold" required>
+        <button class="btn-chip-slate" title="नाम सुरक्षित"><i class="fas fa-check"></i></button>
+      </form>
+      <span class="text-xs text-slate-500">{{ s.n_projects|npn }} योजना</span>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle_sector"><input type="hidden" name="id" value="{{ s.id }}">
+        <button class="btn-chip-slate">{% if s.is_active %}<i class="fas fa-eye-slash"></i> निष्क्रिय{% else %}<i class="fas fa-eye"></i> सक्रिय{% endif %}</button></form>
+      {% if not s.n_projects %}
+      <form method="post" onsubmit="return confirm('“{{ s.name|escapejs }}” र यसका उपक्षेत्र हटाउने?')">{% csrf_token %}<input type="hidden" name="action" value="delete_sector"><input type="hidden" name="id" value="{{ s.id }}">
+        <button class="btn-chip-slate !text-rose-600"><i class="fas fa-trash"></i></button></form>
+      {% endif %}
+    </div>
+    <ul class="divide-y divide-slate-100">
+      {% for x in row.subs %}
+      <li class="flex flex-wrap items-center gap-2 px-5 py-2 {% if not x.is_active %}opacity-60{% endif %}">
+        <form method="post" class="flex items-center gap-2 flex-1 min-w-[14rem]">
+          {% csrf_token %}<input type="hidden" name="action" value="rename_sub"><input type="hidden" name="id" value="{{ x.id }}">
+          <i class="fas fa-angle-right text-slate-300"></i>
+          <input type="text" name="name" value="{{ x.name }}" class="form-input !py-1.5 text-sm" required>
+          <button class="btn-chip-slate" title="नाम सुरक्षित"><i class="fas fa-check"></i></button>
+        </form>
+        <span class="text-xs text-slate-400 w-16 text-right">{{ x.n_projects|npn }} योजना</span>
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle_sub"><input type="hidden" name="id" value="{{ x.id }}">
+          <button class="btn-chip-slate">{% if x.is_active %}निष्क्रिय{% else %}सक्रिय{% endif %}</button></form>
+        {% if not x.n_projects %}
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="delete_sub"><input type="hidden" name="id" value="{{ x.id }}">
+          <button class="btn-chip-slate !text-rose-600"><i class="fas fa-trash"></i></button></form>
+        {% endif %}
+      </li>
+      {% endfor %}
+      <li class="px-5 py-3 bg-slate-50/60">
+        <form method="post" class="flex gap-2">
+          {% csrf_token %}<input type="hidden" name="action" value="add_sub"><input type="hidden" name="sector_id" value="{{ s.id }}">
+          <input type="text" name="name" class="form-input !py-1.5 text-sm" placeholder="“{{ s.name }}” मा नयाँ उपक्षेत्र" required>
+          <button class="btn-chip-brand whitespace-nowrap"><i class="fas fa-plus"></i> उपक्षेत्र</button>
+        </form>
+      </li>
+    </ul>
+  </section>
+  {% endwith %}
+  {% empty %}
+  <div class="card p-10 text-center text-slate-400">कुनै क्षेत्र छैन — माथिबाट थप्नुहोस्।</div>
+  {% endfor %}
+</div>
+{% endblock %}

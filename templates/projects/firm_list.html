@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}फर्म / निर्माण व्यवसायी दर्ता{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">फर्म / निर्माण व्यवसायी दर्ता</h1>
+      <p class="text-sm text-slate-500 mt-0.5">बोलपत्र, दरभाउपत्र, सोझै खरिद र संस्था — एउटै सूची। कालोसूचीमा परेका फर्मले खरिदमा भाग लिन पाउँदैनन्।</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'ppmo_list' %}" class="btn-secondary"><i class="fas fa-ban text-rose-600"></i> PPMO कालोसूची{% if ppmo_count %} ({{ ppmo_count|npn }}){% endif %}</a>
+      <a href="?{{ qs }}{% if qs %}&{% endif %}export=xlsx" hx-boost="false" class="btn-secondary"><i class="fas fa-file-excel text-emerald-600"></i> Excel</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-3">
+    <a href="?" class="card p-4 hover:shadow-soft {% if not f.status %}ring-2 ring-brand-500{% endif %}"><p class="text-xs text-slate-500">सबै फर्म</p><p class="text-xl font-bold">{{ counts.all|npn }}</p></a>
+    <a href="?status=enlisted" class="card p-4 hover:shadow-soft {% if f.status == 'enlisted' %}ring-2 ring-brand-500{% endif %}"><p class="text-xs text-slate-500">दरभाउपत्रका लागि सूचीकृत</p><p class="text-xl font-bold text-brand-700">{{ counts.enlisted|npn }}</p></a>
+    <a href="?status=blacklisted" class="card p-4 hover:shadow-soft {% if f.status == 'blacklisted' %}ring-2 ring-rose-500{% endif %} {% if counts.blacklisted %}bg-rose-50/60{% endif %}"><p class="text-xs text-slate-500">कालोसूचीमा</p><p class="text-xl font-bold text-rose-700">{{ counts.blacklisted|npn }}</p></a>
+  </div>
+
+  {% if can_manage %}
+  <details class="card">
+    <summary class="card-header cursor-pointer"><h2 class="font-semibold text-slate-800"><i class="fas fa-plus text-brand-600"></i> नयाँ फर्म दर्ता</h2></summary>
+    <form method="post" class="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+      {% csrf_token %}
+      <div class="col-span-2"><label class="form-label">फर्मको नाम <span class="text-rose-500">*</span></label><input name="firm_name" class="form-input" required></div>
+      <div><label class="form-label">प्रकार</label><select name="kind" class="form-select">{% for k, v in kinds %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      <div><label class="form-label">निर्माण व्यवसायी वर्ग</label><select name="contractor_class" class="form-select">{% for k, v in classes %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      <div><label class="form-label">PAN / VAT नं.</label>
+        <div class="flex gap-1"><input name="firm_pan" id="nf-pan" class="form-input" inputmode="numeric" maxlength="9">
+        {% if ird_enabled %}<button type="button" id="nf-ird" class="btn-secondary whitespace-nowrap px-2" title="IRD बाट विवरण ल्याउनुहोस्"><i class="fas fa-cloud-arrow-down"></i> IRD</button>{% endif %}</div></div>
+      <div><label class="form-label">दर्ता नं.</label><input name="reg_no" class="form-input"></div>
+      <div><label class="form-label">प्रोपाइटर / सञ्चालक</label><input name="firm_owner" class="form-input"></div>
+      <div><label class="form-label">सम्पर्क नं.</label><input name="firm_contact" class="form-input"></div>
+      <div class="col-span-2"><label class="form-label">ठेगाना</label><input name="firm_address" class="form-input"></div>
+      <div><label class="form-label">इमेल</label><input name="email" class="form-input"></div>
+      <div class="flex flex-col gap-1 text-sm pb-1">
+        <label class="flex items-center gap-2"><input type="checkbox" name="vat_registered" value="1"> भ्याट दर्ता</label>
+        <label class="flex items-center gap-2"><input type="checkbox" name="enlisted" value="1" checked> दरभाउपत्रका लागि सूचीकृत</label>
+      </div>
+      <p id="nf-ird-msg" class="col-span-2 md:col-span-4 text-sm hidden"></p>
+      <div class="col-span-2 md:col-span-4 flex justify-end"><button class="btn-primary"><i class="fas fa-floppy-disk"></i> दर्ता गर्नुहोस्</button></div>
+    </form>
+    {% if ird_enabled %}
+    <script>
+    (function () {
+      const btn = document.getElementById('nf-ird'); if (!btn) return;
+      const msg = document.getElementById('nf-ird-msg'), form = btn.closest('form');
+      const show = (t, cls) => { msg.textContent = t; msg.className = 'col-span-2 md:col-span-4 text-sm rounded-lg px-3 py-2 ' + cls; };
+      btn.addEventListener('click', async () => {
+        const pan = document.getElementById('nf-pan').value.trim();
+        show('IRD बाट विवरण खोज्दै…', 'bg-slate-50 text-slate-600'); btn.disabled = true;
+        try {
+          const r = await fetch('{% url "pan_lookup" %}?pan=' + encodeURIComponent(pan), {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+          const j = await r.json();
+          if (!j.ok) { show(j.error, 'bg-amber-50 text-amber-800'); return; }
+          const d = j.data, set = (n, v) => { const el = form.querySelector('[name=' + n + ']'); if (el && v && !el.value) el.value = v; };
+          set('firm_name', d.name_np || d.name_en); set('firm_address', d.address);
+          if (d.vat) form.querySelector('[name=vat_registered]').checked = true;
+          let t = 'IRD: ' + (d.name_np || '') + (d.name_en ? ' / ' + d.name_en : '') + (d.status ? ' — ' + d.status : '') + (d.office ? ' · ' + d.office : '');
+          if (j.existing) t += ' · यो PAN “' + j.existing.name + '” नाममा पहिले नै दर्ता छ।';
+          if (j.ppmo) { show(t + ' · ⚠ ' + j.ppmo, 'bg-rose-50 text-rose-800'); } else { show(t, 'bg-emerald-50 text-emerald-800'); }
+        } catch (e) { show('IRD सँग सम्पर्क हुन सकेन — विवरण हातैले भर्नुहोस्।', 'bg-amber-50 text-amber-800'); }
+        finally { btn.disabled = false; }
+      });
+    })();
+    </script>
+    {% endif %}
+  </details>
+  {% endif %}
+
+  <form method="get" class="card p-4" data-live-filter>
+    <input type="hidden" name="status" value="{{ f.status }}">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+      <div class="col-span-2"><label class="form-label">नाम, PAN वा प्रोपाइटर</label><input type="search" name="q" value="{{ f.q }}" class="form-input" placeholder="खोज्नुहोस्..."></div>
+      <div><label class="form-label">प्रकार</label><select name="kind" class="form-select"><option value="">सबै</option>{% for k, v in kinds %}<option value="{{ k }}" {% if f.kind == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+      <div><label class="form-label">स्थिति</label><select name="status" class="form-select" onchange="this.form.submit()"><option value="">सबै</option>
+        <option value="enlisted" {% if f.status == 'enlisted' %}selected{% endif %}>सूचीकृत</option>
+        <option value="blacklisted" {% if f.status == 'blacklisted' %}selected{% endif %}>कालोसूची</option>
+        <option value="inactive" {% if f.status == 'inactive' %}selected{% endif %}>निष्क्रिय</option></select></div>
+    </div>
+  </form>
+
+  <section class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-[13px]">
+        <thead><tr class="bg-slate-50 text-[11px] text-slate-500">
+          <th class="px-3 py-3 text-left font-medium min-w-[16rem]">फर्म</th>
+          <th class="px-3 py-3 text-left font-medium">प्रकार</th>
+          <th class="px-3 py-3 text-left font-medium">PAN / VAT</th>
+          <th class="px-3 py-3 text-left font-medium">सम्पर्क</th>
+          <th class="px-3 py-3 text-right font-medium">बोलपत्र</th>
+          <th class="px-3 py-3 text-right font-medium">चालु ठेक्का</th>
+          <th class="px-3 py-3 text-left font-medium">स्थिति</th>
+        </tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in rows %}
+          <tr class="{% if r.f.is_blacklisted or r.ppmo %}bg-rose-50/50{% endif %}">
+            <td class="px-3 py-2.5"><a href="{% url 'firm_detail' r.f.id %}" class="font-medium text-slate-800 hover:text-brand-700">{{ r.f.firm_name }}</a>
+              <span class="block text-[11px] text-slate-400">{{ r.f.firm_owner|default:'' }}{% if r.f.firm_address %} · {{ r.f.firm_address }}{% endif %}</span></td>
+            <td class="px-3 py-2.5 whitespace-nowrap">{{ r.f.get_kind_display }}{% if r.f.contractor_class %} · {{ r.f.get_contractor_class_display }}{% endif %}</td>
+            <td class="px-3 py-2.5">{{ r.f.firm_pan|default:'—' }}{% if r.f.vat_registered %} <span class="badge bg-slate-100 text-slate-600 text-[10px]">VAT</span>{% endif %}</td>
+            <td class="px-3 py-2.5">{{ r.f.firm_contact|default:'—' }}</td>
+            <td class="px-3 py-2.5 text-right">{{ r.bids|npn }}</td>
+            <td class="px-3 py-2.5 text-right">{{ r.running|npn }}</td>
+            <td class="px-3 py-2.5 whitespace-nowrap">
+              {% if r.ppmo %}<span class="badge bg-rose-600 text-white">PPMO कालोसूची</span>
+              {% elif r.f.is_blacklisted %}<span class="badge bg-rose-100 text-rose-700">कालोसूची</span>
+              {% elif not r.f.is_active %}<span class="badge bg-slate-100 text-slate-500">निष्क्रिय</span>
+              {% elif r.f.enlisted %}<span class="badge bg-emerald-50 text-emerald-700">सूचीकृत</span>
+              {% else %}<span class="badge bg-slate-50 text-slate-600">सक्रिय</span>{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="px-3 py-10 text-center text-slate-400">कुनै फर्म भेटिएन।</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

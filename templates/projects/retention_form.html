@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}{% if mode == 'recommend' %}धरौटी फिर्ता सिफारिस{% else %}धरौटी फिर्ता दर्ता{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <p class="text-xs font-medium text-brand-700"><i class="fas fa-money-bill-transfer"></i> धरौटी फिर्ता</p>
+      <h1 class="text-lg md:text-xl font-bold text-slate-800 mt-0.5">{% if mode == 'recommend' %}इन्जिनियर / वडाको सिफारिस अपलोड{% else %}धरौटी फिर्ता दर्ता{% endif %}</h1>
+      <p class="text-sm text-slate-500 mt-0.5">{{ item.p.name }} · {{ item.kind_label }}</p>
+    </div>
+    <a href="{{ back }}" class="btn-secondary"><i class="fas fa-arrow-left"></i> फिर्ता</a>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div class="card p-3 col-span-2"><p class="text-[11px] text-slate-500">{{ item.party_label }}</p><p class="font-semibold text-slate-800 truncate">{{ item.party|default:'—' }}</p></div>
+    <div class="card p-3"><p class="text-[11px] text-slate-500">रोक्का धरौटी</p><p class="font-semibold text-amber-700">रु. {{ item.held|money }}</p></div>
+    <div class="card p-3"><p class="text-[11px] text-slate-500">अन्तिम भुक्तानी → अवधि सकिने</p><p class="font-semibold text-slate-800">{{ completed_bs|default:'—' }} → {{ due_bs|default:'—' }}</p></div>
+  </div>
+
+  {% if errors %}
+  <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 space-y-0.5">
+    {% for e in errors %}<p class="text-sm text-rose-700"><i class="fas fa-circle-exclamation"></i> {{ e }}</p>{% endfor %}
+  </div>
+  {% endif %}
+  {% if item.due and item.days_left > 0 %}
+  <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800"><i class="fas fa-triangle-exclamation"></i> धरौटी अवधि सकिन अझै {{ item.days_left|npn }} दिन बाँकी छ ({{ due_bs }})।{% if mode == 'release' %} म्यादअघि फिर्ता गर्दा कारण अनिवार्य छ।{% endif %}</div>
+  {% endif %}
+
+  <div class="card">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      <div class="p-6 grid md:grid-cols-2 gap-4">
+        {% if mode == 'recommend' %}
+        <div class="md:col-span-2">
+          <label class="form-label">सिफारिस गर्ने <span class="text-rose-500">*</span></label>
+          <div class="flex flex-wrap gap-2">
+            {% for value, label in rec_by_choices %}
+            <label class="cursor-pointer">
+              <input type="radio" name="rec_by" value="{{ value }}" class="peer sr-only" {% if v.rec_by == value %}checked{% endif %}>
+              <span class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm peer-checked:ring-2 peer-checked:ring-brand-400 peer-checked:border-brand-400">
+                <i class="fas {% if value == 'ward' %}fa-landmark{% else %}fa-helmet-safety{% endif %} text-brand-600"></i> {{ label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div><label class="form-label">सिफारिस मिति <span class="text-rose-500">*</span></label>
+          <input type="text" name="rec_date" value="{{ v.rec_date }}" class="form-input nepali-date" placeholder="YYYY-MM-DD" autocomplete="off"></div>
+        <div><label class="form-label">पत्र संख्या / च.नं.</label>
+          <input type="text" name="rec_number" value="{{ v.rec_number }}" class="form-input"></div>
+        <div class="md:col-span-2">
+          <label class="form-label">सिफारिस पत्रको स्क्यान (PDF / फोटो) {% if not item.release %}<span class="text-rose-500">*</span>{% endif %}</label>
+          <label class="flex items-center gap-3 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/40 px-4 py-4 cursor-pointer hover:bg-brand-50" id="drop">
+            <i class="fas fa-cloud-arrow-up text-2xl text-brand-600"></i>
+            <span><span class="block text-sm font-semibold text-brand-800" data-name>{% if item.release %}नयाँ फाइल छान्नुहोस् (नछाने पुरानै रहन्छ){% else %}फाइल छान्नुहोस्{% endif %}</span>
+              <span class="block text-xs text-slate-500">त्रुटि सच्याउने अवधिमा कुनै त्रुटि नदेखिएको भनी इन्जिनियर वा वडाको सिफारिस · बढीमा १० MB</span></span>
+            <input type="file" name="rec_document" accept=".pdf,.jpg,.jpeg,.png" class="sr-only"
+                   onchange="var n=this.files[0]; if(n){this.closest('label').querySelector('[data-name]').textContent=n.name+' ('+Math.round(n.size/1024)+' KB)'; this.closest('label').classList.add('!border-emerald-400','!bg-emerald-50');}">
+          </label>
+          {% if item.release %}<a href="{{ item.release.rec_document.url }}" target="_blank" rel="noopener" class="text-xs text-brand-700 hover:underline mt-1 inline-block"><i class="fas fa-paperclip"></i> हालको सिफारिस पत्र</a>{% endif %}
+        </div>
+        <div class="md:col-span-2"><label class="form-label">कैफियत</label>
+          <textarea name="rec_remarks" rows="2" class="form-textarea">{{ v.rec_remarks }}</textarea></div>
+        {% else %}
+        <div><label class="form-label">फिर्ता मिति <span class="text-rose-500">*</span></label>
+          <input type="text" name="released_on" value="{{ v.released_on }}" class="form-input nepali-date" placeholder="YYYY-MM-DD" autocomplete="off"></div>
+        <div><label class="form-label">फिर्ता रकम (रु.) <span class="text-rose-500">*</span></label>
+          <input type="text" name="released_amount" value="{{ v.released_amount }}" class="form-input"></div>
+        <div><label class="form-label">भौचर / चेक नं.</label>
+          <input type="text" name="voucher_number" value="{{ v.voucher_number }}" class="form-input"></div>
+        <div>
+          <label class="form-label">सदर भएको टिप्पणीको स्क्यान <span class="text-rose-500">*</span></label>
+          <input type="file" name="approved_document" accept=".pdf,.jpg,.jpeg,.png" class="form-input file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:text-brand-700 file:px-3 file:py-1.5 file:text-xs file:font-semibold">
+        </div>
+        {% if early %}
+        <div class="md:col-span-2"><label class="form-label">म्यादअघि फिर्ताको कारण <span class="text-rose-500">*</span></label>
+          <textarea name="early_reason" rows="2" class="form-textarea">{{ v.early_reason }}</textarea></div>
+        {% endif %}
+        {% endif %}
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-2">
+        <a href="{{ back }}" class="btn-secondary">रद्द</a>
+        <button type="submit" class="btn-success"><i class="fas fa-floppy-disk"></i> सुरक्षित गर्नुहोस्</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

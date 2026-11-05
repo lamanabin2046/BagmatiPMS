@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}ठेक्काको सम्झौताकाको तयारी{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+
+  <div>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">ठेक्काको सम्झौताकाको तयारी</h1>
+  </div>
+
+  <div class="card">
+    <form action="add_pg_bank_detail" method="post">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-building"></i> योजना</h2>
+          <input type="hidden" name="performancebond_id" value="{{ performancebond_id }}">
+          <div>
+            <label class="form-label">योजनाको नामः</label>
+            <input type="text" class="form-input" name="project" value="{{ project_name }}" required>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-file-contract"></i> ठेक्का विवरण</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">ठेक्का नम्बर</label>
+              <input type="text" class="form-input" name="bidding_number" value="{{ bidding_number }}" required>
+            </div>
+            <div>
+              <label class="form-label">फर्मको नाम नेपालीमा</label>
+              <input type="text" class="form-input" name="bidder_name" value="{{ bidder_name }}" required>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-university"></i> कार्यसम्पादन जमानत (Performance Bond)</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">कार्यसम्पादन जमानत दिने वैंक</label>
+              <input type="text" class="form-input" name="performance_bond_bank" placeholder="कार्यसम्पादन जमानत दिने वैंक">
+            </div>
+            <div>
+              <label class="form-label">कार्यसम्पादन जमानत रकम</label>
+              <input type="text" class="form-input" name="performance_bond_amount" placeholder="कार्यसम्पादन जमानत रकम">
+            </div>
+            <div>
+              <label class="form-label">कार्यसम्पादन जमानत नम्बर</label>
+              <input type="text" class="form-input" name="performance_bond_number" placeholder="कार्यसम्पादन जमानत नम्बर">
+            </div>
+            <div>
+              <label class="form-label">कार्यसम्पादन जमानत सुरु मिति</label>
+              <input type="text" class="form-input nepali-date date-required-check" name="performance_bond_start_date" placeholder="सुरु मिति" required>
+            </div>
+            <div>
+              <label class="form-label">कार्यसम्पादन जमानत अन्तिम मिति</label>
+              <input type="text" class="form-input nepali-date date-required-check" name="performance_bond_expiring_date" placeholder="अन्तिम मिति" required>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-calendar-check"></i> सम्झौता मितिहरु</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">ठेक्का सम्झौता मिति</label>
+              <input type="text" class="form-input nepali-date date-required-check" name="contract_date" placeholder="ठेक्का सम्झौता मिति" required>
+            </div>
+            <div>
+              <label class="form-label">कार्य सम्पन्न गर्नु‍पर्ने अन्तिम मिति</label>
+              <input type="text" class="form-input nepali-date date-required-check" name="contract_expire_date" placeholder="अन्तिम मिति" required>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" onclick="validateForm()" class="btn-success">
+          <i class="fas fa-print"></i> Save &amp; Print
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+  function validateForm() {
+    var form = document.querySelector("form");
+    if (!form.checkValidity()) {
+      event.preventDefault();
+      event.stopPropagation();
+      form.classList.add("was-validated");
+    }
+    form.classList.add("was-validated");
+  }
+</script>
+{% endblock %}

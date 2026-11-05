@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+{% load static %}
+{% load letters %}
+{% load nepali_date %}
+{% load nepali_filters %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>टिप्पणी र आदेश</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ================= RESET ================= */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ================= PAGE / PRINT SETTINGS ================= */
+    @page {
+      size: A4;
+      margin: 22mm 18mm 20mm 25mm; /* extra left margin for punching/binding */
+    }
+
+    :root {
+      --gov-red: #b0281f;
+      --gov-red-dark: #8c1f18;
+      --ink: #1c1c1c;
+      --muted: #6b6b6b;
+      --hairline: #d8c9a3;
+    }
+
+    html, body {
+      background: #e9e9e9;
+    }
+
+    body {
+      font-family: 'Noto Sans Devanagari', 'Mangal', 'Inter', Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.9;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ================= A4 SHEET (screen preview only) ================= */
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 14mm auto;
+      background: #fff;
+      padding: 20mm 16mm 18mm 22mm;
+      box-shadow: 0 4px 28px rgba(0,0,0,.18);
+    }
+
+    .gov-red { color: var(--gov-red); }
+
+    /* ================= HEADER ================= */
+    .letter-header {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      border-bottom: 3px solid var(--gov-red);
+      padding-bottom: 12px;
+      margin-bottom: 6px;
+      position: relative;
+    }
+    .letter-header::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; bottom: -6px;
+      border-bottom: 1px solid var(--gov-red);
+    }
+
+    .office-logo-wrap {
+      flex: 0 0 auto;
+      width: 88px;
+      height: 88px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .office-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .office-title {
+      flex: 1 1 auto;
+      text-align: center;
+      line-height: 1.35;
+    }
+    .office-title h2 {
+      font-size: 25px;
+      font-weight: 800;
+      color: var(--gov-red);
+      letter-spacing: .3px;
+    }
+    .office-title h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gov-red);
+      margin-top: 2px;
+    }
+    .office-title h4 {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gov-red-dark);
+      margin-top: 1px;
+    }
+
+    .header-spacer { flex: 0 0 auto; width: 88px; }
+
+    /* ================= META ROW ================= */
+    .letter-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 16px 0 6px;
+      font-size: 14px;
+    }
+    .letter-meta .chip {
+      display: inline-block;
+      border: 1px solid var(--gov-red);
+      color: var(--gov-red);
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 3px;
+      letter-spacing: .5px;
+    }
+    .letter-meta .date-box {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    /* ================= SUBJECT ================= */
+    .letter-subject {
+      text-align: center;
+      font-weight: 700;
+      font-size: 16px;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      margin: 20px 0 22px;
+      letter-spacing: .2px;
+    }
+
+    /* ================= SALUTATION ================= */
+    .letter-salutation {
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    /* ================= BODY ================= */
+    .letter-body p {
+      text-align: justify;
+      margin-bottom: 14px;
+    }
+    .letter-body strong { color: var(--ink); }
+
+    /* ================= FINANCIAL SUMMARY TABLE ================= */
+    .summary-box {
+      margin: 18px 0 22px;
+      border: 1px solid var(--hairline);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .summary-box table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14.5px;
+    }
+    .summary-box caption {
+      text-align: left;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--gov-red);
+      background: #fbf3e7;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--hairline);
+      caption-side: top;
+    }
+    .summary-box td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #eee0c6;
+    }
+    .summary-box tr:last-child td { border-bottom: none; }
+    .summary-box td.label { color: var(--muted); width: 55%; }
+    .summary-box td.value { text-align: right; font-weight: 700; white-space: nowrap; }
+    .summary-box tr.total td { background: #fbf3e7; }
+    .summary-box tr.total td.label { color: var(--gov-red-dark); font-weight: 700; }
+    .summary-box tr.total td.value { color: var(--gov-red-dark); }
+
+    /* ================= AUTHORIZATION ================= */
+    .auth-block {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 62px;
+      text-align: center;
+    }
+    .auth-block .auth-col {
+      flex: 1;
+      padding-top: 10px;
+      border-top: 1px solid #888;
+    }
+    .auth-block .auth-col p { line-height: 1.5; font-size: 13.5px; }
+    .auth-block .auth-col p.role {
+      font-weight: 700;
+      color: var(--ink);
+      margin-top: 2px;
+    }
+    .auth-block .auth-col p.action {
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    /* ================= PRINT ADJUSTMENTS ================= */
+    @media print {
+      html, body { background: #fff; }
+      .sheet {
+        width: auto;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="sheet">
+
+  <!-- ================= HEADER ================= -->
+  {% include 'includes/letterhead.html' with branch="(योजना शाखा)" %}
+{% editable_letter "user.print_tippani" "टिप्पणी र आदेश" %}
+
+  <!-- ================= META ================= -->
+  <div class="letter-meta">
+    <span class="chip">टिप्पणी र आदेश</span>
+    <span class="date-box">मिति: {{ start_date_nepali|nepali_date }}</span>
+  </div>
+
+  <!-- ================= SUBJECT ================= -->
+  <div class="letter-subject">
+    विषयः– आयोजना सम्झौता सम्बन्धमा ।
+  </div>
+
+  <!-- ================= ADDRESS ================= -->
+  <p class="letter-salutation">
+    श्रीमान प्रमुख प्रशासकिय अधिकृत ज्यू,
+  </p>
+
+  <!-- ================= BODY ================= -->
+  <div class="letter-body">
+
+    <p>
+      यस {{ palika.palika_type }}को चालु आ.व.
+      {{ project.fiscalyear.name|to_nepali_number }} को {{ palika.assembly }}बाट स्वीकृत
+      वडा नं. {{ project.ward.name|to_nepali_number }} मा सञ्चालन गरिने
+      <strong>{{ project.name }}</strong> का लागि विनियोजित रकम रु.
+      <strong>{{ project.budget|floatformat:0|to_nepali_number }}/-</strong>
+      (अक्षरेपी {{ project.budget|floatformat:0|to_devanagari_words }}) रहेको छ।
+    </p>
+
+    <p>
+      सो योजना सञ्चालनका लागि मिति
+      <strong>{{ formation_date_nepali|nepali_date }}</strong> गते यस {{ palika.palika_type }}को
+      वडा नं. {{ project.ward.name|to_nepali_number }} का वडा अध्यक्ष / वडा सदस्यहरूको
+      अध्यक्षतामा सम्पन्न उपभोक्ता भेलाको निर्णय बमोजिम
+      श्री <strong>{{ usercommittee.chairman_name }}</strong> को अध्यक्षतामा
+      उपभोक्ता समिति गठन भई वडा कार्यालयबाट सिफारिस प्राप्त भएको छ।
+    </p>
+
+    <p>
+      यस {{ palika.palika_type }}को प्राविधिक शाखाबाट उक्त योजनाको लागत अनुमान
+      रु. <strong>{{ project.cost_estimate.total_cost|floatformat:0|to_nepali_number }}/-</strong>
+      (अक्षरेपी {{ project.cost_estimate.total_cost|floatformat:0|to_devanagari_words }})
+      श्रमिक सहभागिता समेत समावेश गरी तयार भएको हुँदा सोही बराबरको निर्माण कार्य
+      उपभोक्ता समिति मार्फत गराउन उपयुक्त देखिएकोले आवश्यक कागजात सहित
+      सम्झौता गरी कार्यादेश दिन मनासिब देखी निर्णयार्थ पेश गरिएको छ।
+    </p>
+
+    <div class="summary-box">
+      <table>
+        <caption>रकम विवरण</caption>
+        <tbody>
+          <tr>
+            <td class="label">विनियोजित बजेट</td>
+            <td class="value">{{ project.cost_estimate.budget|floatformat:2|to_nepali_number }}/-</td>
+          </tr>
+          <tr>
+            <td class="label">कन्टेन्जेन्सी कट्टी</td>
+            <td class="value">{{ project.cost_estimate.contingency_amount|floatformat:2|to_nepali_number }}/-</td>
+          </tr>
+          <tr>
+            <td class="label">उपभोक्ता समितिबाट</td>
+            <td class="value">{{ project.cost_estimate.user_contribution|floatformat:2|to_nepali_number }}/-</td>
+          </tr>
+          <tr class="total">
+            <td class="label">इस्टिमेट रकम</td>
+            <td class="value">{{ project.cost_estimate.total_cost|floatformat:2|to_nepali_number }}/-</td>
+          </tr>
+          <tr>
+            <td class="label">सम्झौता मिति</td>
+            <td class="value">{{ start_date_nepali|nepali_date }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ================= AUTHORIZATION ================= -->
+  <div class="auth-block">
+    <div class="auth-col">
+      <p class="role">(योजना शाखा)</p>
+      <p class="action">पेश गर्ने</p>
+    </div>
+
+    <div class="auth-col">
+      <p class="role">(लेखा शाखा)</p>
+      <p class="action">सिफारिस गर्ने</p>
+    </div>
+
+    <div class="auth-col">
+      <p class="role">(प्रमुख प्रशासकिय अधिकृत)</p>
+      <p class="action">सदर गर्ने</p>
+    </div>
+  </div>
+
+{% endeditable_letter %}
+</div>
+
+<script>
+  window.__letterPrint = function () {
+    window.print();
+    setTimeout(function () {
+      window.location.href = "/UserCommittee/Workflow/";
+    }, 1000);
+  };
+</script>
+
+</body>
+</html>

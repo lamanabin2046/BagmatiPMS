@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Engineer Dashboard{% endblock %}
+{% block content %}
+
+<!-- ================= PAGE HEADER ================= -->
+<div class="mb-6">
+  <h1 class="text-xl md:text-2xl font-bold text-slate-800">Engineer Dashboard</h1>
+  <p class="text-sm text-slate-500 mt-0.5">योजना तथा ठेक्का अवस्थाको संक्षिप्त विवरण</p>
+</div>
+
+{% include 'includes/_my_work_lazy.html' %}
+
+<!-- ================= STAT CARDS ================= -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-building"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ total_projects }}</p>
+      <p class="text-xs text-slate-500">कुल योजना</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-calculator"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ estimated_projects }}</p>
+      <p class="text-xs text-slate-500">लागत अनुमान भएको</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-file-contract"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ contracted_projects }}</p>
+      <p class="text-xs text-slate-500">ठेक्का सम्पन्न</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-circle-check"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ completed_projects }}</p>
+      <p class="text-xs text-slate-500">सम्पन्न योजना</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= USER COMMITTEE ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card mt-4">
+  <div class="px-5 py-4 border-b border-slate-100">
+    <h2 class="text-sm font-semibold text-slate-700">पछिल्लो ५ उपभोक्ता समिति</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase tracking-wide text-slate-500 bg-slate-50">
+          <th class="px-5 py-3 font-medium">क्र.सं.</th>
+          <th class="px-5 py-3 font-medium">योजना नाम</th>
+          <th class="px-5 py-3 font-medium">वडा</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for p in last_user_committees %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 text-slate-700">{{ forloop.counter }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ p.name }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ p.ward.name }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="px-5 py-6 text-center text-slate-400">डाटा उपलब्ध छैन</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= BIDDING PROJECTS ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card mt-4">
+  <div class="px-5 py-4 border-b border-slate-100">
+    <h2 class="text-sm font-semibold text-slate-700">पछिल्लो ३ ठेक्का (Bidding)</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase tracking-wide text-slate-500 bg-slate-50">
+          <th class="px-5 py-3 font-medium">क्र.सं.</th>
+          <th class="px-5 py-3 font-medium">योजना</th>
+          <th class="px-5 py-3 font-medium">ठेक्का नं</th>
+          <th class="px-5 py-3 font-medium">स्थिति</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for b in last_bidding_projects %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 text-slate-700">{{ forloop.counter }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ b.project.name }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ b.bidding_number }}</td>
+          <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-amber-50 text-amber-600 text-xs font-medium px-2.5 py-1">Bidding</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-5 py-6 text-center text-slate-400">डाटा उपलब्ध छैन</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= QUOTATION PROJECTS ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card mt-4 mb-2">
+  <div class="px-5 py-4 border-b border-slate-100">
+    <h2 class="text-sm font-semibold text-slate-700">पछिल्लो ३ दररेट (Quotation)</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase tracking-wide text-slate-500 bg-slate-50">
+          <th class="px-5 py-3 font-medium">क्र.सं.</th>
+          <th class="px-5 py-3 font-medium">योजना</th>
+          <th class="px-5 py-3 font-medium">लागत अनुमान</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for q in last_quotation_projects %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 text-slate-700">{{ forloop.counter }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ q.project.name }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ q.cost_estimate }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="px-5 py-6 text-center text-slate-400">डाटा उपलब्ध छैन</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

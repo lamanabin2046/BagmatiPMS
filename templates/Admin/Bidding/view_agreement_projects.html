@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}सम्झौता र कार्यदेश{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">योजनाको विवरण</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>क्रस</th>
+            <th>ठेक्का नम्बर</th>
+            <th>आयोजनाको नाम</th>
+            <th>निर्माण व्यवसायी</th>
+            <th>बजेट</th>
+            <th>कबोल रकम</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in performancebond %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ i.contract.sealed_bid.bidding_number }}</td>
+            <td>{{ i.contract.sealed_bid.project.name }}</td>
+            <td>{{ i.contract.sealed_bid.bidder_name_nepali }}</td>
+            <td>{{ i.contract.sealed_bid.budget }}</td>
+            <td>{{ i.contract.sealed_bid.bidding_amount }}</td>
+            <td>
+              <div class="flex flex-wrap gap-2">
+                <a href="{% url 'print_contract_paper' i.id %}" class="btn-chip-amber">सम्झौता</a>
+                <a href="{% url 'print_bid_work_order' i.id %}" class="btn-chip-emerald">कार्यादेश</a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-slate-400 py-6">कुनै विवरण फेला परेन।</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-4 border-t border-slate-100 flex justify-end">
+      <a href="" class="btn-success"><i class="fas fa-file-excel"></i> Download In Excel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,5 @@
+{% comment %}ड्यासबोर्डमा "मेरो काम" — पेज छिटो खुलोस् भनेर पछि लोड हुन्छ{% endcomment %}
+<section class="card mb-6" id="my-work" hx-get="{% url 'my_work_panel' %}" hx-trigger="load" hx-swap="outerHTML">
+  <div class="card-header"><h2 class="font-semibold text-slate-800"><i class="fas fa-list-check text-brand-600"></i> मेरो काम</h2></div>
+  <div class="px-5 py-6 text-sm text-slate-400"><i class="fas fa-spinner fa-spin"></i> हिसाब हुँदैछ…</div>
+</section>

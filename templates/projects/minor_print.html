@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+{% load letters outputs %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if doc == 'approval' %}स्वीकृति टिप्पणी{% elif doc == 'order' %}{% if method == 'direct' %}खरिद आदेश{% elif method == 'amanat' %}कार्यादेश{% else %}सम्झौता{% endif %}{% else %}भुक्तानी टिप्पणी{% endif %} — {{ project.name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @page { size: A4; margin: 20mm 18mm 18mm 25mm; }
+    body { font-family: 'Noto Sans Devanagari', sans-serif; color: #1c1c1c; background: #eef1f5; font-size: 14.5px; line-height: 1.85; }
+    .sheet { background: #fff; max-width: 210mm; margin: 24px auto; padding: 22mm 18mm 20mm 25mm; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+    .meta { display: flex; justify-content: space-between; margin: 14px 0 6px; font-size: 13.5px; }
+    .subject { font-weight: 700; text-align: center; margin: 10px 0 14px; text-decoration: underline; }
+    p { text-align: justify; margin-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; font-size: 13.5px; }
+    th, td { border: 1px solid #444; padding: 5px 8px; }
+    th { background: #f3f4f6; }
+    td.r { text-align: right; white-space: nowrap; }
+    .sign { display: flex; justify-content: space-between; margin-top: 56px; gap: 16px; text-align: center; font-size: 13.5px; }
+    .sign div { flex: 1; border-top: 1px dotted #333; padding-top: 4px; }
+    @media print { body { background: #fff; } .sheet { margin: 0; padding: 0; box-shadow: none; max-width: none; } }
+  </style>
+</head>
+<body>
+<div class="sheet">
+  {% include 'includes/letterhead.html' with branch="(योजना शाखा)" %}
+{% if doc == 'approval' %}
+{% editable_letter "minor.approval" "सोझै खरिद / अमानत / संस्था: स्वीकृति टिप्पणी" %}
+  <div class="meta"><span>टिप्पणी र आदेश</span><span>मिति: {{ today|bs }}</span></div>
+  <div class="subject">विषयः– {% if method == 'direct' %}सोझै खरिद गर्ने{% elif method == 'amanat' %}अमानतबाट काम गराउने{% else %}संस्था / समितिमार्फत काम गराउने{% endif %} सम्बन्धमा ।</div>
+  <p>श्रीमान्,</p>
+  <p>यस कार्यालयको आ.व. {{ project.fiscalyear.name }} को स्वीकृत वार्षिक कार्यक्रम तथा वार्षिक खरिद योजनामा समावेश भएको
+    वडा नं. {{ project.ward.name|npn }} को <b>“{{ project.name }}”</b> का लागि विनियोजित रु. {{ project.budget|money }} मध्ये
+    मिति {{ m.estimate_date|bs }} मा रु. {{ m.estimate_amount|money }} को लागत अनुमान स्वीकृत भएको छ।</p>
+  {% if method == 'amanat' %}
+  <p>उक्त काम सार्वजनिक खरिद ऐन, २०६३ को {{ law }} बमोजिम अमानतबाट गराउनु उपयुक्त देखिएकाले लागत अनुमानभित्र रही कार्यालयको
+    जिम्मेवार कर्मचारीमार्फत अमानतबाट गराउन स्वीकृतिका लागि यो टिप्पणी पेश गरेको छु।</p>
+  {% else %}
+  <p>{% if method == 'direct' %}सार्वजनिक खरिद ऐन, २०६३ को {{ law }} बमोजिम सूचीकृत आपूर्तिकर्ताहरूबाट प्राप्त दरभाउ{% else %}{% if m.notice_date %}मिति {{ m.notice_date|bs }} मा प्रकाशित सूचना{% if m.notice_ref %} ({{ m.notice_ref }}){% endif %} बमोजिम {% endif %}प्राप्त प्रस्ताव{% endif %}को तुलनात्मक विवरण देहाय बमोजिम छ:</p>
+  <table>
+    <tr><th>क्र.सं.</th><th>फर्म / संस्था</th><th>PAN / दर्ता नं.</th><th>रकम (रु.)</th></tr>
+    {% for q in quotes %}<tr><td>{{ forloop.counter|npn }}</td><td>{{ q.name }}{% if q.address %}, {{ q.address }}{% endif %}</td><td>{{ q.pan|default:'—' }}</td><td class="r">{{ q.amount|money }}</td></tr>{% endfor %}
+  </table>
+  <p>उपर्युक्त मध्ये लागत अनुमानभित्रको {% if m.selected.amount == quotes.0.amount %}न्यूनतम {% endif %}रकम कबोल गर्ने
+    <b>{{ m.selected.name }}</b> को रु. {{ m.selected.amount|money }} स्वीकृत गरी {% if method == 'direct' %}खरिद आदेश दिन{% else %}सम्झौता गर्न{% endif %}
+    {% if m.approval_remarks %}({{ m.approval_remarks }}) {% endif %}निर्णयार्थ पेश गरेको छु।</p>
+  {% endif %}
+  <div class="sign"><div>पेश गर्ने<br>(योजना शाखा)</div><div>सिफारिस गर्ने<br>(लेखा शाखा)</div><div>सदर गर्ने<br>{{ m.approver_name|default:"(प्रमुख प्रशासकीय अधिकृत)" }}</div></div>
+{% endeditable_letter %}
+
+{% elif doc == 'order' %}
+{% editable_letter "minor.order" "सोझै खरिद / अमानत / संस्था: आदेश / कार्यादेश / सम्झौता" %}
+  <div class="meta"><span>पत्र संख्या: {{ m.order_no|default:'' }}</span><span>मिति: {{ m.order_date|bs }}</span></div>
+  {% if method == 'amanat' %}
+  <p>श्री {{ m.in_charge }}<br>{{ palika.name|default:'' }}</p>
+  <div class="subject">विषयः– कार्यादेश ।</div>
+  <p>यस कार्यालयबाट स्वीकृत लागत अनुमान रु. {{ m.estimate_amount|money }} बमोजिम वडा नं. {{ project.ward.name|npn }} को
+    “{{ project.name }}” को काम अमानतबाट गराउने निर्णय भएकाले रु. {{ m.order_amount|money }} भित्र रही मिति {{ m.due_date|bs }} भित्र
+    सम्पन्न गर्नुहुन यो कार्यादेश दिइएको छ। कामदारको दैनिक हाजिरी (मस्टररोल), सामग्री खरिदको बिल भरपाई र प्राविधिक नापजाँच
+    नियमानुसार राखी कार्यालयमा पेश गर्नुहुन अनुरोध छ।</p>
+  {% elif method == 'direct' %}
+  <p>श्री {{ m.selected.name }}<br>{{ m.selected.address }}{% if m.selected.pan %}<br>PAN: {{ m.selected.pan }}{% endif %}</p>
+  <div class="subject">विषयः– खरिद आदेश ।</div>
+  <p>तपाईंले पेश गर्नुभएको दरभाउ बमोजिम “{{ project.name }}” का लागि रु. {{ m.order_amount|money }} (कर समेत) को खरिद आदेश दिइएको छ।
+    दरभाउमा उल्लिखित स्पेसिफिकेसन, परिमाण र गुणस्तर बमोजिमको सामान / सेवा मिति {{ m.due_date|bs }} भित्र यस कार्यालयमा आपूर्ति
+    गरी बिल पेश गर्नुहुन अनुरोध छ। जाँचपास समितिबाट जाँचपास भएपछि मात्र भुक्तानी हुनेछ।</p>
+  {% else %}
+  <div class="subject">सम्झौता</div>
+  <p>यस {{ palika.name|default:'कार्यालय' }} (यसपछि “कार्यालय” भनिएको) र {{ m.selected.name }}, {{ m.selected.address }}
+    {% if m.selected.pan %}(दर्ता / PAN नं. {{ m.selected.pan }}){% endif %} (यसपछि “संस्था” भनिएको) बीच “{{ project.name }}” सञ्चालन गर्न
+    देहायका शर्तमा यो सम्झौता गरिएको छ:</p>
+  <p>१. सम्झौता रकम रु. {{ m.order_amount|money }} हुनेछ। २. काम मिति {{ m.due_date|bs }} भित्र सम्पन्न गर्नुपर्नेछ।
+    ३. संस्थाले काम सम्पन्न प्रतिवेदन र खर्चको बिल भरपाई पेश गरेपछि नियमानुसार कर कट्टी गरी भुक्तानी गरिनेछ।
+    ४. संस्थाले काम अरूलाई हस्तान्तरण गर्न पाउने छैन। ५. यसमा उल्लेख नभएका कुरा प्रचलित कानुन बमोजिम हुनेछ।</p>
+  <div class="sign"><div>संस्थाको तर्फबाट</div><div>कार्यालयको तर्फबाट</div></div>
+  {% endif %}
+  {% if method != 'sanstha' %}<div class="sign"><div style="flex:0 0 40%;margin-left:auto">(कार्यालय प्रमुख)</div></div>{% endif %}
+{% endeditable_letter %}
+
+{% else %}
+{% editable_letter "minor.payment" "सोझै खरिद / अमानत / संस्था: भुक्तानी टिप्पणी" %}
+  <div class="meta"><span>टिप्पणी र आदेश</span><span>मिति: {{ today|bs }}</span></div>
+  <div class="subject">विषयः– भुक्तानी सम्बन्धमा ।</div>
+  <p>श्रीमान्,</p>
+  <p>वडा नं. {{ project.ward.name|npn }} को “{{ project.name }}” {{ method_label }} विधिबाट
+    {% if m.selected %}{{ m.selected.name }}मार्फत {% endif %}मिति {{ m.completed_on|bs }} मा सम्पन्न भई
+    {% if method == 'amanat' %}नापजाँच{% else %}जाँचपास{% endif %} अनुसार रु. {{ m.completion_value|money }} कायम भएको छ।
+    {% if m.completion_note %}({{ m.completion_note }}){% endif %} भुक्तानीको विवरण देहाय बमोजिम छ:</p>
+  <table>
+    <tr><th>विवरण</th><th>रकम (रु.)</th></tr>
+    <tr><td>{% if method == 'amanat' %}नापजाँच (मूल्याङ्कन){% else %}जाँचपास{% endif %} रकम</td><td class="r">{{ m.completion_value|money }}</td></tr>
+    {% if prev %}<tr><td>अघि भुक्तानी भएको ({{ prev|length|npn }} बिल)</td><td class="r">{{ prev_total|money }}</td></tr>{% endif %}
+    <tr><td><b>यस पटकको कुल भुक्तानी</b></td><td class="r"><b>{{ fin.gross|money }}</b></td></tr>
+    {% for lbl, amt in fin_taxes %}<tr><td>कट्टी: {{ lbl }}</td><td class="r">{{ amt|money }}</td></tr>{% endfor %}
+    <tr><td><b>खुद भुक्तानी</b></td><td class="r"><b>{{ fin.net|money }}</b></td></tr>
+  </table>
+  <p>अतः उपर्युक्त बमोजिम कर तथा धरौटी कट्टी गरी खुद रु. {{ fin.net|money }} भुक्तानी दिन निर्णयार्थ पेश गरेको छु।</p>
+  <div class="sign"><div>पेश गर्ने<br>(योजना शाखा)</div><div>सिफारिस गर्ने<br>(लेखा शाखा)</div><div>सदर गर्ने<br>(प्रमुख प्रशासकीय अधिकृत)</div></div>
+{% endeditable_letter %}
+{% endif %}
+</div>
+<script>
+  window.__letterPrint = function () { window.print(); setTimeout(function () { window.location.href = "{{ back }}"; }, 3000); };
+</script>
+</body>
+</html>

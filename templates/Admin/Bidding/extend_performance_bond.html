@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Performance Bond Extension{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="h-10 w-1.5 bg-brand-600 rounded-full"></div>
+      <div>
+        <h1 class="text-lg md:text-xl font-bold text-slate-800">Performance Bond Extension</h1>
+        <p class="text-xs text-slate-500 font-semibold uppercase tracking-wide">कार्यसम्पादन जमानत तथा सम्झौता म्याद विस्तार</p>
+      </div>
+    </div>
+    <button type="button" onclick="history.back()" class="btn-secondary">
+      <i class="fas fa-arrow-left"></i> फिर्ता
+    </button>
+  </div>
+
+  <div class="card overflow-hidden">
+
+    <div class="p-5 bg-slate-50 border-b border-slate-100">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div>
+          <span class="text-[11px] uppercase font-semibold text-slate-400">आयोजना</span>
+          <p class="mt-1 text-sm font-semibold text-slate-700 truncate">{{ bond.contract.sealed_bid.project.name }}</p>
+        </div>
+        <div>
+          <span class="text-[11px] uppercase font-semibold text-slate-400">निर्माण व्यवसायी</span>
+          <p class="mt-1 text-sm font-semibold text-slate-700">{{ bond.contract.sealed_bid.bidder_name_nepali }}</p>
+        </div>
+        <div>
+          <span class="text-[11px] uppercase font-semibold text-slate-400">ठेक्का नं</span>
+          <p class="mt-1 text-sm font-mono font-semibold text-brand-600">{{ bond.contract.sealed_bid.bidding_number }}</p>
+        </div>
+        <div>
+          <span class="text-[11px] uppercase font-semibold text-slate-400">कबोल रकम</span>
+          <p class="mt-1 text-sm font-semibold text-emerald-600">रु. {{ bond.contract.sealed_bid.bidding_amount }}</p>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" action="{% url 'update_performance_bond_expiry' %}">
+      {% csrf_token %}
+      <input type="hidden" name="bond_id" value="{{ bond.id }}">
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-circle-info"></i> हालको स्थिति</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">PG नम्बर</label>
+              <input type="text" readonly value="{{ bond.bond_number }}" class="form-input">
+            </div>
+            <div>
+              <label class="form-label">हालको PG म्याद</label>
+              <input type="text" readonly value="{{ current_pg_expiry_nepali }}" class="form-input">
+            </div>
+            <div>
+              <label class="form-label">हालको सम्झौता म्याद</label>
+              <input type="text" readonly value="{{ current_contract_expiry_nepali }}" class="form-input">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-calendar-plus"></i> नयाँ म्याद</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label text-amber-600">नयाँ सम्झौता म्याद (नेपाली) *</label>
+              <input type="text" name="contract_expiry_date" required placeholder="YYYY-MM-DD"
+                     class="form-input nepali-date border-amber-300 focus:ring-amber-500/30 focus:border-amber-500">
+            </div>
+            <div>
+              <label class="form-label text-brand-600">नयाँ PG म्याद (नेपाली) *</label>
+              <input type="text" name="pg_expiry_date" required placeholder="YYYY-MM-DD"
+                     class="form-input nepali-date">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">कैफियत (Remarks)</label>
+          <textarea name="remarks" rows="3" class="form-textarea" placeholder="म्याद थप गर्नुको कारण लेख्नुहोस्..."></textarea>
+        </div>
+
+        <div class="flex items-center gap-2 text-amber-700 bg-amber-50 px-3 py-2.5 rounded-xl border border-amber-200 text-xs font-semibold w-fit">
+          <i class="fas fa-triangle-exclamation"></i> सम्झौता र PG दुबै म्याद एकसाथ बढाउनुपर्छ
+        </div>
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" class="btn-primary">
+          <i class="fas fa-floppy-disk"></i> विवरण सुरक्षित गर्नुहोस्
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,240 @@
+{% load static %}
+{% comment %}पत्र पेजको toolbar (प्रिन्ट गर्नुहोस्, फिर्ता, सम्पादन) र editor. छापिँदैन। letters templatetag ले एक पटक राख्छ।{% endcomment %}
+<style>
+  .lt-bar { position: fixed; top: 12px; right: 12px; z-index: 9000; display: flex; gap: 8px; font-family: 'Noto Sans Devanagari', 'Inter', system-ui, sans-serif; }
+  .lt-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #cbd5e1; background: #fff; color: #1e293b; border-radius: 10px;
+            padding: 9px 14px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 10px rgba(15,23,42,.12); text-decoration: none; line-height: 1; }
+  .lt-btn:hover { background: #f8fafc; }
+  .lt-btn.primary { background: #1e3a8a; border-color: #1e3a8a; color: #fff; }
+  .lt-btn.primary:hover { background: #1b2b5c; }
+  .lt-btn.green { background: #047857; border-color: #047857; color: #fff; }
+  .lt-btn.danger { color: #be123c; border-color: #fecdd3; }
+  .lt-btn[disabled] { opacity: .55; cursor: not-allowed; }
+  .lt-badge { position: absolute; top: -9px; left: 10px; font: 600 11px/1 'Noto Sans Devanagari', system-ui, sans-serif; padding: 4px 8px; border-radius: 999px; }
+  .lt-badge.override { background: #fef3c7; color: #92400e; }
+  .lt-badge.template { background: #e0e7ff; color: #3730a3; }
+  .letter-editable { position: relative; }
+  .letter-editable.lt-can:hover { outline: 2px dashed #93c5fd; outline-offset: 6px; border-radius: 4px; }
+  .lt-chip { position: absolute; top: -8px; right: -8px; z-index: 5; display: none; }
+  .letter-editable.lt-can:hover .lt-chip { display: inline-flex; }
+  /* editor modal */
+  .lt-modal { position: fixed; inset: 0; z-index: 9500; display: none; font-family: 'Noto Sans Devanagari', 'Inter', system-ui, sans-serif; }
+  .lt-modal.open { display: block; }
+  .lt-backdrop { position: absolute; inset: 0; background: rgba(15,23,42,.55); }
+  .lt-card { position: relative; margin: 2vh auto; width: min(1180px, 96vw); height: 96vh; background: #fff; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,.35); }
+  .lt-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 20px 0; }
+  .lt-head h3 { margin: 0; font-size: 19px; font-weight: 800; color: #0f172a; }
+  .lt-head p { margin: 3px 0 0; font-size: 13px; color: #64748b; }
+  .lt-x { border: 0; background: transparent; font-size: 22px; cursor: pointer; color: #64748b; padding: 4px 8px; border-radius: 8px; }
+  .lt-tabs { display: flex; gap: 6px; padding: 12px 20px 0; border-bottom: 1px solid #e2e8f0; }
+  .lt-tab { border: 0; background: transparent; padding: 10px 14px; font: 600 14px 'Noto Sans Devanagari', system-ui, sans-serif; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; }
+  .lt-tab.active { color: #1e3a8a; border-bottom-color: #1e3a8a; }
+  .lt-body { flex: 1; min-height: 0; display: flex; }
+  .lt-editor { flex: 1; min-width: 0; padding: 14px 20px; overflow: auto; }
+  .lt-note { font-size: 12.5px; border-radius: 10px; padding: 9px 12px; margin-bottom: 10px; }
+  .lt-note.info { background: #eff6ff; color: #1e40af; }
+  .lt-note.warn { background: #fffbeb; color: #92400e; }
+  .lt-side { width: 300px; border-left: 1px solid #e2e8f0; display: none; flex-direction: column; background: #f8fafc; }
+  .lt-side.show { display: flex; }
+  .lt-side h4 { margin: 0; padding: 14px 14px 6px; font-size: 13px; color: #0f172a; }
+  .lt-side input { margin: 0 14px 8px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font: 13px system-ui, sans-serif; }
+  .lt-ph-list { overflow: auto; padding: 0 8px 12px; }
+  .lt-ph { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; border-radius: 8px; padding: 7px 8px; cursor: pointer; }
+  .lt-ph:hover { background: #fff; border-color: #c7d2fe; }
+  .lt-ph b { display: block; font: 600 12px 'Noto Sans Devanagari', system-ui, sans-serif; color: #1e293b; }
+  .lt-ph code { font-size: 11px; color: #4338ca; }
+  .lt-ph span { display: block; font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lt-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 20px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+  .lt-msg { font-size: 13px; }
+  .lt-msg.err { color: #be123c; } .lt-msg.ok { color: #047857; }
+  .jodit-container { font-size: 15px; }
+  @media print { .lt-bar, .lt-modal, .lt-chip, .lt-badge, script.letter-data { display: none !important; }
+                 .letter-editable.lt-can:hover { outline: none !important; } }
+</style>
+
+<div class="lt-bar" id="ltBar">
+  <button type="button" class="lt-btn" onclick="history.length > 1 ? history.back() : (location.href='/')">← फिर्ता</button>
+  {% if can_edit %}<button type="button" class="lt-btn" id="ltEditBtn">✎ सम्पादन</button>{% endif %}
+  <button type="button" class="lt-btn primary" id="ltPrintBtn">🖨 प्रिन्ट गर्नुहोस्</button>
+</div>
+
+{% if can_edit %}
+<div class="lt-modal" id="ltModal" role="dialog" aria-modal="true">
+  <div class="lt-backdrop" data-lt-close></div>
+  <div class="lt-card">
+    <div class="lt-head">
+      <div>
+        <h3 id="ltTitle">पत्र सम्पादन</h3>
+        <p id="ltSub"></p>
+      </div>
+      <button type="button" class="lt-x" data-lt-close title="बन्द">✕</button>
+    </div>
+    <div class="lt-tabs">
+      <button type="button" class="lt-tab" data-lt-tab="letter">यो पत्र मात्र</button>
+      <button type="button" class="lt-tab" data-lt-tab="template">पालिकाको ढाँचा — सबै योजनामा</button>
+    </div>
+    <div class="lt-body">
+      <div class="lt-editor">
+        <div class="lt-note info" id="ltNote"></div>
+        <textarea id="ltArea"></textarea>
+      </div>
+      <aside class="lt-side" id="ltSide">
+        <h4>Placeholder (थिच्दा कर्सरमा राखिन्छ)</h4>
+        <input type="search" id="ltPhSearch" placeholder="खोज्नुहोस्…">
+        <div class="lt-ph-list" id="ltPhList"></div>
+      </aside>
+    </div>
+    <div class="lt-foot">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button type="button" class="lt-btn danger" id="ltReset">↺ मूल अवस्थामा फर्काउनुहोस्</button>
+        <span class="lt-msg" id="ltMsg"></span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="lt-btn" data-lt-close>रद्द</button>
+        <button type="button" class="lt-btn green" id="ltSave">✓ सुरक्षित गर्नुहोस्</button>
+      </div>
+    </div>
+  </div>
+</div>
+<link rel="stylesheet" href="{% static 'assets/plugins/jodit/jodit.fat.min.css' %}">
+{% endif %}
+
+<script>
+(function () {
+  var printBtn = document.getElementById('ltPrintBtn');
+  printBtn.addEventListener('click', function () {
+    // पुरानो पेजको "छापेपछि फिर्ता जाने" व्यवहार यही बटनबाट मात्र चल्छ
+    if (typeof window.__letterPrint === 'function') { window.__letterPrint(); } else { window.print(); }
+  });
+  {% if can_edit %}
+  var JODIT = "{% static 'assets/plugins/jodit/jodit.fat.min.js' %}";
+  var OP = '\u007b\u007b', CL = '\u007d\u007d';  // placeholder चिन्ह (Django ले नपढोस् भनेर)
+  var modal = document.getElementById('ltModal'), editor = null, cur = null, tab = 'letter';
+  var $ = function (id) { return document.getElementById(id); };
+
+  function sections() {
+    return Array.prototype.map.call(document.querySelectorAll('.letter-editable'), function (el) {
+      var s = el.nextElementSibling;
+      var data = s && s.classList.contains('letter-data') ? JSON.parse(s.textContent) : null;
+      return { el: el, data: data };
+    }).filter(function (x) { return x.data; });
+  }
+  function csrf() { var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/); return m ? decodeURIComponent(m[1]) : ''; }
+  function loadJodit(cb) {
+    if (window.Jodit) return cb();
+    var s = document.createElement('script'); s.src = JODIT; s.onload = cb; document.head.appendChild(s);
+  }
+  function msg(t, kind) { var m = $('ltMsg'); m.textContent = t || ''; m.className = 'lt-msg ' + (kind || ''); }
+
+  function setTab(t) {
+    var d = cur.data;
+    if (t === 'template' && !d.can_template) t = 'letter';
+    if (t === 'letter' && !d.can_letter) t = 'template';
+    tab = t;
+    document.querySelectorAll('.lt-tab').forEach(function (b) {
+      var k = b.getAttribute('data-lt-tab');
+      b.classList.toggle('active', k === t);
+      b.style.display = (k === 'letter' ? d.can_letter : d.can_template) ? '' : 'none';
+    });
+    $('ltSide').classList.toggle('show', t === 'template');
+    var note = $('ltNote');
+    if (t === 'letter') {
+      note.className = 'lt-note info';
+      note.textContent = d.state === 'override' ? 'यो पत्र पहिले नै सम्पादन गरिएको छ। यहाँको परिवर्तन यही पत्रमा मात्र लाग्छ।'
+                       : 'यहाँको परिवर्तन यही पत्रमा मात्र लाग्छ (अरू योजनाका पत्र जस्ताको तस्तै)।';
+      editor.value = d.current;
+    } else {
+      note.className = 'lt-note ' + (d.template_auto ? 'warn' : 'info');
+      note.textContent = d.template_auto
+        ? 'यो पत्रका मानहरू आफैँ ' + OP + 'placeholder' + CL + ' मा बदलिएका छन् — जाँच्नुहोस्। सुरक्षित गरेपछि यस प्रकारका सबै योजनाका पत्रमा यही ढाँचा लाग्छ।'
+        : 'पालिकाको ढाँचा: सबै योजनाका यस प्रकारका पत्रमा लाग्छ। ' + OP + '...' + CL + ' ठाउँमा हरेक योजनाको आफ्नै मान आउँछ।';
+      editor.value = d.template;
+    }
+    $('ltReset').style.display = (t === 'letter' ? d.override_saved : d.template_saved) ? '' : 'none';
+    msg('');
+  }
+
+  function renderPlaceholders(filter) {
+    var list = $('ltPhList'); list.innerHTML = '';
+    (cur.data.catalog || []).forEach(function (p) {
+      var hay = (p.label + ' ' + p.token + ' ' + p.value).toLowerCase();
+      if (filter && hay.indexOf(filter.toLowerCase()) === -1) return;
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'lt-ph';
+      b.innerHTML = '<b></b><code></code><span></span>';
+      b.querySelector('b').textContent = p.label;
+      b.querySelector('code').textContent = OP + p.token + (p.np ? '|np' : '') + CL;
+      b.querySelector('span').textContent = p.value;
+      b.addEventListener('click', function () {
+        editor.s.insertHTML(OP + p.token + (p.np ? '|np' : '') + CL); editor.focus();
+      });
+      list.appendChild(b);
+    });
+  }
+
+  function open(sec) {
+    cur = sec;
+    loadJodit(function () {
+      if (!editor) {
+        editor = Jodit.make('#ltArea', {
+          language: 'en', height: '100%', minHeight: 420, toolbarAdaptive: false, askBeforePasteHTML: false,
+          askBeforePasteFromWord: false, defaultActionOnPaste: 'insert_clear_html', showCharsCounter: false,
+          showWordsCounter: false, showXPathInStatusbar: false, spellcheck: false, beautifyHTML: false,
+          buttons: ['bold', 'italic', 'underline', 'strikethrough', '|', 'fontsize', 'brush', 'paragraph', '|',
+                    'ul', 'ol', 'indent', 'outdent', 'align', '|', 'table', 'hr', '|', 'undo', 'redo', 'eraser', 'source', 'fullsize']
+        });
+      }
+      $('ltTitle').textContent = 'पत्र सम्पादन — ' + (sec.data.title || document.title);
+      $('ltSub').textContent = 'लेटरहेड (पत्र शीर्ष) कार्यालय सेटिङबाट आउँछ; यहाँ पत्रको पाठ मात्र बदलिन्छ।';
+      renderPlaceholders('');
+      setTab(sec.data.can_letter ? 'letter' : 'template');
+      modal.classList.add('open'); document.body.style.overflow = 'hidden';
+    });
+  }
+  function close() { modal.classList.remove('open'); document.body.style.overflow = ''; }
+
+  function post(url, body) {
+    return fetch(url, { method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (j) { j._status = r.status; return j; }); });
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-lt-close]')) { close(); return; }
+    var t = e.target.closest('.lt-tab'); if (t) { setTab(t.getAttribute('data-lt-tab')); return; }
+    var c = e.target.closest('.lt-chip');
+    if (c) { var el = c.closest('.letter-editable'); var s = sections().filter(function (x) { return x.el === el; })[0]; if (s) open(s); }
+  });
+  $('ltEditBtn').addEventListener('click', function () { var s = sections(); if (s.length) open(s[0]); });
+  $('ltPhSearch').addEventListener('input', function (e) { renderPlaceholders(e.target.value); });
+  $('ltSave').addEventListener('click', function () {
+    var b = this; b.disabled = true; msg('सुरक्षित गर्दै…');
+    post('{% url "letter_save" %}', { scope: tab, key: cur.data.key, ref: cur.data.ref, title: cur.data.title, html: editor.value })
+      .then(function (j) { msg(j.message, j.ok ? 'ok' : 'err'); if (j.ok) setTimeout(function () { location.reload(); }, 600); })
+      .catch(function () { msg('सुरक्षित गर्न सकिएन।', 'err'); })
+      .finally(function () { b.disabled = false; });
+  });
+  $('ltReset').addEventListener('click', function () {
+    var what = tab === 'letter' ? 'यो पत्रको सम्पादन' : 'पालिकाको ढाँचा';
+    if (!confirm(what + ' हटाएर मूल अवस्थामा फर्काउने?')) return;
+    post('{% url "letter_reset" %}', { scope: tab, key: cur.data.key, ref: cur.data.ref })
+      .then(function (j) { msg(j.message, j.ok ? 'ok' : 'err'); if (j.ok) setTimeout(function () { location.reload(); }, 600); });
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal.classList.contains('open')) close(); });
+
+  // हरेक सम्पादन गर्न मिल्ने भागमा ✎ चिन्ह र अवस्था
+  document.addEventListener('DOMContentLoaded', function () {
+    sections().forEach(function (s) {
+      s.el.classList.add('lt-can');
+      var chip = document.createElement('button'); chip.type = 'button'; chip.className = 'lt-btn lt-chip'; chip.textContent = '✎ सम्पादन';
+      s.el.appendChild(chip);
+      var st = s.el.getAttribute('data-letter-state');
+      if (st !== 'default') {
+        var bd = document.createElement('span'); bd.className = 'lt-badge ' + st;
+        bd.textContent = st === 'override' ? 'यो पत्र सम्पादित' : 'पालिकाको ढाँचा';
+        s.el.appendChild(bd);
+      }
+    });
+  });
+  {% endif %}
+})();
+</script>

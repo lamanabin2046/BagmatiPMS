@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+{% load static %}
+{% load letters %}
+{% load nepali_date %}
+{% load nepali_filters %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>सम्झौता पत्र</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ================= RESET ================= */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ================= PAGE / PRINT SETTINGS ================= */
+    @page {
+      size: A4;
+      margin: 20mm 16mm 18mm 22mm; /* extra left margin for punching/binding */
+    }
+
+    :root {
+      --gov-red: #b0281f;
+      --gov-red-dark: #8c1f18;
+      --ink: #1c1c1c;
+      --muted: #6b6b6b;
+      --hairline: #d8c9a3;
+    }
+
+    html, body { background: #e9e9e9; }
+
+    body {
+      font-family: 'Noto Sans Devanagari', 'Mangal', 'Inter', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ================= A4 SHEET (screen preview only) ================= */
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 14mm auto;
+      background: #fff;
+      padding: 18mm 14mm 16mm 20mm;
+      box-shadow: 0 4px 28px rgba(0,0,0,.18);
+    }
+
+    /* ================= HEADER / LETTERHEAD ================= */
+    .letter-header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      border-bottom: 3px solid var(--gov-red);
+      padding-bottom: 10px;
+      margin-bottom: 6px;
+      position: relative;
+    }
+    .letter-header::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; bottom: -6px;
+      border-bottom: 1px solid var(--gov-red);
+    }
+    .office-logo-wrap {
+      flex: 0 0 auto;
+      width: 78px;
+      height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .office-logo { width: 100%; height: 100%; object-fit: contain; }
+    .office-title {
+      flex: 1 1 auto;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .office-title h2 { font-size: 22px; font-weight: 800; color: var(--gov-red); letter-spacing: .3px; }
+    .office-title h3 { font-size: 14px; font-weight: 600; color: var(--gov-red); margin-top: 2px; }
+    .office-title h4 { font-size: 12px; font-weight: 500; color: var(--gov-red-dark); margin-top: 1px; }
+    .header-spacer { flex: 0 0 auto; width: 78px; }
+
+    .form-title {
+      text-align: center;
+      font-weight: 700;
+      font-size: 16px;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      margin: 18px 0 22px;
+    }
+
+    /* ================= INTRO ================= */
+    .letter-body p {
+      text-align: justify;
+      margin-bottom: 12px;
+    }
+    .letter-body strong { color: var(--ink); }
+
+    /* ================= CLAUSES ================= */
+    .clause-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--gov-red-dark);
+      background: #fbf3e7;
+      border-left: 4px solid var(--gov-red);
+      padding: 5px 12px;
+      margin: 16px 0 8px;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .clause-body { padding: 0 4px; text-align: justify; }
+    .clause-body p { margin-bottom: 6px; }
+
+    /* ================= TERMS LIST ================= */
+    .terms-list {
+      list-style: decimal;
+      margin: 4px 0 4px 22px;
+      text-align: justify;
+      font-size: 13.5px;
+    }
+    .terms-list li { margin-bottom: 5px; }
+
+    /* ================= SIGNATURES ================= */
+    .signature-container {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+      margin-top: 40px;
+    }
+    .signature-col { display: table-cell; text-align: center; padding: 0 9px; }
+    .signature-col .sig-label {
+      display: inline-block;
+      font-weight: 700;
+      color: var(--gov-red-dark);
+      border-bottom: 2px solid var(--gov-red);
+      padding-bottom: 4px;
+      margin-bottom: 14px;
+      font-size: 13.5px;
+    }
+    .signature-col p { font-size: 13px; line-height: 1.8; text-align: left; padding-left: 14px; }
+
+    /* ================= PRINT ADJUSTMENTS ================= */
+    @media print {
+      html, body { background: #fff; }
+      .sheet { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+      .signature-container { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="sheet">
+
+  <!-- ================= LETTERHEAD ================= -->
+  {% include 'includes/letterhead.html' with branch="(योजना शाखा)" %}
+{% editable_letter "bidding.print_contract_paper" "सम्झौता पत्र" %}
+
+  <!-- ================= TITLE ================= -->
+  <div class="form-title">( सम्झौता पत्र )</div>
+
+  <!-- ================= INTRO ================= -->
+  <div class="letter-body">
+    <p>
+      {% include 'includes/officename.html' %}
+      (यस पश्चात यसलाई कार्यालय भनिनेछ) र श्री
+      <strong>{{ contractor_name_nepali }}</strong>
+      (यस पश्चात यसलाई संस्था भनिनेछ)
+      बीच देहायका शर्तहरूको अधीनमा रही यो सम्झौता पत्र गरी
+      १–१ प्रति लियौ दियौ।
+    </p>
+  </div>
+
+  <!-- ================= CLAUSE 1 ================= -->
+  <div class="clause-title">(१) सम्झौता गर्ने पक्ष र आयोजनाः</div>
+  <div class="clause-body">
+    <p>
+      क. निर्माण व्यवसायी/फर्म/कम्पनीः <strong>{{ contractor_name_nepali }}</strong><br>
+      प्रतिनिधिः नाम {{ bidder_owner_nepali }},
+      पद प्रोप्राइटर,
+      ठेगाना {{ bidder_address_nepali }}
+    </p>
+    <p>
+      ख. आयोजनाको विवरणः<br>
+      नामः {{ project_name_nepali }}<br>
+      स्थानः {{ project_address }}<br>
+      स्वीकृत निकायः {% include 'includes/officename.html' %}
+    </p>
+  </div>
+
+  <!-- ================= CLAUSE 2 ================= -->
+  <div class="clause-title">(२) आयोजनाको लागत विवरण</div>
+  <div class="clause-body">
+    <p>
+      लागत अनुमान रु {{ cost_etimate|to_nepali_number }} (भ्याट समेत)<br>
+      कबोल रकम रु {{ bidding_amount|to_nepali_number }}
+    </p>
+  </div>
+
+  <!-- ================= CLAUSE 3 ================= -->
+  <div class="clause-title">(३) मर्मत सम्भार</div>
+  <div class="clause-body">
+    <p>मर्मतको जिम्मा लिने संस्थाः {{ contractor_name_nepali }}</p>
+  </div>
+
+  <!-- ================= CLAUSE 4 — TERMS ================= -->
+  <div class="clause-title">(४) सम्झौताका मुख्य शर्तहरू</div>
+  <ol class="terms-list">
+    <li>रकम आयोजनाको उद्देश्यका लागि मात्र प्रयोग गर्नेछौं।</li>
+    <li>
+      आयोजना {{ contract_date_nepali|nepali_date }} देखि
+      {{ contract_expire_date_nepali|nepali_date }} सम्म सम्पन्न गर्नेछौं।
+    </li>
+    <li>सार्वजनिक लेखा परीक्षण गराई पेश गर्नेछौं।</li>
+    <li>अन्य व्यवस्था प्रचलित कानुन बमोजिम हुनेछ।</li>
+  </ol>
+
+  <!-- ================= SIGNATURES ================= -->
+  <div class="signature-container">
+    <div class="signature-col">
+      <span class="sig-label">निर्माण व्यवसायी</span>
+      <p>दस्तखतः ...............</p>
+      <p>नामः ...............</p>
+      <p>मितिः ...............</p>
+    </div>
+
+    <div class="signature-col">
+      <span class="sig-label">योजना शाखा</span>
+      <p>दस्तखतः ...............</p>
+      <p>नामः ...............</p>
+      <p>मितिः ...............</p>
+    </div>
+
+    <div class="signature-col">
+      <span class="sig-label">{{ signer.post|default:"प्रमुख प्रशासकीय अधिकृत" }}</span>
+      <p>दस्तखतः ...............</p>
+      <p>नामः {{ signer.name|default:"..............." }}</p>{% if signer.note %}
+      <p style="font-size:11px">({{ signer.note }})</p>{% endif %}
+      <p>मितिः ...............</p>
+    </div>
+  </div>
+
+{% endeditable_letter %}
+</div>
+
+<script>
+  window.__letterPrint = function () {
+    window.print();
+    setTimeout(function () {
+      window.location.href = "__BID_RETURN__";
+    }, 2500);
+  };
+</script>
+
+</body>
+</html>

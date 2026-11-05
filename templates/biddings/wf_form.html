@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <p class="text-xs font-medium text-brand-700"><i class="fas fa-file-contract"></i> {{ module_label|default:"बोलपत्र ठेक्का" }}</p>
+      <h1 class="text-lg md:text-xl font-bold text-slate-800 mt-0.5"><i class="fas fa-{{ icon }} text-brand-500"></i> {{ title }}</h1>
+      <p class="text-sm text-slate-500 mt-0.5">{{ project.name }}{% if project.ward %} · वडा नं. {{ project.ward.name|to_nepali_number }}{% endif %}{% if bid.bidding_number %} · ठेक्का नं. {{ bid.bidding_number }}{% endif %}</p>
+    </div>
+    <a href="{{ back }}" class="btn-secondary"><i class="fas fa-arrow-left"></i> कार्यप्रवाहमा फर्कनुहोस्</a>
+  </div>
+
+  {% if bid and bid.bidding_amount %}
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div class="card p-3"><p class="text-[11px] text-slate-500">लागत अनुमान</p><p class="font-semibold text-slate-800">रु. {{ bid.total_cost_estimate|money:0 }}</p></div>
+    <div class="card p-3"><p class="text-[11px] text-slate-500">कबोल रकम</p><p class="font-semibold text-brand-700">रु. {{ bid.bidding_amount|money:0 }}</p>{% if below is not None %}<p class="text-[11px] text-slate-400">{% if below < 0 %}{{ below|floatformat:2|cut:'-'|to_nepali_number }}% बढी{% else %}{{ below|floatformat:2|to_nepali_number }}% घटी{% endif %}</p>{% endif %}</div>
+    <div class="card p-3 col-span-2"><p class="text-[11px] text-slate-500">निर्माण व्यवसायी</p><p class="font-semibold text-slate-800 truncate">{{ bid.bidder_name_nepali }}</p><p class="text-[11px] text-slate-400 truncate">{{ bid.bidder_address_nepali }}</p></div>
+  </div>
+  {% endif %}
+
+  {% if cards %}
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    {% for c in cards %}
+    <div class="card p-3 {% if c.wide %}col-span-2{% endif %}"><p class="text-[11px] text-slate-500">{{ c.label }}</p><p class="font-semibold {% if c.brand %}text-brand-700{% else %}text-slate-800{% endif %} truncate">{{ c.value }}</p>{% if c.sub %}<p class="text-[11px] text-slate-400 truncate">{{ c.sub }}</p>{% endif %}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if errors %}
+  <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 space-y-0.5">
+    {% for e in errors %}<p class="text-sm text-rose-700"><i class="fas fa-circle-exclamation"></i> {{ e }}</p>{% endfor %}
+  </div>
+  {% endif %}
+  {% if note %}
+  <div class="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-2.5 text-sm text-brand-900"><i class="fas fa-circle-info text-brand-500"></i> {{ note }}{% if note_link %} <a href="{{ note_link.url }}" class="font-semibold text-brand-700 underline whitespace-nowrap"><i class="fas fa-plus"></i> {{ note_link.label }}</a>{% endif %}</div>
+  {% endif %}
+
+  <div class="card">
+    <form method="post" id="bid-wf-form" {% if upload %}enctype="multipart/form-data"{% endif %} novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="p-6 space-y-6">
+        {% for sec in sections %}
+        <div>
+          <h2 class="section-title"><i class="fas fa-{{ sec.icon }}"></i> {{ sec.title }}</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {% for fld in sec.fields %}
+            <div class="{% if fld.wide %}md:col-span-3{% endif %}">
+              <label class="form-label" for="f-{{ fld.name }}">{{ fld.label }}{% if fld.required %} <span class="text-rose-500">*</span>{% endif %}</label>
+              {% if fld.kind == 'date' %}
+              <div class="relative">
+                <input type="text" id="f-{{ fld.name }}" name="{{ fld.name }}" value="{{ fld.value }}" class="form-input nepali-date !pr-9" placeholder="YYYY-MM-DD" autocomplete="off" {% if fld.required %}required{% endif %}>
+                <i class="far fa-calendar absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+              </div>
+              {% elif fld.kind == 'checks' %}
+              <div class="rounded-xl border border-slate-200 divide-y divide-slate-100 max-h-80 overflow-y-auto">
+                {% for o in fld.options %}
+                <label class="flex items-start gap-3 px-3 py-2.5 hover:bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="{{ fld.name }}" value="{{ o.value }}" class="form-check mt-0.5" {% if o.checked %}checked{% endif %}>
+                  <span class="min-w-0"><span class="block text-sm font-medium text-slate-800">{{ o.label }}</span>{% if o.sub %}<span class="block text-[11px] text-slate-400">{{ o.sub }}</span>{% endif %}</span>
+                </label>
+                {% empty %}
+                <p class="px-3 py-4 text-sm text-slate-400">सूची खाली छ।</p>
+                {% endfor %}
+              </div>
+              {% elif fld.kind == 'select' %}
+              <select id="f-{{ fld.name }}" name="{{ fld.name }}" class="form-select w-full" {% if fld.required %}required{% endif %}>
+                {% for o in fld.options %}<option value="{{ o.0 }}" {% if o.0 == fld.value %}selected{% endif %}>{{ o.1 }}</option>{% endfor %}
+              </select>
+              {% elif fld.kind == 'textarea' %}
+              <textarea id="f-{{ fld.name }}" name="{{ fld.name }}" rows="2" class="form-input" {% if fld.required %}required{% endif %}>{{ fld.value }}</textarea>
+              {% elif fld.kind == 'checkbox' %}
+              <label class="flex items-start gap-2 text-sm mt-1"><input type="checkbox" name="{{ fld.name }}" value="1" class="mt-1" {% if fld.value %}checked{% endif %}> <span>{{ fld.hint }}</span></label>
+              {% elif fld.kind == 'file' %}
+              <input type="file" id="f-{{ fld.name }}" name="{{ fld.name }}" accept=".pdf,.jpg,.jpeg,.png" class="form-input file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:text-brand-700 file:px-3 file:py-1.5 file:text-xs file:font-semibold">
+              {% else %}
+              <input type="text" id="f-{{ fld.name }}" name="{{ fld.name }}" value="{{ fld.value }}" {{ fld.attrs|safe }}
+                     class="form-input {% if fld.readonly %}bg-slate-50 font-semibold text-brand-700{% endif %}" {% if fld.readonly %}readonly tabindex="-1"{% endif %} {% if fld.required %}required{% endif %}>
+              {% endif %}
+              {% if fld.hint and fld.kind != 'checkbox' %}<p class="text-[11px] text-slate-400 mt-1">{{ fld.hint }}</p>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% if firm_options %}<datalist id="firm-options">{% for fo in firm_options %}<option value="{{ fo.firm_name }}">{{ fo.firm_pan }} {{ fo.firm_address }}</option>{% endfor %}</datalist>{% endif %}
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-2">
+        <a href="{{ back }}" class="btn-secondary">रद्द</a>
+        <button type="submit" class="btn-success"><i class="fas fa-floppy-disk"></i> {{ submit }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  var form = document.getElementById('bid-wf-form');
+  if (!form) return;
+  var NP = '०१२३४५६७८९';
+  function num(name) {
+    var el = form.elements[name]; if (!el) return 0;
+    var s = (el.value || '').replace(/[०-९]/g, function (c) { return NP.indexOf(c); }).replace(/,/g, '');
+    var n = parseFloat(s); return isNaN(n) ? 0 : n;
+  }
+  function set(name, v) { var el = form.elements[name]; if (el) el.value = (Math.round(v * 100) / 100).toFixed(2); }
+  var script = "{{ script|default:'' }}";
+
+  function calc(evt) {
+    var src = evt && evt.target ? evt.target.name : '';
+    if (script === 'estimate') {
+      set('total_cost_estimate', num('cost_estimate_vat') + num('ps_amount'));
+    } else if (script === 'below') {
+      var est = {{ estimate|default:0|stringformat:'s' }}, amt = num('bidding_amount');
+      var el = form.elements['below_pct'];
+      if (el) el.value = est && amt ? (((est - amt) * 100 / est).toFixed(2) + (amt > est ? ' (बढी)' : '')) : '';
+    } else if (script === 'running') {
+      if (src === 'total_evaluated_amount') set('payable_amount', Math.max(num('total_evaluated_amount') - {{ prev_cum|default:0|stringformat:'s' }}, 0));
+      var ded = num('advance_adjusted') + num('agrim_tax') + num('vat_deduction') + num('dharauti_deduction') + num('bahal_tax');
+      set('net_payable', num('payable_amount') - ded);
+    } else if (script === 'quot_final') {
+      if (src === 'totalValuation') set('retension', num('totalValuation') * 0.05);
+      if (src !== 'finalpayment' && form.dataset.manual !== '1') set('finalpayment', num('totalValuation') - num('retension') - num('taxdeduction') - {{ calc.advance|default:0 }});
+    } else if (script === 'final') {
+      if (form.dataset.manual === '1' && src !== 'final_amount') return;
+      var base = num('total_evaluation_amount') - {{ calc.run_gross|default:0 }} - {{ calc.adv_left|default:0 }};
+      var tax = num('agrim_tax') + num('vat_deduction') + num('dharauti_deduction') + num('bahal_tax') + num('ld_amount');
+      if (src !== 'final_amount') set('final_amount', base - tax);
+    }
+  }
+  form.addEventListener('input', function (e) {
+    if (script === 'final' && e.target.name === 'final_amount') { form.dataset.manual = '1'; return; }
+    if (script === 'quot_final' && e.target.name === 'finalpayment') { form.dataset.manual = '1'; return; }
+    calc(e);
+  });
+  if (script && script !== 'final' && script !== 'quot_final') calc();
+  if (script === 'final' && !form.elements['final_amount'].value) calc();
+})();
+</script>
+{% endblock %}

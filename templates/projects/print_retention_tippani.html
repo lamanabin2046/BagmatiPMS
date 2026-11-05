@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+{% load static %}
+{% load letters %}
+{% load nepali_date %}
+{% load nepali_filters %}
+{% load outputs %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8">
+  <title>धरौटी फिर्ता टिप्पणी</title>
+  <style>
+    @page { size: A4; margin: 40px 40px 40px 0.7in; }
+    body { font-family: "Mangal", "Kalimati", "Noto Sans Devanagari", Arial, sans-serif; font-size: 15px; color: #000; line-height: 1.9; margin: 0 auto; max-width: 780px; padding: 20px; }
+    .date-right { text-align: right; margin-bottom: 10px; }
+    .subject { text-align: center; font-weight: bold; text-decoration: underline; margin: 18px 0; }
+    .text-main { text-align: justify; }
+    table.lines { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 14px; }
+    table.lines th, table.lines td { border: 1px solid #555; padding: 4px 8px; }
+    table.lines th { background: #f2f2f2; text-align: center; }
+    table.lines td.amt { text-align: right; white-space: nowrap; }
+    .signature-section { margin-top: 70px; display: flex; justify-content: space-between; text-align: center; }
+  </style>
+</head>
+<body>
+
+{% include 'includes/letterhead.html' with title="टिप्पणी र आदेश" %}
+{% editable_letter "projects.print_retention_tippani" "धरौटी फिर्ता टिप्पणी" %}
+
+<div class="date-right"><strong>मिति:</strong> {{ today_bs }}</div>
+
+<div class="subject">विषयः धरौटी रकम फिर्ता सम्बन्धमा ।</div>
+
+<p>श्रीमान्,</p>
+
+<p class="text-main">
+  यस {{ palika.full_name }}को
+  {% if project.fiscalyear %}आ.व. {{ project.fiscalyear.name|to_nepali_number }} मा {% endif %}वडा नं.
+  {{ project.ward.name|to_nepali_number }} मा
+  {% if item.kind == 'uc' %}उपभोक्ता समितिमार्फत{% elif item.kind == 'bid' %}बोलपत्रमार्फत{% else %}दरभाउपत्रमार्फत{% endif %}
+  सञ्चालित <strong>“{{ project.name }}”</strong> योजनाको {{ item.party_label }}
+  <strong>श्री {{ item.party }}</strong> लाई भुक्तानी दिँदा
+  धरौटी बापत जम्मा रु. {{ item.held|money }}/-
+  ({{ item.held|to_devanagari_words }}) कट्टा गरी राखिएको छ ।
+</p>
+
+<table class="lines">
+  <thead><tr><th style="width:60px">क्र.सं.</th><th>मिति</th><th>भुक्तानी</th><th>शीर्षक</th><th style="width:160px">रकम (रु.)</th></tr></thead>
+  <tbody>
+    {% for ln in lines %}
+    <tr><td style="text-align:center">{{ forloop.counter|to_nepali_number }}</td><td>{{ ln.date_bs }}</td><td>{{ ln.source }}</td><td>{{ ln.label }}</td><td class="amt">{{ ln.amount|money }}</td></tr>
+    {% endfor %}
+    <tr><td colspan="4" style="text-align:right"><strong>जम्मा</strong></td><td class="amt"><strong>{{ item.held|money }}</strong></td></tr>
+  </tbody>
+</table>
+
+<p class="text-main">
+  उक्त योजनाको अन्तिम भुक्तानी मिति {{ completed_bs }} बाट {{ months|to_nepali_number }} महिनाको त्रुटि सच्याउने अवधि
+  {% if early %}मिति {{ due_bs }} मा सकिने भए पनि{% else %}मिति {{ due_bs }} मा समाप्त भएको र सो अवधिमा{% endif %}
+  निर्माण कार्यमा कुनै त्रुटि नदेखिएको भनी
+  {% if rel.rec_by == 'ward' %}वडा कार्यालयबाट{% else %}प्राविधिक (इन्जिनियर) बाट{% endif %}
+  मिति {{ rec_bs }}{% if rel.rec_number %} (पत्र संख्या / च.नं. {{ rel.rec_number }}){% endif %} मा
+  धरौटी फिर्ता दिन सिफारिस प्राप्त भएकोले नियमानुसार उक्त धरौटी रकम रु. {{ item.held|money }}/-
+  सम्बन्धित {{ item.party_label }}लाई फिर्ता दिन उपयुक्त देखिएकोले निर्णयार्थ पेश गरेको छु ।
+</p>
+{% if early %}
+<p class="text-main"><strong>द्रष्टव्य:</strong> धरौटी अवधि पूरा हुनुअघि नै फिर्ता गर्नुपर्ने कारण ……………………………………………………</p>
+{% endif %}
+
+<div class="signature-section">
+  <div>.....................<br>योजना शाखा<br>पेश गर्ने</div>
+  <div>.....................<br>लेखा शाखा<br>सिफारिस गर्ने</div>
+  <div>.........................<br>प्रमुख प्रशासकीय अधिकृत<br>सदर गर्ने</div>
+</div>
+
+{% endeditable_letter %}
+<script>
+  window.__letterPrint = function () {
+    window.print();
+    setTimeout(function () { window.location.href = "{{ back }}"; }, 1200);
+  };
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block title %}उपभोक्ता समिति विवरण{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+
+  <div>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">उपभोक्ता समिति विवरण</h1>
+  </div>
+
+  <div class="card">
+    <form method="post" enctype="multipart/form-data" action="{% if project %}{% url 'add_usercommittee_for_project' project.id %}{% else %}{% url 'add_usercommittee' %}{% endif %}">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-building"></i> योजना विवरण</h2>
+          {% if project %}
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">आयोजना</label>
+              <input type="text" class="form-input bg-slate-50 font-medium" value="{{ project.name }}" readonly>
+            </div>
+            <div>
+              <label class="form-label">आयोजनाको ठेगाना</label>
+              <input type="text" class="form-input bg-slate-50" value="{{ project.address }}" readonly>
+            </div>
+            <div>
+              <label class="form-label">कुल बजेट</label>
+              <input type="text" class="form-input bg-slate-50 font-semibold text-emerald-600" value="रु. {{ project.budget|floatformat:0 }}" readonly>
+            </div>
+          </div>
+          {% else %}
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">योजना</label>
+              <select name="project" id="projectSelect" class="form-select w-full" data-placeholder="योजना खोज्नुहोस..." required>
+                <option></option>
+                {% for i in projects %}
+                <option value="{{ i.id }}"{% if selected_project == i.id|stringformat:"s" %} selected{% endif %} data-address="{{ i.address|default:'' }}" data-budget="{{ i.budget|default:'' }}">
+                  {{ i.name }} — {{ i.address }} — रु. {{ i.budget }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="form-label">योजनाको स्थान</label>
+              <input type="text" id="projectAddress" class="form-input" readonly>
+            </div>
+            <div>
+              <label class="form-label">कुल बजेट</label>
+              <input type="text" id="projectBudget" class="form-input font-semibold text-emerald-600" readonly>
+            </div>
+          </div>
+          {% endif %}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label class="form-label">उपभोक्ता समितिको नाम</label>
+              <input type="text" name="name" class="form-input" value="{{ form.name|default:'' }}" required>
+            </div>
+            <div>
+              <label class="form-label">समिति गठन मिति</label>
+              <input type="text" name="formation_date" class="form-input nepali-date" value="{{ form.formation_date|default:'' }}" required>
+            </div>
+          </div>
+        </div>
+
+        {% include 'Admin/User/_uc_roster.html' %}
+
+        {% if user.user_type == '1' or user.user_type == '3' %}
+        <div>
+          <h2 class="section-title"><i class="fas fa-calendar-days"></i> आयोजना कार्यन्वयन अवधि</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">सुरु मिति</label>
+              <input name="start_date" class="form-input nepali-date" value="{{ form.start_date|default:'' }}" required>
+            </div>
+            <div>
+              <label class="form-label">समाप्त मिति</label>
+              <input name="accomplish_date" class="form-input nepali-date" value="{{ form.accomplish_date|default:'' }}" required>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-xs text-slate-500">
+          <i class="fas fa-circle-info"></i> योजना सुरु मिति र समाप्त मिति योजना शाखा/एडमिनबाट पछि थपिनेछ।
+        </div>
+        {% endif %}
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> समिति सुरक्षित गर्नुहोस्
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+{% if not project %}
+<script>
+$(function () {
+  const $project = $('#projectSelect');
+
+  $project.select2({
+    placeholder: $project.data('placeholder'),
+    allowClear: true,
+    width: '100%'
+  });
+
+  function autofillProject(data) {
+    if (!data || !data.element) {
+      $('#projectAddress').val('');
+      $('#projectBudget').val('');
+      return;
+    }
+    const el = data.element;
+    $('#projectAddress').val(el.dataset.address || '');
+    $('#projectBudget').val(el.dataset.budget ? 'रु. ' + el.dataset.budget : '');
+  }
+
+  $project.on('select2:select', function (e) { autofillProject(e.params.data); });
+  $project.on('select2:clear', function () { autofillProject(null); });
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load nepali_date %}
+{% block title %}अन्तिम विल भुक्तानी विवरण{% endblock %}
+
+{% block extra_head %}
+<style>
+  .table-compact th, .table-compact td { padding: 6px 8px !important; font-size: 11.5px; white-space: nowrap; }
+  .table-compact td.wrap-cell { white-space: normal; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">अन्तिम भुक्तानी विवरण (Final Payment)</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell table-compact" data-table="true">
+        <thead>
+          <tr>
+            <th>क्र.सं.</th>
+            <th>योजना</th>
+            <th>ठेक्का नं</th>
+            <th class="text-right">कबोल रकम</th>
+            <th class="text-right">कुल अग्रिम</th>
+            <th>कर / कट्टी</th>
+            <th class="text-right">खुद भुक्तानी</th>
+            <th>भुक्तानी मिति</th>
+
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fp in final_payments %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td class="wrap-cell" style="max-width:180px;">{{ fp.contract.sealed_bid.project.name }}</td>
+            <td>{{ fp.contract.sealed_bid.bidding_number }}</td>
+            <td class="text-right font-semibold">{{ fp.bidding_amount|floatformat:2 }}</td>
+            <td class="text-right text-rose-600">{{ fp.total_advance_payment|floatformat:2 }}</td>
+            <td class="text-right text-rose-600 font-semibold"
+                title="अग्रिम कर {{ fp.agrim_tax|floatformat:2 }} + VAT {{ fp.vat_deduction|floatformat:2 }} + धरौटी {{ fp.dharauti_deduction|floatformat:2 }} + बहाल कर {{ fp.bahal_tax|floatformat:2 }}">
+              {{ fp.agrim_tax|add:fp.vat_deduction|add:fp.dharauti_deduction|add:fp.bahal_tax|floatformat:2 }}
+            </td>
+            <td class="text-right font-semibold text-emerald-600">{{ fp.final_amount|floatformat:2 }}</td>
+            <td>{{ fp.payment_date|nepali_date }}</td>
+         
+            <td>
+              <a href="{% url 'print_final_tippani' fp.id %}" class="btn-chip-slate">टिप्पणी</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="10" class="text-center text-slate-400 py-6">कुनै अन्तिम भुक्तानी विवरण उपलब्ध छैन।</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

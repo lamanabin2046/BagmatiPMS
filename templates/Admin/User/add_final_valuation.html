@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load nepali_date %}
+{% load nepali_filters %}
+{% block title %}अन्तिम विल मुल्यांकन{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+
+  <div>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">आयोजनाको अन्तिम विल तयार गर्नुहोस्</h1>
+  </div>
+
+  <div class="card">
+    <form action="{% url 'add_final_valuation' %}" method="post" id="add_project_form" enctype="multipart/form-data"
+          data-user-cortribution-url="{% url 'ajax_load_user_contribution' %}"
+          data-contingency-url="{% url 'ajax_load_contingency' %}"
+          data-budget-url="{% url 'ajax_load_budget' %}">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-building"></i> योजना विवरण</h2>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="form-label">टिप्पणी मिति</label>
+              <input type="text" class="form-input nepali-date date-required-check" name="application_date" placeholder="YYYY-MM-DD" required>
+              <p class="form-hint">(टिप्पणी लेखिएको मिति)</p>
+            </div>
+            <div class="md:col-span-3">
+              <label class="form-label">योजनाको नामः</label>
+              <select class="form-select select2 w-full" name="project" id="id_project">
+                <option value="" {% if not request.GET.project %}selected{% endif %} disabled>योजना छान्नुहोस</option>
+                {% for i in cost_estimate %}
+                <option value="{{ i.id }}" data-budget="{{ i.project.budget }}" data-share="{{ i.office_contribution|stringformat:'s' }}" data-total="{{ i.total_cost|stringformat:'s' }}" data-category="{{ i.project.work_category_id|default:'' }}" {% if request.GET.project == i.project_id|stringformat:"s" %}selected{% endif %}>{{ i.project.name }}-{{ i.project.address }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div>
+              <label class="form-label">विनियोजत रकम</label>
+              <input type="text" class="form-input" name="budget" id="budget" required>
+            </div>
+            <div>
+              <label class="form-label">कन्टेन्जेन्सी कट्टी रकम</label>
+              <input type="text" class="form-input" name="contingency" id="contingency" required>
+            </div>
+            <div>
+              <label class="form-label">उपभोक्ता समितिको लागत (श्रमदान)</label>
+              <input type="text" class="form-input" name="user_contribution" id="user_contribution">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-magnifying-glass-chart"></i> प्राविधिक मुल्यांकन गर्दा</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">जम्मा मुल्यांकन रकम</label>
+              <input type="text" class="form-input" name="totalValuation" id="totalValuation" placeholder="total valuation" required>
+            </div>
+            <div>
+              <label class="form-label">{{ palika.palika_type }}बाट भुक्तानी हुने रकम</label>
+              <input type="text" class="form-input" name="officeContribution" placeholder="Official Payment Amount">
+            </div>
+            <div>
+              <label class="form-label">उपोक्ता समितले व्यहोर्ने रकम</label>
+              <input type="text" class="form-input" name="usersContribution" id="usersContribution" placeholder="Users Contribution" required>
+            </div>
+          </div>
+        </div>
+
+        {% if prev_installments %}
+        <div class="rounded-xl border border-brand-100 bg-brand-50/50 px-4 py-3 text-sm">
+          <p class="font-semibold text-brand-800 mb-1"><i class="fas fa-layer-group"></i> यस अघि दिइएका किस्ता (खुद भुक्तानीबाट कट्टी हुन्छन्)</p>
+          {% for i in prev_installments %}<p class="text-slate-700">{{ i.get_kind_display }} {{ i.number }} औं किस्ता — रु. {{ i.amount }}</p>{% endfor %}
+          <p class="text-slate-800 font-semibold mt-1">जम्मा: रु. {{ tax_less }}</p>
+        </div>
+        {% endif %}
+        {% include 'Admin/User/_tax_rows.html' %}
+
+        {% include 'Admin/User/_outputs.html' %}
+        {% include 'Admin/User/_final_check.html' %}
+        {% include 'includes/_optional_doc.html' with label="मूल्याङ्कन प्रतिवेदन / नापी किताब" %}
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" onclick="validateForm(event)" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+  $(document).ready(function () {
+    $('#id_project').select2({ width: '100%' });
+  });
+
+  $("#id_project").change(function () {
+    const url = $("#add_project_form").attr("data-budget-url");
+    const projectid = $(this).val();
+    $.ajax({
+      url: url,
+      data: { "projectid": projectid },
+      success: function (data) {
+        $("#budget").val(data);
+        const budget = $("#id_project option:selected").data("budget");
+        const marmatRate = 0.00;
+        const marmat = budget * marmatRate;
+        $("#marmat").val(marmat);
+      }
+    });
+  });
+
+  $("#id_project").change(function () {
+    const url = $("#add_project_form").attr("data-user-cortribution-url");
+    const projectid = $(this).val();
+    $.ajax({
+      url: url,
+      data: { "projectid": projectid },
+      success: function (data) { $("#user_contribution").val(data); }
+    });
+  });
+
+  $("#id_project").change(function () {
+    const url = $("#add_project_form").attr("data-contingency-url");
+    const projectid = $(this).val();
+    $.ajax({
+      url: url,
+      data: { "projectid": projectid },
+      success: function (data) { $("#contingency").val(data); }
+    });
+  });
+
+  (function (fn) { document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", fn) : fn(); })(function () {
+    var totalValuationInput = document.getElementById("totalValuation");
+    var officeContributionInput = document.querySelector("input[name='officeContribution']");
+    var usersContributionInput = document.getElementById("usersContribution");
+    var budgetInput = document.getElementById("budget");
+    var contingencyInput = document.getElementById("contingency");
+    var userContributionInput = document.getElementById("user_contribution");
+
+    totalValuationInput.addEventListener("input", function () {
+      var totalValuation = parseFloat(totalValuationInput.value);
+      var budget = parseFloat(budgetInput.value);
+      var contingency = parseFloat(contingencyInput.value);
+      var userContribution = parseFloat(userContributionInput.value);
+
+      var budgetContingencyUserSum = budget - contingency + userContribution;
+      if (budgetContingencyUserSum > totalValuation) {
+        var calculatedContribution = ((budget - contingency) * totalValuation) / budgetContingencyUserSum;
+        officeContributionInput.value = calculatedContribution.toFixed(2);
+      } else {
+        officeContributionInput.value = (budget - contingency).toFixed(2);
+      }
+      var usersContribution = totalValuation - parseFloat(officeContributionInput.value);
+      usersContributionInput.value = usersContribution.toFixed(2);
+      if (window.__taxRecalc) { window.__taxRecalc(); }
+    });
+  });
+
+  function validateForm(event) {
+    var form = document.getElementById("add_project_form");
+    if (!form.checkValidity()) {
+      event.preventDefault();
+      event.stopPropagation();
+      form.classList.add("was-validated");
+    }
+    form.classList.add("was-validated");
+  }
+
+  // opened from the workflow page with ?project=<id>: load its amounts straight away
+  $(function () { if ($("#id_project").val()) { $("#id_project").trigger("change"); } });
+</script>
+{% endblock %}

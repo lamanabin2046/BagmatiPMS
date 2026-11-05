@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+{% load letters outputs %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if doc == 'estimate' %}राजस्व मूल्याङ्कन टिप्पणी{% elif doc == 'notice' %}बोलपत्र आह्वान सूचना{% elif doc == 'comparison' %}तुलनात्मक विवरण{% elif doc == 'acceptance' %}स्वीकृति पत्र{% elif doc == 'agreement' %}सम्झौता{% elif doc == 'receipt' %}राजस्व रसिद{% elif doc == 'reminder' %}ताकेता पत्र{% else %}फरफारक टिप्पणी{% endif %} — {{ s.name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @page { size: A4; margin: 20mm 18mm 18mm 25mm; }
+    body { font-family: 'Noto Sans Devanagari', sans-serif; color: #1c1c1c; background: #eef1f5; font-size: 14.5px; line-height: 1.85; }
+    .sheet { background: #fff; max-width: 210mm; margin: 24px auto; padding: 22mm 18mm 20mm 25mm; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+    .page-break { page-break-before: always; margin-top: 28px; padding-top: 18px; border-top: 1px dashed #bbb; }
+    .meta { display: flex; justify-content: space-between; margin: 14px 0 6px; font-size: 13.5px; }
+    .subject { font-weight: 700; text-align: center; margin: 10px 0 14px; text-decoration: underline; }
+    .title { font-weight: 800; text-align: center; font-size: 17px; margin: 8px 0 12px; }
+    p { text-align: justify; margin-bottom: 8px; }
+    ol.terms { padding-left: 22px; margin-bottom: 10px; }
+    ol.terms li { margin-bottom: 4px; text-align: justify; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; font-size: 13.5px; }
+    th, td { border: 1px solid #444; padding: 5px 8px; vertical-align: top; }
+    th { background: #f3f4f6; }
+    td.r { text-align: right; white-space: nowrap; }
+    tr.sel td { background: #eefaf3; font-weight: 600; }
+    .sign { display: flex; justify-content: space-between; margin-top: 56px; gap: 16px; text-align: center; font-size: 13.5px; }
+    .sign div { flex: 1; border-top: 1px dotted #333; padding-top: 4px; }
+    @media print { body { background: #fff; } .sheet { margin: 0; padding: 0; box-shadow: none; max-width: none; } .page-break { border-top: 0; margin-top: 0; } }
+  </style>
+</head>
+<body>
+<div class="sheet">
+  {% include 'includes/letterhead.html' with branch="(राजस्व शाखा)" %}
+
+{% if doc == 'estimate' %}
+{% editable_letter "revenue.estimate" "राजस्व ठेक्का: मूल्याङ्कन टिप्पणी" %}
+  <div class="meta"><span>टिप्पणी र आदेश</span><span>मिति: {{ s.estimate_date|bs }}</span></div>
+  <div class="subject">विषयः– {{ s.name }} को राजस्व ठेक्का बन्दोबस्त गर्ने सम्बन्धमा ।</div>
+  <p>श्रीमान्,</p>
+  <p>यस {{ palika.full_name|default:palika.name }}{% if s.ward %} वडा नं. {{ s.ward.name|npn }}{% endif %} {% if s.location %}{{ s.location }} स्थित {% endif %}<b>“{{ s.name }}”</b>
+    ({{ s.get_category_display }}) को आ.व. {{ s.fiscalyear.name }} को {{ s.contract_months|npn }} महिनाको ठेक्का बन्दोबस्त गर्नुपर्ने भएकाले देहायबमोजिम राजस्व मूल्याङ्कन गरिएको छ:</p>
+  <table>
+    <tr><th>विवरण</th><th>मान</th></tr>
+    {% if s.survey_date %}<tr><td>प्राविधिक सर्वेक्षण</td><td>{{ s.survey_date|bs }} · {{ s.surveyor }}{% if s.survey_quantity %} · उपलब्ध परिमाण {{ s.survey_quantity|money }} {{ s.unit }}{% endif %}</td></tr>{% endif %}
+    {% if s.env_type %}<tr><td>वातावरणीय स्वीकृति</td><td>{{ s.get_env_type_display }} · {{ s.env_ref }} ({{ s.env_approved_on|bs }}{% if s.env_valid_until %}, म्याद {{ s.env_valid_until|bs }}{% endif %})</td></tr>{% endif %}
+    <tr><td>अनुमानित परिमाण</td><td class="r">{{ s.est_quantity|money }} {{ s.unit }}</td></tr>
+    <tr><td>स्वीकृत दर (रु.)</td><td class="r">{{ s.rate|money }}</td></tr>
+    <tr><td><b>अनुमानित राजस्व (परिमाण × दर)</b></td><td class="r"><b>{{ s.est_revenue|money }}</b></td></tr>
+    <tr><td><b>प्रस्तावित न्यूनतम कबोल अङ्क</b></td><td class="r"><b>{{ s.min_bid|money }}</b></td></tr>
+  </table>
+  {% if s.estimate_note %}<p><b>दरको आधार:</b> {{ s.estimate_note|linebreaksbr }}</p>{% endif %}
+  <p>अतः उपर्युक्त न्यूनतम कबोल अङ्क स्वीकृत गरी {{ s.contract_months|npn }} महिनाको लागि बोलपत्र आह्वान गर्न निर्णयार्थ पेश गरेको छु।</p>
+  <div class="sign"><div>पेश गर्ने<br>(राजस्व शाखा)</div><div>सिफारिस गर्ने<br>(लेखा / प्राविधिक)</div><div>सदर गर्ने<br>{{ s.approver_name|default:"(प्रमुख प्रशासकीय अधिकृत)" }}</div></div>
+{% endeditable_letter %}
+
+{% elif doc == 'notice' %}
+{% if public %}<p style="text-align:right;font-size:12px"><a href="{{ back }}">← सबै सूचना</a></p>{% endif %}
+{% editable_letter "revenue.notice" "राजस्व ठेक्का: बोलपत्र आह्वान सूचना" %}
+  <div class="meta"><span>सूचना नं.: {{ s.notice_ref|default:'' }}</span><span>प्रकाशित मिति: {{ s.notice_date|bs }}</span></div>
+  <div class="title">राजस्व ठेक्का बन्दोबस्त सम्बन्धी बोलपत्र आह्वानको सूचना</div>
+  <p>यस {{ palika.full_name|default:palika.name }}को आ.व. {{ s.fiscalyear.name }} को देहायको राजस्व स्रोतको ठेक्का बन्दोबस्त गर्न इच्छुक, कानुनबमोजिम दर्ता भएका फर्म / व्यक्तिहरूबाट
+    यो सूचना प्रकाशित भएको मितिले {{ days|npn }} दिनभित्र अर्थात् मिति {{ s.bid_deadline|bs }} सम्म कार्यालय समयभित्र छाप लगाइएको बोलपत्र आह्वान गरिन्छ।</p>
+  <table>
+    <tr><th>राजस्व स्रोत</th><th>स्थान</th><th>अवधि</th><th>न्यूनतम कबोल (रु.)</th><th>बोलपत्र जमानत</th></tr>
+    <tr><td>{{ s.name }} ({{ s.get_category_display }}){% if s.est_quantity and s.category == 'riverbed' %}<br><small>परिमाण {{ s.est_quantity|money }} {{ s.unit }}</small>{% endif %}</td>
+      <td>{% if s.ward %}वडा नं. {{ s.ward.name|npn }}, {% endif %}{{ s.location }}</td><td>{{ s.contract_months|npn }} महिना</td>
+      <td class="r">{{ s.min_bid|money }}</td><td>कबोल अङ्कको {{ s.bid_security_pct|floatformat:"-2"|npn }}%</td></tr>
+  </table>
+  {% if s.permitted_area %}<p><b>क्षेत्र:</b> {{ s.permitted_area }}</p>{% endif %}
+  <p><b>शर्तहरू:</b></p><p>{{ s.conditions|linebreaksbr }}</p>
+  <p>बोलपत्र मिति {{ s.bid_deadline|bs }} पछि बोलपत्रदाता वा प्रतिनिधिको रोहबरमा खोलिनेछ। कुनै वा सबै बोलपत्र स्वीकृत वा अस्वीकृत गर्ने अधिकार यस कार्यालयमा सुरक्षित रहनेछ।</p>
+  <div class="sign"><div style="flex:0 0 40%;margin-left:auto">{% include 'includes/_sign_inline.html' %}</div></div>
+{% endeditable_letter %}
+
+{% elif doc == 'comparison' %}
+{% editable_letter "revenue.comparison" "राजस्व ठेक्का: बोलपत्र तुलनात्मक विवरण" %}
+  <div class="meta"><span>बोलपत्र खोलेको मिति: {{ s.opening_date|bs }}</span><span>मिति: {{ today|bs }}</span></div>
+  <div class="subject">विषयः– {{ s.name }} को बोलपत्रको तुलनात्मक विवरण र मूल्याङ्कन ।</div>
+  <p>मिति {{ s.notice_date|bs }} को सूचनाबमोजिम प्राप्त बोलपत्रहरू मिति {{ s.opening_date|bs }} मा खोलिएकोमा तिनको विवरण (न्यूनतम कबोल रु. {{ s.min_bid|money }}) देहायबमोजिम छ:</p>
+  <table>
+    <tr><th>क्र.सं.</th><th>बोलपत्रदाता</th><th>PAN</th><th>योग्यता / कागजात</th><th>जमानत</th><th>कबोल अङ्क (रु.)</th><th>मान्य</th></tr>
+    {% for b, ok in ranked %}<tr class="{% if rec.id == b.id %}sel{% endif %}"><td>{{ forloop.counter|npn }}</td><td>{{ b.name }}{% if b.address %}, {{ b.address }}{% endif %}{% if b.remarks %}<br><small>{{ b.remarks }}</small>{% endif %}</td>
+      <td>{{ b.pan|default:'—' }}</td><td>{% if b.eligible %}पुगेको{% else %}नपुगेको{% endif %}</td><td>{% if b.security_ok %}ठीक{% else %}नमिलेको{% endif %}</td>
+      <td class="r">{{ b.amount|money }}</td><td>{% if ok %}मान्य{% else %}अमान्य{% endif %}</td></tr>{% endfor %}
+  </table>
+  {% if rec %}<p>उपर्युक्तमध्ये योग्यता, बोलपत्र जमानत र प्रकाशित शर्त पूरा गर्ने उच्चतम कबोल अङ्क <b>{{ rec.name }}</b> को रु. {{ rec.amount|money }} देखिएकाले स्वीकृतिका लागि सिफारिस गरिन्छ।</p>
+  {% else %}<p>कुनै बोलपत्र मान्य नदेखिएकाले पुनः बोलपत्र आह्वान गर्न सिफारिस गरिन्छ।</p>{% endif %}
+  <div class="sign"><div>सदस्य<br>(मूल्याङ्कन समिति)</div><div>सदस्य<br>(मूल्याङ्कन समिति)</div><div>संयोजक<br>(मूल्याङ्कन समिति)</div></div>
+{% endeditable_letter %}
+
+{% elif doc == 'acceptance' %}
+{% editable_letter "revenue.acceptance" "राजस्व ठेक्का: बोलपत्र स्वीकृति पत्र" %}
+  <div class="meta"><span>पत्र संख्या:</span><span>मिति: {{ s.award_at.date|bs }}</span></div>
+  <p>श्री {{ s.selected.name }}<br>{{ s.selected.address }}{% if s.selected.pan %}<br>PAN: {{ s.selected.pan }}{% endif %}</p>
+  <div class="subject">विषयः– बोलपत्र स्वीकृत भएको सम्बन्धमा ।</div>
+  <p>यस कार्यालयको मिति {{ s.notice_date|bs }} को सूचनाबमोजिम “{{ s.name }}” को ठेक्काका लागि तपाईंले पेश गर्नुभएको रु. {{ s.selected.amount|money }} को बोलपत्र स्वीकृत भएकाले
+    यो पत्र प्राप्त भएको मितिले ७ दिनभित्र कार्यसम्पादन जमानत र पहिलो किस्ता बुझाई सम्झौता गर्न आउनुहुन अनुरोध छ। तोकिएको म्यादभित्र सम्झौता नगरेमा बोलपत्र जमानत जफत हुनेछ।</p>
+  <div class="sign"><div style="flex:0 0 40%;margin-left:auto">{% include 'includes/_sign_inline.html' %}</div></div>
+{% endeditable_letter %}
+{% for b, ok in ranked %}{% if b.id != s.selected_id %}
+<div class="page-break">
+{% include 'includes/letterhead.html' with branch="(राजस्व शाखा)" %}
+  <div class="meta"><span>पत्र संख्या:</span><span>मिति: {{ s.award_at.date|bs }}</span></div>
+  <p>श्री {{ b.name }}<br>{{ b.address }}</p>
+  <div class="subject">विषयः– बोलपत्र सम्बन्धमा ।</div>
+  <p>“{{ s.name }}” को ठेक्काका लागि तपाईंले पेश गर्नुभएको बोलपत्र {% if not ok %}शर्त / न्यूनतम कबोल नपुगेकाले {% endif %}स्वीकृत हुन नसकेको र {{ s.selected.name }} को बोलपत्र स्वीकृत भएको व्यहोरा जानकारी गराइन्छ।
+    तपाईंको बोलपत्र जमानत नियमानुसार फिर्ता लिन सक्नुहुनेछ।</p>
+  <div class="sign"><div style="flex:0 0 40%;margin-left:auto">{% include 'includes/_sign_inline.html' %}</div></div>
+</div>
+{% endif %}{% endfor %}
+
+{% elif doc == 'agreement' %}
+{% editable_letter "revenue.agreement" "राजस्व ठेक्का: सम्झौता" %}
+  <div class="meta"><span>सम्झौता नं.: {{ s.agreement_no|default:'' }}</span><span>मिति: {{ s.agreement_date|bs }}</span></div>
+  <div class="title">राजस्व ठेक्का सम्झौता-पत्र</div>
+  <p>{{ palika.full_name|default:palika.name }} (यसपछि “प्रथम पक्ष”) र {{ s.selected.name }}, {{ s.selected.address }}{% if s.selected.pan %} (PAN {{ s.selected.pan }}){% endif %} (यसपछि “दोस्रो पक्ष”) बीच
+    “{{ s.name }}” ({{ s.get_category_display }}) को राजस्व ठेक्का देहायका शर्तमा दिन यो सम्झौता गरिएको छ:</p>
+  <ol class="terms">
+    <li>ठेक्का रकम रु. {{ s.contract_amount|money }} हुनेछ; ठेक्का अवधि मिति {{ s.start_date|bs }} देखि {{ s.end_date|bs }} सम्म।</li>
+    <li>दोस्रो पक्षले देहायको तालिकाअनुसार किस्ता बुझाउनुपर्नेछ; म्याद नाघेमा प्रचलित कानुनबमोजिम विलम्ब शुल्क लाग्नेछ र ठेक्का रद्द हुन सक्नेछ।</li>
+  </ol>
+  <table><tr><th>किस्ता</th><th>बुझाउनुपर्ने मिति</th><th>रकम (रु.)</th></tr>
+    {% for i in ms.instalments %}<tr><td>{{ i.n|npn }}</td><td>{{ i.due_date|bs }}</td><td class="r">{{ i.amount|money }}</td></tr>{% endfor %}</table>
+  <ol class="terms" start="3">
+    <li>दोस्रो पक्षले रु. {{ s.security_amount|money }} को कार्यसम्पादन जमानत ({{ s.security_ref }}, म्याद {{ s.security_expiry|bs }}) राखेको छ; सबै दायित्व पूरा भई फरफारक भएपछि मात्र फिर्ता हुनेछ।</li>
+    {% if s.permitted_area %}<li>सङ्कलन / उत्खनन तोकिएको क्षेत्रमा मात्र गर्नुपर्नेछ: {{ s.permitted_area }}{% if s.category == 'riverbed' %}; परिमाण {{ s.est_quantity|money }} {{ s.unit }} भन्दा बढी हुने छैन{% endif %}।</li>{% endif %}
+    {% if s.env_type %}<li>वातावरणीय स्वीकृति ({{ s.env_ref }}) मा तोकिएका शर्त र वातावरण संरक्षणका उपाय पालना गर्नुपर्नेछ।</li>{% endif %}
+    <li>प्रथम पक्षले जुनसुकै बेला अनुगमन गर्न सक्नेछ; शर्त उल्लङ्घन भएमा जरिवाना, जमानत जफत र सम्झौता रद्द हुन सक्नेछ।</li>
+    <li>दोस्रो पक्षले ठेक्का अरूलाई हस्तान्तरण गर्न पाउने छैन। यसमा उल्लेख नभएका कुरा प्रचलित कानुनबमोजिम हुनेछ।</li>
+  </ol>
+  <div class="sign"><div>दोस्रो पक्ष<br>{{ s.selected.name }}</div><div>साक्षी</div><div>प्रथम पक्ष<br>{% include 'includes/_sign_inline.html' %}</div></div>
+{% endeditable_letter %}
+
+{% elif doc == 'receipt' %}
+  <div class="title">राजस्व प्राप्ति रसिद</div>
+  <div class="meta"><span>रसिद नं.: <b>{{ pay.receipt_no }}</b></span><span>मिति: {{ pay.date|bs }}</span></div>
+  <table>
+    <tr><td>राजस्व स्रोत</td><td>{{ s.name }} ({{ s.get_category_display }})</td></tr>
+    <tr><td>ठेकेदार</td><td>{{ s.selected.name }}{% if s.selected.pan %} · PAN {{ s.selected.pan }}{% endif %}</td></tr>
+    <tr><td>सम्झौता</td><td>{{ s.agreement_no|default:'' }} · {{ s.agreement_date|bs }} · रु. {{ s.contract_amount|money }}</td></tr>
+    <tr><td>किस्ता</td><td>{{ inst.n|npn }} (बुझाउनुपर्ने मिति {{ inst.due_date|bs }}, रु. {{ inst.amount|money }})</td></tr>
+    <tr><td>किस्ता रकम</td><td class="r">{{ pay.amount|money }}</td></tr>
+    {% if pay.late_fee %}<tr><td>विलम्ब शुल्क</td><td class="r">{{ pay.late_fee|money }}</td></tr>{% endif %}
+    <tr><td><b>प्राप्त रकम</b></td><td class="r"><b>{{ pay_total|money }}</b></td></tr>
+    <tr><td>कुल असुल / बाँकी</td><td>रु. {{ ms.paid|money }} / रु. {{ ms.outstanding|money }}</td></tr>
+  </table>
+  <div class="sign"><div>बुझाउने</div><div style="flex:0 0 40%">बुझिलिने (राजस्व / लेखा शाखा)</div></div>
+
+{% elif doc == 'reminder' %}
+{% editable_letter "revenue.reminder" "राजस्व ठेक्का: किस्ता ताकेता पत्र" %}
+  <div class="meta"><span>पत्र संख्या:</span><span>मिति: {{ today|bs }}</span></div>
+  <p>श्री {{ s.selected.name }}<br>{{ s.selected.address }}</p>
+  <div class="subject">विषयः– ठेक्का किस्ता बुझाउने सम्बन्धमा (ताकेता) ।</div>
+  <p>यस कार्यालयसँग मिति {{ s.agreement_date|bs }} मा भएको “{{ s.name }}” को ठेक्का सम्झौता (रु. {{ s.contract_amount|money }}) बमोजिम
+    किस्ता नं. {{ inst.n|npn }} को रु. {{ inst.amount|money }} मिति {{ inst.due_date|bs }} भित्र बुझाउनुपर्नेमा{% if inst.paid_amount %} रु. {{ inst.paid_amount|money }} मात्र बुझाइएकाले{% endif %}
+    बाँकी रु. {{ inst.amount|sub:inst.paid_amount|money }}{% if fee %} र आजसम्मको विलम्ब शुल्क रु. {{ fee|money }}{% endif %} यो पत्र प्राप्त भएको ७ दिनभित्र यस कार्यालयमा बुझाउनुहुन अनुरोध छ।</p>
+  <p>तोकिएको म्यादभित्र नबुझाएमा सम्झौताबमोजिम थप विलम्ब शुल्क लाग्ने, कार्यसम्पादन जमानत ({{ s.security_ref }}) जफत गरी सम्झौता रद्द गर्ने र बाँकी रकम प्रचलित कानुनबमोजिम असुल उपर गरिने व्यहोरा जानकारी गराइन्छ।</p>
+  <p>बोधार्थ: लेखा शाखा।</p>
+  <div class="sign"><div style="flex:0 0 40%;margin-left:auto">{% include 'includes/_sign_inline.html' %}</div></div>
+{% endeditable_letter %}
+
+{% else %}
+{% editable_letter "revenue.settlement" "राजस्व ठेक्का: फरफारक टिप्पणी" %}
+  <div class="meta"><span>टिप्पणी र आदेश</span><span>मिति: {{ s.settled_on|bs }}</span></div>
+  <div class="subject">विषयः– {{ s.name }} को राजस्व ठेक्का फरफारक सम्बन्धमा ।</div>
+  <p>श्रीमान्,</p>
+  <p>“{{ s.name }}” को ठेक्का {{ s.selected.name }} सँग मिति {{ s.agreement_date|bs }} मा रु. {{ s.contract_amount|money }} मा सम्झौता भई {{ s.start_date|bs }} देखि {{ s.end_date|bs }} सम्म सञ्चालन भएकोमा असुलीको विवरण देहायबमोजिम छ:</p>
+  <table>
+    <tr><th>किस्ता</th><th>बुझाउनुपर्ने मिति</th><th>रकम (रु.)</th><th>असुल (रु.)</th><th>रसिद / मिति</th></tr>
+    {% for i in ms.instalments %}<tr><td>{{ i.n|npn }}</td><td>{{ i.due_date|bs }}</td><td class="r">{{ i.amount|money }}</td><td class="r">{{ i.paid_amount|money }}</td><td>{% for p in i.payments.all %}{{ p.receipt_no }} ({{ p.date|bs }}){% if p.late_fee %} + वि.शु. {{ p.late_fee|money }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</td></tr>{% endfor %}
+    <tr><td colspan="2"><b>जम्मा</b></td><td class="r"><b>{{ ms.due|money }}</b></td><td class="r"><b>{{ ms.paid|money }}</b></td><td>बाँकी रु. {{ ms.outstanding|money }}</td></tr>
+  </table>
+  {% if s.cancelled_on %}<p>उक्त सम्झौता मिति {{ s.cancelled_on|bs }} मा {{ s.cancel_ref }} बमोजिम रद्द गरिएको ({{ s.cancel_reason }}){% if s.security_forfeited %} र कार्यसम्पादन जमानत जफत गरिएको{% endif %} छ।{% if s.arrears %} असुल हुन बाँकी रु. {{ s.arrears|money }} बक्यौता लगतमा राखी प्रचलित कानुनबमोजिम असुल उपर गर्नुपर्नेछ।{% endif %}</p>{% endif %}
+  {% if ms.late_paid %}<p>ढिलो बुझाएको किस्ताको विलम्ब शुल्क रु. {{ ms.late_paid|money }} असुल भएको छ।</p>{% endif %}
+  {% if ms.inspections %}<p>ठेक्का अवधिमा {{ ms.inspections|length|npn }} पटक अनुगमन भएको{% if ms.penalty %} र रु. {{ ms.penalty|money }} जरिवाना असुल भएको{% endif %} छ।</p>{% endif %}
+  <p>{{ s.settlement_remarks|linebreaksbr }}</p>
+  <p>अतः {% if s.cancelled_on %}रद्द भएको सम्झौताको हिसाब मिलान गरी{% else %}सम्झौताबमोजिमका सबै दायित्व पूरा भएकाले{% endif %} ठेक्का फरफारक गरी{% if s.security_released %} कार्यसम्पादन जमानत रु. {{ s.security_amount|money }} ({{ s.security_ref }}) फिर्ता गर्न{% endif %} निर्णयार्थ पेश गरेको छु।</p>
+  <div class="sign"><div>पेश गर्ने<br>(राजस्व शाखा)</div><div>सिफारिस गर्ने<br>(लेखा शाखा)</div><div>सदर गर्ने<br>(प्रमुख प्रशासकीय अधिकृत)</div></div>
+{% endeditable_letter %}
+{% endif %}
+</div>
+<script>
+  window.__letterPrint = function () { window.print(); setTimeout(function () { window.location.href = "{{ back }}"; }, 3000); };
+</script>
+</body>
+</html>

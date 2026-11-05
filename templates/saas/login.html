@@ -1,0 +1,13 @@
+{% extends "saas/base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto mt-16 card p-6">
+  <h1 class="text-xl font-bold mb-1">SaaS Manager</h1>
+  <p class="text-sm text-slate-500 mb-5">पालिका व्यवस्थापन प्रणाली सञ्चालक</p>
+  <form method="post" class="space-y-4">{% csrf_token %}
+    <div class="field"><label>मोबाइल नम्बर</label><input name="mobile" required autofocus></div>
+    <div class="field"><label>पासवर्ड</label><input type="password" name="password" required></div>
+    <button class="btn-primary w-full justify-center">Login</button>
+  </form>
+</div>
+{% endblock %}

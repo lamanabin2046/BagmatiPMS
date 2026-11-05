@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}आर्थिक वर्ष बन्द{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800"><i class="fas fa-lock text-brand-600"></i> आ.व. {{ fy.name }} बन्द</h1>
+      <p class="text-sm text-slate-500 mt-0.5">हरेक योजनाको निर्णय: <b>बहुवर्षीय</b> योजना मात्र <b>क्रमागत</b> (इतिहाससहित अर्को आ.व. मा सर्ने); एक वर्षे अधुरा योजना <b>रोक्का</b> (बजेट फ्रिज, हेर्न मात्र); सम्पन्न त्यहीँ रहने। बन्दपछि नयाँ आ.व. चालु आ.व. हुन्छ।</p>
+    </div>
+    <form method="get"><select name="fiscalyear" class="form-select !w-auto" onchange="this.form.submit()">{% for x in fiscal_years %}{% if not x.closed_at %}<option value="{{ x.id }}" {% if x.id == fy.id %}selected{% endif %}>आ.व. {{ x.name }}</option>{% endif %}{% endfor %}</select></form>
+  </div>
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+    <div class="card p-4"><p class="text-xs text-slate-500">योजना</p><p class="text-lg font-bold">{{ rows|length|npn }}</p><p class="text-[11px] text-slate-400">चालु {{ counts.carried|npn }} · सुरु नभएको {{ counts.frozen|npn }} · सम्पन्न {{ counts.completed|npn }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">विनियोजित</p><p class="text-lg font-bold">रु. {{ totals.allocated|money:0 }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">खर्च</p><p class="text-lg font-bold text-emerald-700">रु. {{ totals.spent|money:0 }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">खर्च हुन बाँकी</p><p class="text-lg font-bold text-brand-700">रु. {{ totals.remaining|money:0 }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">फिर्ता बाँकी धरौटी</p><p class="text-lg font-bold text-violet-700">रु. {{ totals.retention|money:0 }}</p></div>
+  </div>
+  {% if errors %}<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 space-y-0.5">{% for e in errors %}<p class="text-sm text-rose-700"><i class="fas fa-circle-exclamation"></i> {{ e }}</p>{% endfor %}</div>{% endif %}
+  <form method="post" class="space-y-4">
+    {% csrf_token %}<input type="hidden" name="fiscalyear" value="{{ fy.id }}">
+    <div class="card overflow-x-auto">
+      <table class="w-full text-[13px]">
+        <thead class="bg-slate-50 text-[11px] text-slate-500"><tr>
+          <th class="px-3 py-2.5 text-left font-medium min-w-[16rem]">योजना</th><th class="px-3 py-2.5 text-left font-medium">विधि · स्थिति</th>
+          <th class="px-3 py-2.5 text-right font-medium">विनियोजित</th><th class="px-3 py-2.5 text-right font-medium">खर्च</th><th class="px-3 py-2.5 text-right font-medium">प्रतिबद्धता</th>
+          <th class="px-3 py-2.5 text-left font-medium">निर्णय</th><th class="px-3 py-2.5 text-left font-medium">नयाँ आ.व. को आवंटन</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in rows %}
+          <tr class="{% if r.action == 'carried' %}bg-brand-50/30{% elif r.action == 'frozen' %}bg-amber-50/30{% endif %}">
+            <td class="px-3 py-2"><span class="font-medium">{{ r.p.name }}</span><span class="block text-[11px] text-slate-400">{% if r.p.ward %}वडा नं. {{ r.p.ward.name|npn }}{% else %}पालिका{% endif %}{% if r.retention %} · धरौटी रु. {{ r.retention|money:0 }}{% endif %}{% if r.p.carried_from %} · पहिले नै क्रमागत{% endif %}{% if r.multi_year %} · <span class="text-violet-700">बहुवर्षीय</span>{% endif %}</span></td>
+            <td class="px-3 py-2 text-xs">{{ r.kind_label }}<span class="block text-slate-500">{{ r.status_label }}</span></td>
+            <td class="px-3 py-2 text-right">{{ r.allocated|money:0 }}</td><td class="px-3 py-2 text-right">{{ r.spent|money:0 }}</td>
+            <td class="px-3 py-2 text-right">{% if r.committed %}{{ r.committed|money:0 }}{% else %}—{% endif %}</td>
+            <td class="px-3 py-2">
+              {% if r.status == 'completed' or r.status == 'paid' %}<input type="hidden" name="action_{{ r.p.id }}" value="completed"><span class="badge bg-emerald-50 text-emerald-700">सम्पन्न</span>
+              {% else %}<select name="action_{{ r.p.id }}" class="form-select !py-1.5" style="width:9.5rem">
+                {% if r.multi_year %}<option value="carried" {% if r.action == 'carried' %}selected{% endif %}>क्रमागत (सार्ने)</option>{% endif %}
+                <option value="frozen" {% if r.action == 'frozen' %}selected{% endif %}>रोक्का / फ्रिज</option>
+                <option value="completed" {% if r.action == 'completed' %}selected{% endif %}>सम्पन्न मान्ने</option></select>{% endif %}</td>
+            <td class="px-3 py-2">{% if r.multi_year and r.status != 'completed' and r.status != 'paid' %}<input name="alloc_{{ r.p.id }}" value="{{ r.alloc }}" class="form-input !py-1.5" style="width:9rem" inputmode="decimal">{% endif %}</td>
+          </tr>
+          {% empty %}<tr><td colspan="7" class="px-3 py-10 text-center text-slate-400">यस आ.व. मा योजना छैन।</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card p-5 space-y-3">
+      <div class="grid sm:grid-cols-3 gap-3">
+        <div><label class="form-label">क्रमागत योजना सार्ने आ.व.</label>
+          <select name="to_fiscalyear" class="form-select"><option value="">— नयाँ बनाउने —</option>{% for x in later %}<option value="{{ x.id }}" {% if p.to_fiscalyear == x.id|stringformat:'s' or forloop.first and not p.to_fiscalyear %}selected{% endif %}>आ.व. {{ x.name }}</option>{% endfor %}</select></div>
+        <div><label class="form-label">वा नयाँ आ.व. को नाम</label><input name="new_fy" value="{{ p.new_fy|default:suggest_new }}" class="form-input" placeholder="२०८३/८४"></div>
+        <div><label class="form-label">बन्द गर्ने निर्णय नं. / मिति <span class="text-rose-500">*</span></label><input name="close_ref" value="{{ p.close_ref }}" class="form-input"></div>
+      </div>
+      <div class="rounded-xl bg-slate-50 p-3 text-xs text-slate-600 leading-relaxed">
+        <p>• <b>क्रमागत:</b> बहुवर्षीय योजना मात्र — योजना (सम्झौता, उपभोक्ता समिति, धरौटी, जमानत, नापी सहित) नयाँ आ.व. मा सर्छ। विनियोजित = अहिलेसम्मको खर्च + नयाँ आवंटन; अघिल्लो खर्च नयाँ आ.व. को ड्यासबोर्डमा गनिँदैन। बजेट शीर्षक नयाँ आ.व. को तोक्नुपर्छ।</p>
+        <p>• <b>रोक्का:</b> योजना यसै आ.व. मा रहन्छ; आ.व. बन्द भएपछि भुक्तानी र बजेट परिवर्तन हुँदैन (बजेट फ्रिज)।</p>
+        <p>• धरौटी फिर्ता र राजस्व असुली बन्द भएको आ.व. मा पनि चलिरहन्छ। बन्द प्रतिवेदन (स्न्यापसट) सधैँ उस्तै रहन्छ।</p>
+      </div>
+      <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" value="1" class="mt-1"> <span>आ.व. {{ fy.name }} बन्द भएपछि यस आ.व. मा रहेका योजनामा भुक्तानी वा बजेट परिवर्तन गर्न मिल्दैन भन्ने बुझेँ।</span></label>
+      <div class="flex justify-end"><button class="btn-primary" onclick="return confirm('आ.व. {{ fy.name }} बन्द गर्ने?')"><i class="fas fa-lock"></i> आ.व. बन्द गर्नुहोस्</button></div>
+    </div>
+  </form>
+</div>
+{% endblock %}

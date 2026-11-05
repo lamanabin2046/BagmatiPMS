@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}उपभोक्ता समितिको विवरण{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">उपभोक्ता समितिको विवरण</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>S.N.</th>
+            <th>आयोजना</th>
+            <th>उपभोक्ता समितिको नाम</th>
+            <th>अध्यक्षको नाम</th>
+            <th>सम्पर्क नम्बर</th>
+            <th>Ward</th>
+            <th>Budget</th>
+            <th>FY</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in user_committees %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ i.project.name }}</td>
+            <td class="font-semibold text-slate-800">{{ i.name }}</td>
+            <td>{{ i.chairman_name }}</td>
+            <td>{{ i.chairman_mobile }}</td>
+            <td>{{ i.project.ward.name }}</td>
+            <td>{{ i.project.budget }}</td>
+            <td>{{ i.project.fiscalyear.name }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

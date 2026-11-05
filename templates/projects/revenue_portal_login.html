@@ -1,0 +1,11 @@
+{% extends 'projects/revenue_public_base.html' %}
+{% block title %}बोलपत्रदाता लगइन{% endblock %}
+{% block body %}
+<form method="post" class="card p-6 max-w-sm mx-auto space-y-3">
+  {% csrf_token %}
+  <h1 class="text-lg font-bold">बोलपत्रदाता लगइन</h1>
+  <div><label class="lbl">मोबाइल नं.</label><input name="mobile" class="inp" inputmode="numeric" required autocomplete="username"></div>
+  <div><label class="lbl">पासवर्ड</label><input name="password" type="password" class="inp" required autocomplete="current-password"></div>
+  <div class="flex justify-between items-center pt-1">{% if portal %}<a href="{% url 'revenue_portal_register' %}" class="text-sm underline">नयाँ दर्ता</a>{% endif %}<button class="btn">लगइन</button></div>
+</form>
+{% endblock %}

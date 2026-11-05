@@ -1,0 +1,10 @@
+{% comment %}प्रतिवेदनहरू — सबै प्रतिवेदन एकै पेजमा (projects/reports_hub.py); अनुमति / भूमिकाअनुसार{% endcomment %}
+{% if user.user_type == '1' or user.user_type == '8' or 'report.uc' in me.perms or 'report.outputs' in me.perms or 'retention.recommend' in me.perms or 'retention.manage' in me.perms or 'budget.view' in me.perms or 'budget.manage' in me.perms or 'bid.view' in me.perms or 'quot.view' in me.perms or 'rev.view' in me.perms or 'rev.manage' in me.perms or 'rev.collect' in me.perms %}
+<li>
+  <a href="{% url 'reports_hub' %}"
+     class="nav-link-item {% if current in 'reports_hub,uc_report_summary,uc_report_projects,uc_report_taxes,outputs_report,deduction_register,retention_list,retention_recommend,retention_release,palika_engineer_project_list,palika_engineer_project_detail,palika_engineer_estimated_projects,palika_engineer_ward_comparison,palika_engineer_committee_list,palika_engineer_final_valuations,palika_engineer_committee_financial_report,revenue_report,audit_pack,yearend_report' %}active{% endif %}">
+    <i data-lucide="bar-chart-3" class="nav-icon"></i>
+    <span class="sidebar-label">प्रतिवेदनहरू</span>
+  </a>
+</li>
+{% endif %}

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}योजना अधिकृत ड्यासबोर्ड{% endblock %}
+{% block content %}
+
+<!-- ================= PAGE HEADER ================= -->
+<div class="mb-6">
+  <h1 class="text-xl md:text-2xl font-bold text-slate-800">योजना अधिकृत ड्यासबोर्ड</h1>
+  <p class="text-sm text-slate-500 mt-0.5">उपभोक्ता समिति गठन तथा लागत अनुमान व्यवस्थापन</p>
+</div>
+
+{% include 'includes/_my_work_lazy.html' %}
+
+<!-- ================= STAT CARDS ================= -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-hourglass-half"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ committee_pending_count }}</p>
+      <p class="text-xs text-slate-500">उपभोक्ता समिति बाँकी भएका योजना</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-calculator"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ cost_estimate_pending_count }}</p>
+      <p class="text-xs text-slate-500">लागत अनुमान बाँकी भएका योजना</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-users"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ total_committees }}</p>
+      <p class="text-xs text-slate-500">जम्मा गठित उपभोक्ता समिति</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= उपभोक्ता समिति म्याद अलर्ट ================= -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-hourglass-end"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ usercommittee_expired_count }}</p>
+      <p class="text-xs text-slate-500">उपभोक्ता समिति म्याद नाघेको</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-hourglass-half"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ usercommittee_expiring_count }}</p>
+      <p class="text-xs text-slate-500">म्याद सकिन लाग्यो (३० दिनभित्र)</p>
+    </div>
+  </div>
+</div>
+
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card mt-4">
+  <div class="px-5 py-4 border-b border-slate-100">
+    <h2 class="text-sm font-semibold text-slate-700">म्याद नजिकिएका उपभोक्ता समिति</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase tracking-wide text-slate-500 bg-slate-50">
+          <th class="px-5 py-3 font-medium">योजना</th>
+          <th class="px-5 py-3 font-medium">उपभोक्ता समिति</th>
+          <th class="px-5 py-3 font-medium">वडा</th>
+          <th class="px-5 py-3 font-medium">म्याद</th>
+          <th class="px-5 py-3 font-medium">बाँकी/नाघेको दिन</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for uc in usercommittee_deadline_alerts %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 text-slate-700">{{ uc.project.name }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ uc.name }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ uc.project.ward.name|default:"—" }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ uc.deadline }}</td>
+          <td class="px-5 py-3">
+            {% if uc.days_left < 0 %}
+            <span class="inline-flex items-center rounded-full bg-rose-50 text-rose-600 text-xs font-medium px-2.5 py-1">{{ uc.days_left_abs }} दिन नाघेको</span>
+            {% else %}
+            <span class="inline-flex items-center rounded-full bg-amber-50 text-amber-600 text-xs font-medium px-2.5 py-1">{{ uc.days_left }} दिन बाँकी</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-5 py-6 text-center text-slate-400">हाल कुनै उपभोक्ता समितिको म्याद नाघेको/सकिन लागेको छैन</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= QUICK ACTIONS ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card mt-4 p-5">
+  <h2 class="text-sm font-semibold text-slate-700 mb-3">छिटो कार्यहरू</h2>
+  <div class="flex flex-wrap gap-3">
+    <a href="{% url 'add_usercommittee' %}" class="btn-chip-brand"><i class="fas fa-user-plus"></i> उपभोक्ता समिति थप्नुहोस्</a>
+    <a href="{% url 'view_usercommittee' %}" class="btn-chip-amber"><i class="fas fa-list"></i> उपभोक्ता समितिको विवरण</a>
+    <a href="{% url 'add_cost_estimate' %}" class="btn-chip-emerald"><i class="fas fa-calculator"></i> लागत अनुमान थप्नुहोस्</a>
+    <a href="{% url 'view_estimated_projects' %}" class="btn-chip-brand"><i class="fas fa-file-alt"></i> कागजात तयारी गर्नुहोस्</a>
+  </div>
+</div>
+
+{% endblock %}

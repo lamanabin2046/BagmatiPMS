@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}पत्रका ढाँचा{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-800">पत्रका ढाँचा</h1>
+    <p class="text-sm text-slate-500 mt-1">पत्र खोल्दा माथि दायाँ "✎ सम्पादन" थिचेर पत्रको पाठ बदल्न सकिन्छ — "यो पत्र मात्र" वा "पालिकाको ढाँचा — सबै योजनामा"।</p>
+  </div>
+</div>
+
+<div class="grid lg:grid-cols-2 gap-5">
+  <section class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="font-semibold text-slate-800">पालिकाको ढाँचा</h2>
+        <p class="text-xs text-slate-500 mt-0.5">यस प्रकारका सबै योजनाका पत्रमा लाग्छ। हटाए मूल ढाँचा फर्किन्छ।</p>
+      </div>
+    </div>
+    <div class="divide-y divide-slate-100">
+      {% for t in templates %}
+      <div class="px-5 py-3 flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <p class="font-medium text-slate-800 truncate">{{ t.title|default:t.key }}</p>
+          <p class="text-xs text-slate-400">{{ t.updated_by.mobile|default:'—' }} · {{ t.updated_at|date:'Y-m-d H:i' }}</p>
+        </div>
+        {% if can_template %}
+        <form method="post">{% csrf_token %}<input type="hidden" name="id" value="{{ t.id }}">
+          <button class="btn-chip-rose" hx-confirm="यो ढाँचा हटाएर मूल ढाँचामा फर्काउने?"><i class="fas fa-rotate-left"></i> मूलमा फर्काउनुहोस्</button>
+        </form>
+        {% endif %}
+      </div>
+      {% empty %}
+      <p class="px-5 py-8 text-center text-sm text-slate-400">अहिलेसम्म कुनै ढाँचा बदलिएको छैन — सबै पत्र मूल ढाँचामै छन्।</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="font-semibold text-slate-800">सम्पादित पत्रहरू</h2>
+        <p class="text-xs text-slate-500 mt-0.5">एउटा पत्र मात्र बदलिएका (हालका १००)</p>
+      </div>
+    </div>
+    <div class="divide-y divide-slate-100">
+      {% for o in overrides %}
+      <a href="{{ o.ref }}" target="_blank" rel="noopener" class="px-5 py-3 flex items-center justify-between gap-3 hover:bg-slate-50">
+        <div class="min-w-0">
+          <p class="font-medium text-slate-800 truncate">{{ o.title|default:o.key }}</p>
+          <p class="text-xs text-slate-400 truncate">{{ o.ref }} · {{ o.updated_by.mobile|default:'—' }} · {{ o.updated_at|date:'Y-m-d H:i' }}</p>
+        </div>
+        <i class="fas fa-up-right-from-square text-slate-400"></i>
+      </a>
+      {% empty %}
+      <p class="px-5 py-8 text-center text-sm text-slate-400">कुनै पत्र छुट्टै सम्पादन गरिएको छैन।</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

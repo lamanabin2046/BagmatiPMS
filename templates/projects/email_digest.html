@@ -1,0 +1,16 @@
+<div style="font-family:'Noto Sans Devanagari',Arial,sans-serif;max-width:600px;margin:auto;color:#1e293b">
+  <div style="background:#1e3a8a;color:#fff;padding:14px 18px;border-radius:10px 10px 0 0">
+    <b style="font-size:16px">{{ pal }}</b><br><span style="font-size:12px;color:#bfdbfe">परियोजना व्यवस्थापन प्रणाली — {{ today }} का काम</span>
+  </div>
+  <div style="border:1px solid #e2e8f0;border-top:0;padding:16px 18px;border-radius:0 0 10px 10px">
+    <p style="margin:0 0 12px">नमस्कार {{ u }}, तपाईंका <b style="color:#b91c1c">{{ urgent }} जरुरी</b>{% if warn %} र <b style="color:#b45309">{{ warn }} ध्यान दिनुपर्ने</b>{% endif %} काम छन्:</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      {% for i in items %}<tr style="border-top:1px solid #f1f5f9">
+        <td style="padding:7px 4px"><span style="display:inline-block;width:8px;height:8px;border-radius:9px;background:{% if i.tone == 'urgent' %}#dc2626{% else %}#f59e0b{% endif %}"></span></td>
+        <td style="padding:7px 4px"><span style="color:#64748b;font-size:12px">{{ i.group }}</span><br>{% if url %}<a href="{{ url }}{{ i.url }}" style="color:#1d4ed8;text-decoration:none">{{ i.label }}</a>{% else %}{{ i.label }}{% endif %}</td>
+        <td style="padding:7px 4px;text-align:right;font-weight:bold">{{ i.count }}</td></tr>{% endfor %}
+    </table>
+    {% if url %}<p style="margin:16px 0 0"><a href="{{ url }}/" style="background:#1e3a8a;color:#fff;padding:9px 16px;border-radius:8px;text-decoration:none;font-size:14px">प्रणाली खोल्नुहोस्</a></p>{% endif %}
+    <p style="font-size:11px;color:#94a3b8;margin-top:18px">यो इमेल प्रणालीले आफैँ पठाएको हो।</p>
+  </div>
+</div>

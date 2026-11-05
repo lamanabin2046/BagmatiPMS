@@ -1,0 +1,22 @@
+{% extends 'projects/revenue_public_base.html' %}
+{% block title %}बोलपत्रदाता दर्ता{% endblock %}
+{% block body %}
+<form method="post" enctype="multipart/form-data" class="card p-6 max-w-2xl mx-auto space-y-4">
+  {% csrf_token %}
+  <h1 class="text-lg font-bold">बोलपत्रदाता दर्ता</h1>
+  <div class="grid sm:grid-cols-2 gap-3">
+    <div><label class="lbl">प्रकार</label><select name="kind" class="inp"><option value="company" {% if p.kind != 'individual' %}selected{% endif %}>फर्म / कम्पनी</option><option value="individual" {% if p.kind == 'individual' %}selected{% endif %}>व्यक्ति</option></select></div>
+    <div><label class="lbl">नाम *</label><input name="name" value="{{ p.name }}" class="inp" required></div>
+    <div><label class="lbl">PAN (फर्मलाई अनिवार्य)</label><input name="pan" value="{{ p.pan }}" class="inp" maxlength="9" inputmode="numeric"></div>
+    <div><label class="lbl">दर्ता / नागरिकता नं.</label><input name="reg_no" value="{{ p.reg_no }}" class="inp"></div>
+    <div class="sm:col-span-2"><label class="lbl">ठेगाना *</label><input name="address" value="{{ p.address }}" class="inp" required></div>
+    <div><label class="lbl">मोबाइल नं. (लगइनका लागि) *</label><input name="mobile" value="{{ p.mobile }}" class="inp" maxlength="10" inputmode="numeric" required></div>
+    <div><label class="lbl">इमेल</label><input name="email" value="{{ p.email }}" class="inp" type="email"></div>
+    <div><label class="lbl">पासवर्ड (कम्तीमा ८ अक्षर) *</label><input name="password" type="password" class="inp" required autocomplete="new-password"></div>
+    <div><label class="lbl">पासवर्ड फेरि *</label><input name="password2" type="password" class="inp" required autocomplete="new-password"></div>
+    <div class="sm:col-span-2"><label class="lbl">दर्ता प्रमाणपत्र (PDF / फोटो)</label><input name="reg_doc" type="file" accept=".pdf,.jpg,.jpeg,.png" class="inp"></div>
+  </div>
+  <p class="text-xs text-slate-500">यो दर्ता बोलपत्र पेश गर्न मात्र हो — पालिकाको आन्तरिक प्रणालीमा पहुँच हुँदैन। पेश गरेका कागजात मूल्याङ्कन समितिले जाँच्नेछ।</p>
+  <div class="flex justify-between items-center"><a href="{% url 'revenue_portal_login' %}" class="text-sm underline">पहिले नै दर्ता छ? लगइन</a><button class="btn">दर्ता गर्नुहोस्</button></div>
+</form>
+{% endblock %}

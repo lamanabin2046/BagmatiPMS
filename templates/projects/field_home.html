@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}साइट फोटो{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-4">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-800">साइट फोटो{% if can_upload %} (मोबाइल){% endif %}</h1>
+    <p class="text-sm text-slate-500">{% if can_upload %}योजनास्थलमै पुगेर फोटो खिच्नुहोस् — GPS, मिति-समय र भौतिक प्रगति फोटोमै छापिन्छ।{% else %}इन्जिनियरले योजनास्थलबाट राखेका फोटो, GPS स्थान र भौतिक प्रगति — योजना छानेर हेर्नुहोस्।{% endif %}</p>
+  </div>
+  <form method="get" class="card p-3 flex flex-wrap gap-2 items-center">
+    <input name="q" value="{{ q }}" placeholder="योजनाको नाम / ठाउँ खोज्नुहोस्" class="form-input flex-1" style="min-width:12rem">
+    <select name="fiscalyear" class="form-select" style="width:auto">{% for x in fiscal_years %}<option value="{{ x.id }}" {% if fy and x.id == fy.id %}selected{% endif %}>आ.व. {{ x.name }}</option>{% endfor %}</select>
+    <label class="text-sm flex items-center gap-1"><input type="checkbox" name="show" value="all" {% if show == 'all' %}checked{% endif %}> सम्पन्न पनि</label>
+    <input type="hidden" name="has" value="0"><label class="text-sm flex items-center gap-1"><input type="checkbox" name="has" value="1" {% if has == '1' %}checked{% endif %}> फोटो भएका मात्र</label>
+    <button class="btn btn-primary">खोज</button>
+  </form>
+  <div class="space-y-2">
+    {% for r in rows %}
+    <a href="{% url 'field_project' r.p.id %}" class="card p-3 flex items-center gap-3 hover:bg-slate-50">
+      <div class="flex-1 min-w-0">
+        <p class="font-semibold text-slate-800 truncate">{{ r.p.name }}</p>
+        <p class="text-xs text-slate-500">{% if r.p.ward %}वडा {{ r.p.ward.name }} · {% endif %}{{ r.p.address|truncatechars:40 }}</p>
+        <p class="text-xs mt-1 {% if r.last %}text-slate-500{% else %}text-amber-700{% endif %}">{% if r.last %}{{ r.n|npn }} फोटो · अन्तिम {{ r.last|bs }}{% else %}फोटो छैन{% endif %}{% if r.p.latitude is None %} · <span class="text-slate-400">स्थान नतोकिएको</span>{% endif %}</p>
+      </div>
+      <div class="text-right shrink-0" style="width:4.5rem">
+        {% if r.progress is not None %}<p class="text-lg font-bold text-emerald-700">{{ r.progress|npn }}%</p>
+        <div style="height:6px;background:#e2e8f0;border-radius:9px"><div style="height:6px;border-radius:9px;background:#059669;width:{{ r.progress }}%"></div></div>
+        {% else %}<p class="text-xs text-slate-400">प्रगति —</p>{% endif %}
+      </div>
+      <i data-lucide="{% if can_upload %}camera{% else %}images{% endif %}" class="w-5 h-5 text-blue-700 shrink-0"></i>
+    </a>
+    {% empty %}<div class="card p-6 text-center text-slate-500 text-sm">योजना भेटिएन।</div>{% endfor %}
+  </div>
+  {% if page.has_other_pages %}<div class="flex justify-between text-sm">
+    {% if page.has_previous %}<a class="btn btn-secondary" href="?q={{ q|urlencode }}&fiscalyear={{ fy.id }}&show={{ show }}&has={{ has }}&page={{ page.previous_page_number }}">← अघिल्लो</a>{% else %}<span></span>{% endif %}
+    {% if page.has_next %}<a class="btn btn-secondary" href="?q={{ q|urlencode }}&fiscalyear={{ fy.id }}&show={{ show }}&has={{ has }}&page={{ page.next_page_number }}">अर्को →</a>{% endif %}
+  </div>{% endif %}
+</div>
+{% endblock %}

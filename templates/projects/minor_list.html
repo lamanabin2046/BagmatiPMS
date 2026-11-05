@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}{{ method_label }}{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">{{ method_label }}</h1>
+      <p class="text-sm text-slate-500 mt-0.5">वार्षिक खरिद योजनामा यो विधि तोकिएका योजना — चरणअनुसार प्रगति।</p>
+    </div>
+    <nav class="flex flex-wrap gap-1.5">
+      <a href="?" class="btn-chip-slate {% if not method %}!bg-brand-600 !text-white{% endif %}">सबै</a>
+      {% for k, v in methods %}<a href="?method={{ k }}" class="btn-chip-slate {% if method == k %}!bg-brand-600 !text-white{% endif %}">{{ v }}</a>{% endfor %}
+    </nav>
+  </div>
+
+  {% with base='?method='|add:method|add:'&fiscalyear='|add:f.fiscalyear|add:'&ward='|add:f.ward|add:'&q='|add:f.q %}
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <a href="{{ base }}" class="card p-3 hover:shadow-soft {% if not f.stage %}ring-2 ring-brand-500{% endif %}"><p class="text-xs text-slate-500">सबै</p><p class="text-xl font-bold">{{ counts.all|npn }}</p></a>
+    <a href="{{ base }}&stage=running" class="card p-3 hover:shadow-soft {% if f.stage == 'running' %}ring-2 ring-brand-500{% endif %}"><p class="text-xs text-slate-500">चालु</p><p class="text-xl font-bold text-brand-700">{{ counts.running|npn }}</p></a>
+    <a href="{{ base }}&stage=to_approve" class="card p-3 hover:shadow-soft {% if f.stage == 'to_approve' %}ring-2 ring-brand-500{% endif %} {% if counts.to_approve %}bg-rose-50/60{% endif %}"><p class="text-xs text-slate-500">स्वीकृति बाँकी</p><p class="text-xl font-bold text-rose-700">{{ counts.to_approve|npn }}</p></a>
+    <a href="{{ base }}&stage=overdue" class="card p-3 hover:shadow-soft {% if f.stage == 'overdue' %}ring-2 ring-brand-500{% endif %}"><p class="text-xs text-slate-500">म्याद नाघेको</p><p class="text-xl font-bold text-amber-700">{{ counts.overdue|npn }}</p></a>
+    <a href="{{ base }}&stage=completed" class="card p-3 hover:shadow-soft {% if f.stage == 'completed' %}ring-2 ring-brand-500{% endif %}"><p class="text-xs text-slate-500">सम्पन्न</p><p class="text-xl font-bold text-emerald-700">{{ counts.completed|npn }}</p></a>
+  </div>
+  {% endwith %}
+
+  <form method="get" class="card p-4" data-live-filter>
+    <input type="hidden" name="method" value="{{ method }}"><input type="hidden" name="stage" value="{{ f.stage }}">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+      <div><label class="form-label">आर्थिक वर्ष</label>
+        <select name="fiscalyear" class="form-select"><option value="">सबै</option>{% for y in fiscal_years %}<option value="{{ y.id }}" {% if f.fiscalyear == y.id|stringformat:'s' %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
+      <div><label class="form-label">वडा</label>
+        <select name="ward" class="form-select"><option value="">सबै वडा</option>{% for w in all_wards %}<option value="{{ w.id }}" {% if f.ward == w.id|stringformat:'s' %}selected{% endif %}>वडा नं. {{ w.name }}</option>{% endfor %}</select></div>
+      <div class="col-span-2"><label class="form-label">योजना वा फर्म / संस्था</label>
+        <input type="search" name="q" value="{{ f.q }}" class="form-input" placeholder="खोज्नुहोस्..."></div>
+    </div>
+  </form>
+
+  <section class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-[13px]">
+        <thead><tr class="bg-slate-50 text-[11px] text-slate-500">
+          <th class="px-3 py-3 text-left font-medium min-w-[16rem]">योजना</th>
+          {% if not method %}<th class="px-3 py-3 text-left font-medium">विधि</th>{% endif %}
+          <th class="px-3 py-3 text-right font-medium">लागत अनुमान</th>
+          <th class="px-3 py-3 text-left font-medium min-w-[14rem]">चरण</th>
+          <th class="px-3 py-3 text-left font-medium">हालको काम</th>
+          <th class="px-3 py-3"></th>
+        </tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in rows %}
+          <tr class="{% if r.summary.overdue %}bg-amber-50/40{% endif %}">
+            <td class="px-3 py-2.5"><a href="{% url 'minor_detail' r.p.id %}" class="font-medium text-slate-800 hover:text-brand-700">{{ r.p.name }}</a>
+              <span class="block text-[11px] text-slate-400">वडा नं. {{ r.p.ward.name|default:'—'|npn }} · {{ r.p.fiscalyear.name }}{% if r.m.selected %} · {{ r.m.selected.name }}{% endif %}</span></td>
+            {% if not method %}<td class="px-3 py-2.5 whitespace-nowrap">{{ r.label }}</td>{% endif %}
+            <td class="px-3 py-2.5 text-right whitespace-nowrap">{% if r.m %}{{ r.m.estimate_amount|money:0 }}{% else %}—{% endif %}</td>
+            <td class="px-3 py-2.5">
+              <div class="flex items-center gap-1">
+                {% for st in r.steps %}
+                <span title="{{ st.label }}{% if st.note %} — {{ st.note }}{% endif %}" class="w-3 h-3 rounded-full
+                  {% if st.state == 'done' %}bg-emerald-500{% elif st.state == 'current' %}bg-brand-600 ring-2 ring-brand-200{% elif st.state == 'optional' %}bg-slate-200 border border-dashed border-slate-400{% else %}bg-slate-200{% endif %}"></span>
+                {% endfor %}
+              </div>
+            </td>
+            <td class="px-3 py-2.5">{% if r.summary.completed %}<span class="badge bg-emerald-50 text-emerald-700">सम्पन्न</span>{% else %}<span class="text-slate-700">{{ r.summary.current_label }}</span>{% if r.summary.overdue %} <span class="badge bg-amber-100 text-amber-800">म्याद नाघेको</span>{% endif %}{% endif %}</td>
+            <td class="px-3 py-2.5 text-right"><a href="{% url 'minor_detail' r.p.id %}" class="btn-primary !py-1.5 !px-3 text-xs">खोल्नुहोस्</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="px-3 py-10 text-center text-slate-400">कुनै योजना भेटिएन। वार्षिक खरिद योजनाबाट यो विधि तोकेपछि यहाँ देखिन्छ।</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page.has_other_pages %}
+    <div class="flex justify-end gap-2 px-5 py-3 border-t border-slate-100 text-sm">
+      {% if page.has_previous %}<a href="?{{ qs }}&page={{ page.previous_page_number }}" class="btn-chip-slate">अघिल्लो</a>{% endif %}
+      <span class="text-slate-500">{{ page.number|npn }} / {{ page.paginator.num_pages|npn }}</span>
+      {% if page.has_next %}<a href="?{{ qs }}&page={{ page.next_page_number }}" class="btn-chip-slate">अर्को</a>{% endif %}
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

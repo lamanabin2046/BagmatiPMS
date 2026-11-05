@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+  <h1 class="text-xl md:text-2xl font-bold text-slate-800">{{ page_title }}</h1>
+  <p class="text-sm text-slate-500 mt-0.5">यहाँबाट {{ label }} थप्न, सम्पादन गर्न वा हटाउन सकिन्छ।</p>
+</div>
+
+<!-- ================= ADD FORM ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card mb-4">
+  <div class="px-5 py-4 border-b border-slate-100">
+    <h2 class="text-sm font-semibold text-slate-700">नयाँ {{ label }} थप्नुहोस्</h2>
+  </div>
+  <form method="post" class="p-5 flex flex-col sm:flex-row gap-3 sm:items-end">
+    {% csrf_token %}
+    <div class="flex-1">
+      <label class="form-label">{{ label }}</label>
+      <input type="text" name="name" class="form-input" placeholder="{{ placeholder }}" required>
+    </div>
+    <div>
+      <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> थप्नुहोस्</button>
+    </div>
+  </form>
+</div>
+
+<!-- ================= LIST ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card">
+  <div class="px-5 py-4 border-b border-slate-100">
+    <h2 class="text-sm font-semibold text-slate-700">सूची</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase tracking-wide text-slate-500 bg-slate-50">
+          <th class="px-5 py-3 font-medium">क्र.सं.</th>
+          <th class="px-5 py-3 font-medium">{{ label }}</th>
+          <th class="px-5 py-3 font-medium">प्रयोगमा भएका योजना</th>
+          <th class="px-5 py-3 font-medium">कार्य</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for item in items %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 text-slate-700">{{ forloop.counter }}</td>
+          <td class="px-5 py-3 text-slate-700 font-medium">{{ item.name }}
+            {% if fy_mode %}{% if item.is_current %}<span class="badge bg-emerald-50 text-emerald-700 ml-1"><i class="fas fa-circle-check mr-1"></i> चालु आ.व.</span>{% endif %}
+            {% if item.closed_at %}<span class="badge bg-slate-100 text-slate-600 ml-1"><i class="fas fa-lock mr-1"></i> बन्द</span>{% endif %}{% endif %}</td>
+          <td class="px-5 py-3 text-slate-700">{{ item.usage_count }}</td>
+          <td class="px-5 py-3">
+            <div class="flex items-center gap-2">
+              {% if fy_mode and not item.is_current and not item.closed_at %}
+              <form method="post" hx-confirm="आ.व. {{ item.name }} लाई चालु आ.व. बनाउने? कार्यप्रवाह, खरिद योजना, बजेट र नयाँ योजना दर्ता यही आ.व. का हुनेछन्; अरू आ.व. का योजना हेर्न मात्र मिल्नेछ।">
+                {% csrf_token %}<input type="hidden" name="action" value="set_current"><input type="hidden" name="id" value="{{ item.id }}">
+                <button type="submit" class="btn-chip-brand"><i class="fas fa-circle-check"></i> चालु बनाउनुहोस्</button>
+              </form>
+              {% endif %}
+              <a href="{% url edit_url_name item.id %}" class="btn-chip-emerald"><i class="fas fa-pen"></i></a>
+              {% if item.usage_count %}
+              <button type="button" class="btn-chip-rose opacity-40 cursor-not-allowed" disabled
+                      title="यो {{ label }} योजनामा प्रयोग भइरहेको हुनाले मेटाउन मिल्दैन">
+                <i class="fas fa-trash"></i>
+              </button>
+              {% else %}
+              <form method="post" action="{% url delete_url_name item.id %}"
+                    hx-confirm="के तपाईं यो {{ label }} मेटाउन निश्चित हुनुहुन्छ?">
+                {% csrf_token %}
+                <button type="submit" class="btn-chip-rose"><i class="fas fa-trash"></i></button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-5 py-6 text-center text-slate-400">हाल कुनै {{ label }} थपिएको छैन</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

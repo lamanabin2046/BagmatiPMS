@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load nepali_date %}
+{% block title %}सार्वजनिक परीक्षण{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-start justify-between gap-3 mb-5">
+  <div class="min-w-0">
+    <h1 class="text-2xl font-bold text-slate-800">सार्वजनिक परीक्षण / सुनुवाइ र अनुगमन</h1>
+    <p class="text-sm text-slate-500 mt-1 truncate">{{ project.name }} · वडा नं. {{ project.ward.name|to_nepali_number }} · {{ committee.name|default:'' }}
+      <span class="badge {% if required %}bg-amber-50 text-amber-700{% else %}bg-slate-100 text-slate-600{% endif %} ml-1">{% if required %}अनिवार्य{% else %}ऐच्छिक{% endif %}</span>
+    </p>
+  </div>
+  <div class="flex gap-2">
+    {% if audit %}<a href="{% url 'uc_print_public_audit' project.id %}" target="_blank" rel="noopener" class="btn-secondary"><i class="fas fa-print"></i> मुचुल्का / प्रतिवेदन</a>{% endif %}
+    <a href="{% url 'usercommittee_workflow' %}" class="btn-secondary"><i class="fas fa-arrow-left"></i> उपभोक्ता समिति</a>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="card">
+  {% csrf_token %}
+  <div class="p-6 space-y-8">
+
+    <section>
+      <h2 class="section-title"><i class="fas fa-people-group"></i> सार्वजनिक परीक्षण / सुनुवाइ</h2>
+      <div class="grid md:grid-cols-4 gap-4">
+        <div><label class="form-label">मिति <span class="text-rose-500">*</span></label>
+          <input name="date" class="form-input nepali-date" required value="{% if form %}{{ form.date }}{% else %}{{ date_bs }}{% endif %}" placeholder="YYYY-MM-DD"></div>
+        <div class="md:col-span-2"><label class="form-label">स्थान</label>
+          <input name="venue" class="form-input" value="{% if form %}{{ form.venue }}{% else %}{{ audit.venue|default:'' }}{% endif %}" placeholder="जस्तै: वडा कार्यालय परिसर"></div>
+        <div><label class="form-label">अध्यक्षता</label>
+          <input name="chaired_by" class="form-input" value="{% if form %}{{ form.chaired_by }}{% else %}{{ audit.chaired_by|default:committee.chairman_name|default:'' }}{% endif %}"></div>
+        <div><label class="form-label">कुल सहभागी</label>
+          <input name="participants_total" id="paTotal" inputmode="numeric" class="form-input" value="{% if form %}{{ form.participants_total }}{% else %}{{ audit.participants_total|default:'' }}{% endif %}"></div>
+        <div><label class="form-label">महिला सहभागी</label>
+          <input name="participants_women" id="paWomen" inputmode="numeric" class="form-input" value="{% if form %}{{ form.participants_women }}{% else %}{{ audit.participants_women|default:'' }}{% endif %}">
+          <p class="form-hint" id="paPct"></p></div>
+        <div><label class="form-label">प्रस्तुत आम्दानी (रु.)</label>
+          <input name="income_presented" inputmode="decimal" class="form-input text-right" value="{% if form %}{{ form.income_presented }}{% else %}{{ audit.income_presented|default_if_none:'' }}{% endif %}" placeholder="{% if final %}{{ final.final_evaluation }}{% endif %}"></div>
+        <div><label class="form-label">प्रस्तुत खर्च (रु.)</label>
+          <input name="expense_presented" inputmode="decimal" class="form-input text-right" value="{% if form %}{{ form.expense_presented }}{% else %}{{ audit.expense_presented|default_if_none:'' }}{% endif %}"></div>
+        <div class="md:col-span-2"><label class="form-label">निर्णय</label>
+          <textarea name="decision" rows="3" class="form-textarea" placeholder="जस्तै: आम्दानी खर्च सार्वजनिक गरियो, काम सन्तोषजनक देखियो, अन्तिम भुक्तानीका लागि सिफारिस गर्ने।">{% if form %}{{ form.decision }}{% else %}{{ audit.decision|default:'' }}{% endif %}</textarea></div>
+        <div class="md:col-span-2"><label class="form-label">उठेका सवाल / गुनासो</label>
+          <textarea name="issues" rows="3" class="form-textarea">{% if form %}{{ form.issues }}{% else %}{{ audit.issues|default:'' }}{% endif %}</textarea></div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title"><i class="fas fa-binoculars"></i> अनुगमन समितिको प्रतिवेदन</h2>
+      <div class="grid md:grid-cols-4 gap-4">
+        <div><label class="form-label">अनुगमन मिति</label>
+          <input name="monitoring_date" class="form-input nepali-date" value="{% if form %}{{ form.monitoring_date }}{% else %}{{ mdate_bs }}{% endif %}" placeholder="YYYY-MM-DD"></div>
+        <div><label class="form-label">निष्कर्ष</label>
+          <select name="monitoring_finding" class="form-select">
+            <option value="">छान्नुहोस्</option>
+            {% for k, l in findings %}<option value="{{ k }}"{% if form %}{% if form.monitoring_finding == k %} selected{% endif %}{% elif audit.monitoring_finding == k %} selected{% endif %}>{{ l }}</option>{% endfor %}
+          </select></div>
+        <div class="md:col-span-2"><label class="form-label">अनुगमन समितिका सदस्य</label>
+          <input name="monitoring_members" class="form-input" value="{% if form %}{{ form.monitoring_members }}{% else %}{{ audit.monitoring_members|default:'' }}{% endif %}" placeholder="नाम, पद — अल्पविरामले छुट्याउनुहोस्"></div>
+        <div class="md:col-span-4"><label class="form-label">सुझाव / कैफियत</label>
+          <textarea name="monitoring_remarks" rows="2" class="form-textarea">{% if form %}{{ form.monitoring_remarks }}{% else %}{{ audit.monitoring_remarks|default:'' }}{% endif %}</textarea></div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title"><i class="fas fa-paperclip"></i> कागजात र फोटो <span class="text-xs font-normal normal-case text-slate-400">— PDF वा फोटो, बढीमा १० MB, एकपटकमा धेरै छान्न मिल्छ</span></h2>
+      <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {% for kind, label, items in kinds %}
+        <div class="rounded-xl border border-slate-200 p-3">
+          <p class="text-sm font-semibold text-slate-700 mb-2">{{ label }}</p>
+          {% if items %}
+          <div class="flex flex-wrap gap-2 mb-2">
+            {% for f in items %}
+            <div class="relative group">
+              <a href="{{ f.file.url }}" target="_blank" rel="noopener">
+                {% if f.is_image %}<img src="{{ f.file.url }}" class="w-20 h-16 object-cover rounded-lg border border-slate-200" alt="">
+                {% else %}<span class="w-20 h-16 rounded-lg border border-slate-200 bg-rose-50 text-rose-600 flex items-center justify-center"><i class="fas fa-file-pdf text-xl"></i></span>{% endif %}
+              </a>
+              <button type="submit" form="delFile{{ f.id }}" class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-white border border-rose-200 text-rose-600 text-xs hidden group-hover:block" title="हटाउनुहोस्">✕</button>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <input type="file" name="files_{{ kind }}" multiple accept="image/*,application/pdf" class="block w-full text-xs text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-brand-700">
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+  <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-xl flex justify-end">
+    <button class="btn-success"><i class="fas fa-floppy-disk"></i> सुरक्षित गर्नुहोस्</button>
+  </div>
+</form>
+
+{# फाइल हटाउने फारमहरू (मुख्य फारमबाहिर) #}
+{% for kind, label, items in kinds %}{% for f in items %}
+<form id="delFile{{ f.id }}" method="post" class="hidden" hx-confirm="यो फाइल हटाउने?">{% csrf_token %}<input type="hidden" name="action" value="delete_file"><input type="hidden" name="file_id" value="{{ f.id }}"></form>
+{% endfor %}{% endfor %}
+
+<script>
+(function () {
+  var ND = '०१२३४५६७८९', n = function (v) { return parseInt(String(v || '').replace(/[०-९]/g, function (c) { return ND.indexOf(c); }), 10) || 0; };
+  var t = document.getElementById('paTotal'), w = document.getElementById('paWomen'), out = document.getElementById('paPct');
+  function upd() {
+    var T = n(t.value), W = n(w.value);
+    out.textContent = T ? 'महिला ' + String(Math.round(W * 100 / T)).replace(/[0-9]/g, function (d) { return ND[d]; }) + '%' + (W > T ? ' — कुलभन्दा बढी!' : '') : '';
+    out.className = 'form-hint ' + (W > T ? 'text-rose-600' : '');
+  }
+  t.addEventListener('input', upd); w.addEventListener('input', upd); upd();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% load static %}
+<!-- ===================== HEADER ===================== -->
+<header id="app-header" class="sticky top-0 z-20 h-16 bg-white border-b border-slate-200 flex items-center gap-3 px-4 md:px-6 shrink-0">
+
+  <!-- sidebar toggle (mobile: slide in, desktop: mini) -->
+  <button type="button" onclick="window.innerWidth < 768 ? toggleMobileSidebar() : toggleMiniSidebar()"
+          class="w-9 h-9 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100" title="साइडबार">
+    <i data-lucide="panel-left" class="w-5 h-5"></i>
+  </button>
+  <span class="hidden sm:block h-6 w-px bg-slate-200"></span>
+
+  <!-- breadcrumb (the page name comes from the page <title>) -->
+  <nav class="min-w-0 flex-1 flex items-center gap-2 text-sm" aria-label="breadcrumb">
+    {% if me %}
+    <a href="{% url me.home %}" class="hidden sm:inline text-slate-500 hover:text-slate-800 shrink-0">ड्यासबोर्ड</a>
+    <i data-lucide="chevron-right" class="hidden sm:inline w-4 h-4 text-slate-400 shrink-0" id="crumb-sep"></i>
+    {% endif %}
+    <span id="crumb-current" class="font-medium text-slate-800 truncate"></span>
+  </nav>
+
+  <!-- Nepali date + live time -->
+  <div class="hidden md:block text-right leading-tight">
+    <p class="text-sm font-medium text-slate-700">{{ today_bs }}</p>
+    <p class="text-xs text-slate-500" id="np-clock"></p>
+  </div>
+
+  <!-- notifications -->
+  <button type="button" class="w-9 h-9 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100" title="सूचना">
+    <i data-lucide="bell" class="w-5 h-5"></i>
+  </button>
+
+  <!-- user -->
+  {% if me %}
+  <div class="relative">
+    <button type="button" data-dropdown-toggle onclick="toggleDropdown('userMenuPanel')"
+            class="flex items-center gap-2.5 rounded-lg pl-1 pr-2 py-1 hover:bg-slate-50 transition text-left">
+      <span class="avatar-initials w-9 h-9 text-xs bg-brand-50 text-brand-800 ring-1 ring-brand-100">{{ me.initials }}</span>
+      <span class="hidden lg:block min-w-0 max-w-[15rem] leading-tight">
+        <span class="block text-sm font-semibold text-slate-800 truncate">{{ me.name }}</span>
+        <span class="block text-xs text-slate-500 truncate">{{ me.role }}</span>
+        <span class="block text-[11px] text-slate-400 truncate">{{ palika.full_name }}{% if palika.district %}, {{ palika.district }}{% endif %}</span>
+      </span>
+    </button>
+
+    <div id="userMenuPanel" data-dropdown-panel
+         class="hidden absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-soft border border-slate-100 py-1.5 z-30">
+      <div class="px-4 py-2.5 border-b border-slate-100">
+        <p class="text-sm font-semibold text-slate-800 truncate">{{ me.name }}</p>
+        <p class="text-xs text-slate-500 truncate">{{ me.role }}</p>
+        <p class="text-xs text-slate-400 truncate">{{ me.mobile }}</p>
+      </div>
+      <a class="flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50" href="{% url me.home %}">
+        <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-400"></i> ड्यासबोर्ड
+      </a>
+      <a class="flex items-center gap-2 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50" href="{% url 'logout' %}" hx-boost="false">
+        <i data-lucide="log-out" class="w-4 h-4"></i> लगआउट
+      </a>
+    </div>
+  </div>
+  {% endif %}
+</header>
+<!-- ===================== END HEADER ===================== -->

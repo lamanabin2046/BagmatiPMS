@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}SuTRA सँग रसिद मिलान{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <p class="text-xs font-medium text-brand-700"><i class="fas fa-landmark"></i> राजस्व आम्दानी</p>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">SuTRA सँग रसिद मिलान</h1>
+      <p class="text-sm text-slate-500 mt-0.5">यहाँ दर्ता भएका {{ counts.all|npn }} रसिद · मिलेका {{ counts.ok|npn }} · जाँच नभएका {{ counts.unchecked|npn }}</p>
+    </div>
+    <a href="{% url 'revenue_list' %}" class="btn-secondary"><i class="fas fa-arrow-left"></i> राजस्व आम्दानी</a>
+  </div>
+  <form method="post" enctype="multipart/form-data" hx-boost="false" class="card p-5 space-y-3">
+    {% csrf_token %}
+    <p class="text-sm text-slate-600">SuTRA बाट राजस्व / आम्दानीको विवरण (रसिद नं. र रकम भएको) Excel वा CSV मा निकालेर यहाँ अपलोड गर्नुहोस्। शीर्ष पङ्क्तिमा “रसिद नं.” र “रकम” (Receipt No, Amount) चाहिन्छ। रकममा विलम्ब शुल्क समेत भए पनि मिल्छ।</p>
+    <div class="flex flex-wrap items-center gap-3">
+      <select name="fiscalyear" class="form-select !w-auto"><option value="">सबै आ.व.</option>{% for x in fiscal_years %}<option value="{{ x.id }}" {% if fy == x.id|stringformat:'s' %}selected{% endif %}>{{ x.name }}</option>{% endfor %}</select>
+      <input type="file" name="file" accept=".xlsx,.csv" class="form-input max-w-xs" required>
+      <button class="btn-primary"><i class="fas fa-code-compare"></i> मिलान गर्नुहोस्</button>
+    </div>
+  </form>
+  {% if result %}
+  <div class="grid sm:grid-cols-4 gap-3">
+    <div class="card p-4 bg-emerald-50/60"><p class="text-xs text-slate-500">मिलेको</p><p class="text-xl font-bold text-emerald-700">{{ result.matched|length|npn }}</p></div>
+    <div class="card p-4 {% if result.mismatch %}bg-rose-50/60{% endif %}"><p class="text-xs text-slate-500">रकम फरक</p><p class="text-xl font-bold text-rose-700">{{ result.mismatch|length|npn }}</p></div>
+    <div class="card p-4 {% if result.missing_sutra %}bg-amber-50/60{% endif %}"><p class="text-xs text-slate-500">यहाँ छ, SuTRA मा छैन</p><p class="text-xl font-bold text-amber-700">{{ result.missing_sutra|length|npn }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">SuTRA मा छ, यहाँ छैन</p><p class="text-xl font-bold">{{ result.missing_here|length|npn }}</p></div>
+  </div>
+  {% if result.mismatch or result.missing_sutra %}
+  <div class="card overflow-x-auto"><table class="w-full text-sm">
+    <thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="px-3 py-2 text-left">रसिद नं.</th><th class="px-3 py-2 text-left">स्रोत / ठेकेदार</th><th class="px-3 py-2 text-right">यहाँ (किस्ता + वि.शु.)</th><th class="px-3 py-2 text-right">SuTRA</th><th class="px-3 py-2 text-left">समस्या</th></tr></thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for p, amt in result.mismatch %}<tr class="bg-rose-50/40"><td class="px-3 py-2">{{ p.receipt_no }}</td><td class="px-3 py-2">{{ p.instalment.source.name }} · {{ p.instalment.source.selected.name }}</td><td class="px-3 py-2 text-right">{{ p.amount|money:0 }} + {{ p.late_fee|money:0 }}</td><td class="px-3 py-2 text-right">{{ amt|money:0 }}</td><td class="px-3 py-2 text-rose-700">रकम फरक</td></tr>{% endfor %}
+      {% for p in result.missing_sutra %}<tr><td class="px-3 py-2">{{ p.receipt_no }}</td><td class="px-3 py-2">{{ p.instalment.source.name }} · {{ p.instalment.source.selected.name }}</td><td class="px-3 py-2 text-right">{{ p.amount|money:0 }}</td><td class="px-3 py-2 text-right">—</td><td class="px-3 py-2 text-amber-700">SuTRA मा आम्दानी बाँधिएको छैन</td></tr>{% endfor %}
+    </tbody></table></div>
+  {% endif %}
+  {% if result.missing_here %}<p class="text-xs text-slate-500">SuTRA मा मात्र भएका रसिद (राजस्व ठेक्काबाहेकका पनि हुन सक्छन्): {% for r, a in result.missing_here|slice:":40" %}{{ r }} (रु. {{ a|money:0 }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+  {% endif %}
+</div>
+{% endblock %}

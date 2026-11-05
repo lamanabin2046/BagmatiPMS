@@ -1,0 +1,412 @@
+{% comment %}उपभोक्ता समितिका पदाधिकारी तथा सदस्य — पद dropdown, NID खोज, कागजात (अपलोड / क्यामेरा).
+   चाहिने: rows (with_slots), posts, doc_slots_blank, nid_api, nid_mode. फारम multipart हुनुपर्छ।{% endcomment %}
+<div id="ucRoster" data-lookup-url="{% url 'uc_nid_lookup' %}" data-uc="{{ uc_id }}" data-block="{{ conflict_block|yesno:'1,' }}">
+  <div class="flex flex-wrap items-end justify-between gap-3 mb-3">
+    <h2 class="section-title mb-0"><i class="fas fa-users"></i> पदाधिकारी तथा सदस्यहरू</h2>
+    <p class="text-xs text-slate-500 flex items-center gap-1.5">
+      <i class="fas fa-id-card text-brand-600"></i>
+      {% if nid_mode == 'demo' %}
+        <span class="badge bg-amber-50 text-amber-700 ring-1 ring-amber-200">डेमो NID</span>
+        NID लेखी <b>खोज्नुहोस्</b>: पहिले दर्ता भएका व्यक्ति कागजात सहित, नत्र डेमो परिचयपत्र अभिलेखबाट।
+      {% elif nid_api %}
+        NID लेखी <b>खोज्नुहोस्</b>: पहिले दर्ता भएका व्यक्ति कागजात सहित, नत्र राष्ट्रिय परिचयपत्रबाट।
+      {% else %}
+        NID लेखी <b>खोज्नुहोस्</b>: पहिले दर्ता भएका व्यक्ति कागजात सहित आउँछन्।
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="overflow-x-auto rounded-xl border border-slate-200">
+    <table class="w-full text-sm min-w-[1320px]">
+      <thead>
+        <tr class="text-left text-xs text-slate-500 bg-slate-50">
+          <th class="px-3 py-2.5 font-medium w-10">क्र.सं.</th>
+          <th class="px-3 py-2.5 font-medium">पद <span class="text-rose-500">*</span></th>
+          <th class="px-3 py-2.5 font-medium">राष्ट्रिय परिचयपत्र (NID) नं.</th>
+          <th class="px-3 py-2.5 font-medium">नाम थर <span class="text-rose-500">*</span></th>
+          <th class="px-3 py-2.5 font-medium">लिङ्ग <span class="text-rose-500">*</span></th>
+          <th class="px-3 py-2.5 font-medium">ठेगाना</th>
+          <th class="px-3 py-2.5 font-medium">मोबाइल नं.</th>
+          <th class="px-3 py-2.5 font-medium">ना.प्र.नं.</th>
+          <th class="px-3 py-2.5 font-medium">कागजात <span class="text-rose-500">*</span></th>
+          <th class="px-2 py-2.5 w-10"></th>
+        </tr>
+      </thead>
+      <tbody id="ucRosterBody" class="divide-y divide-slate-100">
+        {% for r in rows %}
+          {% include 'Admin/User/_uc_roster_row.html' with r=r key=r.key sn=forloop.counter %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# महिला सहभागिता (JS ले भर्छ) #}
+  <div id="ucGender" class="mt-3 rounded-xl border px-4 py-2.5 text-xs flex flex-wrap items-center gap-x-4 gap-y-1"></div>
+
+  <div class="flex flex-wrap items-center justify-between gap-3 mt-3">
+    <button type="button" id="ucAddRow" class="btn-secondary text-brand-700"><i class="fas fa-plus"></i> सदस्य थप्नुहोस्</button>
+    <p class="text-xs text-slate-400 max-w-3xl text-right">
+      अध्यक्ष, सचिव र कोषाध्यक्ष एक-एक जना अनिवार्य, उपाध्यक्ष बढीमा एक। स्वीकृतका लागि <b>हरेक सदस्यको फोटो</b> र <b>नागरिकता (दुवै पाटा) वा राष्ट्रिय परिचयपत्र</b> चाहिन्छ।
+      पहिले दर्ता भएका व्यक्तिको कागजात फेरि राख्नु पर्दैन। JPG/PNG/PDF, बढीमा ५ MB।
+    </p>
+  </div>
+
+  {# नयाँ row को ढाँचा (__KEY__ ठाउँमा JS ले अद्वितीय key राख्छ) #}
+  <template id="ucRowTpl">
+    {% include 'Admin/User/_uc_roster_row.html' with r=None key='__KEY__' sn='' %}
+  </template>
+
+  {# कागजात modal (फारमभित्रै, ताकि छानेका फाइल submit हुन्) #}
+  <div id="ucDocModal" class="fixed inset-0 z-[70] hidden">
+    <div class="absolute inset-0 bg-slate-900/50" data-uc-close></div>
+    <div class="relative h-full flex items-center justify-center p-3 pointer-events-none">
+      <div class="pointer-events-auto bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col">
+        <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+          <div>
+            <p class="text-xs text-brand-700 font-medium"><i class="fas fa-id-card"></i> सदस्यका कागजात</p>
+            <h3 id="ucDocTitle" class="font-bold text-slate-800"></h3>
+          </div>
+          <button type="button" data-uc-close class="w-9 h-9 rounded-lg text-slate-500 hover:bg-slate-100"><i class="fas fa-xmark text-lg"></i></button>
+        </div>
+        <div id="ucDocHost" class="flex-1 overflow-y-auto p-5"></div>
+        <div class="flex items-center justify-between gap-3 px-5 py-3 border-t border-slate-100 bg-slate-50/70 rounded-b-2xl">
+          <p class="text-[11px] text-slate-500"><span class="text-rose-500">*</span> फोटो र नागरिकता (दुवै पाटा) वा राष्ट्रिय परिचयपत्र अनिवार्य। फाइल फारम सुरक्षित गर्दा मात्र अपलोड हुन्छ।</p>
+          <button type="button" data-uc-close class="btn-primary"><i class="fas fa-check"></i> ठिक छ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# क्यामेरा #}
+  <div id="ucCamModal" class="fixed inset-0 z-[80] hidden">
+    <div class="absolute inset-0 bg-slate-950/80"></div>
+    <div class="relative h-full flex items-center justify-center p-3">
+      <div class="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 text-white">
+          <p id="ucCamTitle" class="text-sm font-medium"></p>
+          <button type="button" id="ucCamClose" class="w-8 h-8 rounded-lg hover:bg-white/10"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="relative bg-black aspect-video">
+          <video id="ucCamVideo" autoplay playsinline muted class="w-full h-full object-contain"></video>
+          <img id="ucCamShot" alt="" class="absolute inset-0 w-full h-full object-contain hidden">
+          <p id="ucCamMsg" class="absolute inset-0 flex items-center justify-center text-center text-sm text-white/80 px-6 hidden"></p>
+        </div>
+        <div class="flex items-center justify-between gap-2 px-4 py-3">
+          <select id="ucCamSelect" class="form-select !w-auto !py-1.5 !text-xs hidden"></select>
+          <div class="flex gap-2 ml-auto">
+            <button type="button" id="ucCamRetake" class="btn-secondary hidden"><i class="fas fa-rotate-left"></i> फेरि खिच्नुहोस्</button>
+            <button type="button" id="ucCamSnap" class="btn-primary"><i class="fas fa-camera"></i> फोटो खिच्नुहोस्</button>
+            <button type="button" id="ucCamUse" class="btn-success hidden"><i class="fas fa-check"></i> यही प्रयोग गर्नुहोस्</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// एक पटक मात्र (HTMX पेज परिवर्तनमा पनि) document मा listener राख्ने
+if (!window.__ucRosterInit) {
+  window.__ucRosterInit = true;
+  var ND = '०१२३४५६७८९';
+  var np = function (n) { return String(n).replace(/[0-9]/g, function (d) { return ND[d]; }); };
+  var byId = function (id) { return document.getElementById(id); };
+
+  var renumber = function () {
+    document.querySelectorAll('#ucRosterBody .uc-row').forEach(function (tr, i) {
+      tr.querySelector('.uc-sn').textContent = np(i + 1);
+    });
+  };
+
+  // ---------- कागजात: preview र स्थिति ----------
+  var slotHas = function (slot) {
+    var f = slot.querySelector('.uc-file');
+    return (f.files && f.files.length) || !!slot.dataset.existing;
+  };
+  var renderSlot = function (slot) {
+    var f = slot.querySelector('.uc-file'), box = slot.querySelector('.uc-slot-preview'), st = slot.querySelector('.uc-slot-state');
+    var file = f.files && f.files[0];
+    if (slot.dataset.objUrl) { URL.revokeObjectURL(slot.dataset.objUrl); delete slot.dataset.objUrl; }
+    box.innerHTML = '';
+    var url = '', pdf = false;
+    if (file) { url = URL.createObjectURL(file); slot.dataset.objUrl = url; pdf = /pdf$/i.test(file.type) || /\.pdf$/i.test(file.name); }
+    else if (slot.dataset.existing) { url = slot.dataset.existing; pdf = !!slot.dataset.existingPdf; }
+    if (!url) {
+      box.className = 'uc-slot-preview h-32 rounded-lg bg-slate-50 border border-dashed border-slate-300 flex items-center justify-center overflow-hidden text-slate-300';
+      box.innerHTML = '<i class="fas fa-image text-2xl"></i>';
+    } else {
+      box.className = 'uc-slot-preview h-32 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden';
+      box.innerHTML = pdf ? '<a href="' + url + '" target="_blank" class="text-rose-600 text-center"><i class="fas fa-file-pdf text-3xl"></i><span class="block text-[11px] mt-1">PDF हेर्नुहोस्</span></a>'
+                          : '<img src="' + url + '" class="w-full h-full object-contain">';
+    }
+    st.className = 'uc-slot-state text-[11px] mt-1 min-h-[1rem] ' + (file ? 'text-brand-700' : slot.dataset.existing ? 'text-emerald-600' : 'text-slate-400');
+    st.textContent = file ? '● नयाँ छानिएको (सुरक्षित गर्दा अपलोड हुन्छ)' : slot.dataset.existing ? '✓ अभिलेखमा पहिले नै छ' : 'छैन';
+    slot.querySelector('.uc-clear').classList.toggle('hidden', !file);
+  };
+  var rowPanel = function (row) {
+    return row.querySelector('.uc-docs-panel') || (row._panel || null);
+  };
+  var updateRowDocs = function (row) {
+    var panel = rowPanel(row); if (!panel) return;
+    var has = {};
+    panel.querySelectorAll('.uc-slot').forEach(function (s) { has[s.dataset.kind] = slotHas(s); });
+    var ok = has.photo && (has.nid_card || (has.citizenship_front && has.citizenship_back));
+    var n = Object.keys(has).filter(function (k) { return has[k]; }).length;
+    var btn = row.querySelector('.uc-docs-btn');
+    btn.className = 'uc-docs-btn w-full min-w-[7.5rem] rounded-lg border px-2.5 py-2 text-left text-xs transition ' +
+      (ok ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100');
+    btn.querySelector('.uc-docs-dots').innerHTML = ['photo', 'citizenship_front', 'citizenship_back', 'nid_card'].map(function (k) {
+      return '<span class="w-2 h-2 rounded-full ' + (has[k] ? 'bg-current' : 'bg-current opacity-25') + '"></span>';
+    }).join('');
+    btn.querySelector('.uc-docs-text').innerHTML = (ok ? '<i class="fas fa-circle-check"></i> पुग्यो' : '<i class="fas fa-paperclip"></i> कागजात') + ' (' + np(n) + '/४)';
+  };
+  var initRow = function (row) {
+    var panel = row.querySelector('.uc-docs-panel');
+    if (panel) { panel.querySelectorAll('.uc-slot').forEach(renderSlot); }
+    updateRowDocs(row);
+    try { row._active = JSON.parse(row.dataset.active || '[]'); } catch (err) { row._active = []; }
+    showConflict(row);
+  };
+  // ---------- अरू सक्रिय समितिमा पदाधिकारी? ----------
+  var OFFICER_POSTS = ['chairman', 'treasurer', 'secretary'];
+  var showConflict = function (row) {
+    var p = row.querySelector('.uc-conflict-msg');
+    if (!p) return;
+    var active = row._active || [], post = row.querySelector('.uc-post').value;
+    var esc = function (t) { var d = document.createElement('span'); d.textContent = t == null ? '' : String(t); return d.innerHTML; };
+    var desc = function (o) { return '<b>“' + esc(o.committee) + '”</b> (' + esc(o.project) + (o.ward ? ', वडा ' + np(esc(o.ward)) : '') + ') मा ' + esc(o.post_label); };
+    var clash = OFFICER_POSTS.indexOf(post) >= 0 ? active.filter(function (o) { return o.officer; }) : [];
+    row.classList.toggle('bg-rose-50/40', clash.length > 0);
+    if (clash.length) {
+      var block = byId('ucRoster').dataset.block === '1';
+      p.className = 'uc-conflict-msg mt-1 rounded-md px-2 py-1 text-[11px] leading-snug ' + (block ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-800');
+      p.innerHTML = '<i class="fas fa-triangle-exclamation"></i> यिनी हाल ' + clash.map(desc).join(', ') + ' पनि हुनुहुन्छ' +
+        (block ? ' — पालिकाको नियम अनुसार सुरक्षित हुँदैन।' : ' — एकैपटक दुई समितिमा पदाधिकारी।');
+    } else if (active.length) {
+      p.className = 'uc-conflict-msg mt-1 text-[11px] leading-snug text-slate-500';
+      p.innerHTML = '<i class="fas fa-circle-info"></i> अन्य सक्रिय समितिमा: ' + active.map(desc).join(', ');
+    } else {
+      p.className = 'uc-conflict-msg hidden'; p.innerHTML = '';
+    }
+  };
+  // ---------- महिला सहभागिता (कम्तीमा ३३%, पदाधिकारीमध्ये कम्तीमा एक महिला) ----------
+  var genderSummary = function () {
+    var box = byId('ucGender'); if (!box) return;
+    var t = 0, w = 0, m = 0, o = 0, u = 0, officerWoman = false;
+    document.querySelectorAll('#ucRosterBody .uc-row').forEach(function (row) {
+      if (!row.querySelector('.uc-name').value.trim()) return;
+      t++;
+      var g = row.querySelector('.uc-gender').value, post = row.querySelector('.uc-post').value;
+      if (g === 'महिला') { w++; if (['chairman', 'secretary', 'treasurer'].indexOf(post) >= 0) officerWoman = true; }
+      else if (g === 'पुरुष') m++; else if (g === 'अन्य') o++; else u++;
+    });
+    var pct = t ? Math.round(w * 100 / t) : 0, ok33 = t && w * 100 >= 33 * t;
+    var good = t && ok33 && officerWoman && !u;
+    box.className = 'mt-3 rounded-xl border px-4 py-2.5 text-xs flex flex-wrap items-center gap-x-4 gap-y-1 ' +
+      (!t ? 'border-slate-200 bg-slate-50 text-slate-500' : good ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800');
+    var parts = ['<b><i class="fas fa-venus-mars"></i> महिला सहभागिता: ' + np(pct) + '%</b>',
+      'महिला ' + np(w) + ' · पुरुष ' + np(m) + (o ? ' · अन्य ' + np(o) : '') + ' · कुल ' + np(t)];
+    if (t) {
+      parts.push(ok33 ? '<span>✓ ३३% पुग्यो</span>' : '<span>✗ कम्तीमा ३३% महिला चाहिन्छ</span>');
+      parts.push(officerWoman ? '<span>✓ पदाधिकारीमा महिला</span>' : '<span>✗ अध्यक्ष/सचिव/कोषाध्यक्षमध्ये कम्तीमा एक महिला</span>');
+      if (u) parts.push('<span>' + np(u) + ' जनाको लिङ्ग छानिएको छैन</span>');
+    }
+    box.innerHTML = parts.join('');
+  };
+
+  window.__ucInitRoster = function () {
+    genderSummary();
+    renumber();
+    document.querySelectorAll('#ucRosterBody .uc-row').forEach(initRow);
+  };
+
+  // ---------- कागजात modal ----------
+  var openRow = null;
+  var openDocs = function (row) {
+    var panel = row.querySelector('.uc-docs-panel');
+    openRow = row; row._panel = panel;
+    var name = row.querySelector('.uc-name').value.trim() || 'नाम नलेखिएको सदस्य';
+    byId('ucDocTitle').textContent = name + ' — ' + row.querySelector('.uc-post').selectedOptions[0].textContent;
+    panel.classList.remove('hidden');
+    byId('ucDocHost').appendChild(panel);
+    byId('ucDocModal').classList.remove('hidden');
+  };
+  var closeDocs = function () {
+    if (!openRow) return;
+    var panel = openRow._panel;
+    panel.classList.add('hidden');
+    openRow.querySelector('.uc-docs-btn').after(panel);   // फारमभित्र आफ्नै row मा फर्काउने
+    updateRowDocs(openRow);
+    openRow = null;
+    byId('ucDocModal').classList.add('hidden');
+  };
+
+  // ---------- क्यामेरा ----------
+  var cam = { stream: null, slot: null, blob: null };
+  var camStop = function () { if (cam.stream) { cam.stream.getTracks().forEach(function (t) { t.stop(); }); cam.stream = null; } };
+  var camMsg = function (t) { byId('ucCamMsg').textContent = t || ''; byId('ucCamMsg').classList.toggle('hidden', !t); };
+  var camStart = function (deviceId) {
+    camStop(); camMsg('क्यामेरा खोल्दै…');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      camMsg('यो browser/ठेगानाबाट क्यामेरा चल्दैन। HTTPS वा localhost चाहिन्छ, नत्र "अपलोड" प्रयोग गर्नुहोस्।'); return;
+    }
+    var video = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } };
+    navigator.mediaDevices.getUserMedia({ video: video, audio: false }).then(function (s) {
+      cam.stream = s; byId('ucCamVideo').srcObject = s; camMsg('');
+      return navigator.mediaDevices.enumerateDevices();
+    }).then(function (devs) {
+      if (!devs) return;
+      var vids = devs.filter(function (d) { return d.kind === 'videoinput'; }), sel = byId('ucCamSelect');
+      sel.classList.toggle('hidden', vids.length < 2);
+      var cur = cam.stream && cam.stream.getVideoTracks()[0].getSettings().deviceId;
+      sel.innerHTML = vids.map(function (d, i) { return '<option value="' + d.deviceId + '"' + (d.deviceId === cur ? ' selected' : '') + '>' + (d.label || ('क्यामेरा ' + np(i + 1))) + '</option>'; }).join('');
+    }).catch(function (err) {
+      camMsg(err && err.name === 'NotAllowedError' ? 'क्यामेरा प्रयोग गर्ने अनुमति दिइएन। browser को ठेगाना पट्टीबाट अनुमति दिनुहोस्।' : 'क्यामेरा भेटिएन वा खोल्न सकिएन। "अपलोड" प्रयोग गर्नुहोस्।');
+    });
+  };
+  var camOpen = function (slot) {
+    cam.slot = slot; cam.blob = null;
+    byId('ucCamTitle').textContent = slot.querySelector('p').textContent.replace('*', '').trim() + ' — क्यामेराबाट';
+    byId('ucCamShot').classList.add('hidden'); byId('ucCamVideo').classList.remove('hidden');
+    byId('ucCamSnap').classList.remove('hidden'); byId('ucCamRetake').classList.add('hidden'); byId('ucCamUse').classList.add('hidden');
+    byId('ucCamModal').classList.remove('hidden');
+    camStart();
+  };
+  var camClose = function () { camStop(); byId('ucCamModal').classList.add('hidden'); cam.slot = null; };
+  var camSnap = function () {
+    var v = byId('ucCamVideo'); if (!v.videoWidth) return;
+    var c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0);
+    c.toBlob(function (b) {
+      cam.blob = b;
+      byId('ucCamShot').src = URL.createObjectURL(b);
+      byId('ucCamShot').classList.remove('hidden'); byId('ucCamVideo').classList.add('hidden');
+      byId('ucCamSnap').classList.add('hidden'); byId('ucCamRetake').classList.remove('hidden'); byId('ucCamUse').classList.remove('hidden');
+    }, 'image/jpeg', 0.9);
+  };
+  var camUse = function () {
+    if (!cam.blob || !cam.slot) return;
+    var file = new File([cam.blob], cam.slot.dataset.kind + '_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+    var dt = new DataTransfer(); dt.items.add(file);
+    var input = cam.slot.querySelector('.uc-file'); input.files = dt.files;
+    renderSlot(cam.slot);
+    camClose();
+  };
+
+  // ---------- NID खोज ----------
+  var say = function (row, text, tone) {
+    var p = row.querySelector('.uc-nid-msg');
+    p.className = 'uc-nid-msg text-[11px] mt-1 ' + ({ ok: 'text-emerald-600', warn: 'text-amber-600', err: 'text-rose-600', info: 'text-slate-400' }[tone] || '');
+    p.textContent = text;
+  };
+  var setExisting = function (row, docs, pdfKinds) {
+    var panel = rowPanel(row);
+    panel.querySelectorAll('.uc-slot').forEach(function (s) {
+      var url = (docs && docs[s.dataset.kind]) || '';
+      s.dataset.existing = url; s.dataset.existingPdf = (pdfKinds || []).indexOf(s.dataset.kind) >= 0 ? '1' : '';
+      renderSlot(s);
+    });
+    updateRowDocs(row);
+  };
+  var lookup = function (row) {
+    var nid = row.querySelector('.uc-nid').value.trim();
+    if (!nid) { say(row, 'पहिले NID नम्बर लेख्नुहोस्।', 'warn'); row.querySelector('.uc-nid').focus(); return; }
+    if (nid.replace(/\D/g, '').length !== 9) { say(row, 'NID ९ अङ्कको हुनुपर्छ (उदाहरण: 435-6756-65)।', 'warn'); return; }
+    row.dataset.lastLookup = row.querySelector('.uc-nid').value;
+    var btn = row.querySelector('.uc-nid-btn');
+    btn.disabled = true; btn.classList.add('opacity-60');
+    say(row, 'खोज्दै…', 'info');
+    fetch(byId('ucRoster').dataset.lookupUrl + '?nid=' + encodeURIComponent(nid) + (byId('ucRoster').dataset.uc ? '&uc=' + byId('ucRoster').dataset.uc : ''), { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        row._active = d.active || []; showConflict(row);
+        if (!d.found) { row.querySelector('.uc-person').value = ''; setExisting(row, null); say(row, d.message || 'विवरण भेटिएन, हातैले भर्नुहोस्।', 'warn'); return; }
+        var p = d.person;
+        [['name', '.uc-name'], ['address', '.uc-address'], ['mobile', '.uc-mobile'], ['citizenship', '.uc-citizenship'], ['gender', '.uc-gender']].forEach(function (f) {
+          if (p[f[0]]) { row.querySelector(f[1]).value = p[f[0]]; }
+        });
+        genderSummary();
+        row.querySelector('.uc-person').value = p.person_id || '';
+        row.dataset.nidAtLink = row.querySelector('.uc-nid').value;
+        setExisting(row, p.docs || null, p.docs_pdf);
+        if (d.source === 'registry') {
+          var n = Object.keys(p.docs || {}).length;
+          say(row, '✓ पहिले दर्ता भएको व्यक्ति' + (p.committee ? ' ("' + p.committee + '" मा ' + (p.post_label || 'सदस्य') + ')' : '') +
+                   (p.docs_complete ? ' — कागजात पुगेका छन्' : ' — ' + np(n) + ' कागजात छन्, बाँकी थप्नुहोस्'), 'ok');
+        } else {
+          say(row, (d.source === 'demo' ? '✓ डेमो NID बाट विवरण भरियो' : '✓ राष्ट्रिय परिचयपत्रबाट विवरण भरियो') + ' — कागजात थप्नुहोस्', 'ok');
+        }
+      })
+      .catch(function () { say(row, 'खोज्न सकिएन, फेरि प्रयास गर्नुहोस्।', 'err'); })
+      .finally(function () { btn.disabled = false; btn.classList.remove('opacity-60'); });
+  };
+
+  // ---------- events ----------
+  document.addEventListener('click', function (e) {
+    if (!byId('ucRoster')) return;
+    var b;
+    if ((b = e.target.closest('.uc-nid-btn'))) { lookup(b.closest('.uc-row')); }
+    else if ((b = e.target.closest('.uc-docs-btn'))) { openDocs(b.closest('.uc-row')); }
+    else if (e.target.closest('[data-uc-close]')) { closeDocs(); }
+    else if ((b = e.target.closest('.uc-pick'))) { b.closest('.uc-slot').querySelector('.uc-file').click(); }
+    else if ((b = e.target.closest('.uc-cam'))) { camOpen(b.closest('.uc-slot')); }
+    else if ((b = e.target.closest('.uc-clear'))) { var sl = b.closest('.uc-slot'); sl.querySelector('.uc-file').value = ''; renderSlot(sl); }
+    else if (e.target.closest('#ucCamClose')) { camClose(); }
+    else if (e.target.closest('#ucCamSnap')) { camSnap(); }
+    else if (e.target.closest('#ucCamRetake')) { cam.blob = null; byId('ucCamShot').classList.add('hidden'); byId('ucCamVideo').classList.remove('hidden'); byId('ucCamSnap').classList.remove('hidden'); byId('ucCamRetake').classList.add('hidden'); byId('ucCamUse').classList.add('hidden'); }
+    else if (e.target.closest('#ucCamUse')) { camUse(); }
+    else if ((b = e.target.closest('.uc-remove'))) {
+      var rows = document.querySelectorAll('#ucRosterBody .uc-row');
+      if (rows.length > 1) { b.closest('.uc-row').remove(); }
+      else { b.closest('.uc-row').querySelectorAll('input:not([type=hidden]):not([type=file])').forEach(function (i) { i.value = ''; }); }
+      renumber(); genderSummary();
+    } else if (e.target.closest('#ucAddRow')) {
+      var key = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      byId('ucRosterBody').insertAdjacentHTML('beforeend', byId('ucRowTpl').innerHTML.replace(/__KEY__/g, key));
+      var row = byId('ucRosterBody').lastElementChild;
+      initRow(row); renumber();
+      row.querySelector('.uc-nid').focus();
+    }
+  });
+
+  document.addEventListener('change', function (e) {
+    if (e.target.closest && e.target.closest('#ucRosterBody') && e.target.matches('.uc-gender, .uc-post')) { genderSummary(); }
+    if (e.target.classList && e.target.classList.contains('uc-post')) { showConflict(e.target.closest('.uc-row')); }
+    if (e.target.classList && e.target.classList.contains('uc-file')) { renderSlot(e.target.closest('.uc-slot')); }
+    if (e.target.id === 'ucCamSelect') { camStart(e.target.value); }
+  });
+
+  // NID टाइप गर्दा आफैँ XXX-XXXX-XX ढाँचा (नेपाली अङ्क पनि चल्छ); NID बदलिए पुरानो व्यक्ति जोड हटाउने
+  document.addEventListener('input', function (e) {
+    if (e.target.classList && e.target.classList.contains('uc-name')) { genderSummary(); }
+    if (!(e.target.classList && e.target.classList.contains('uc-nid'))) return;
+    var d = e.target.value.replace(/[०-९]/g, function (c) { return ND.indexOf(c); }).replace(/\D/g, '').slice(0, 9);
+    var f = d.slice(0, 3) + (d.length > 3 ? '-' + d.slice(3, 7) : '') + (d.length > 7 ? '-' + d.slice(7) : '');
+    if (f !== e.target.value) { e.target.value = f; }
+    var row = e.target.closest('.uc-row');
+    if (row.querySelector('.uc-person').value && row.dataset.nidAtLink !== f) {
+      if (row.dataset.nidAtLink === undefined) { row.dataset.nidAtLink = e.target.defaultValue; }
+      if (row.dataset.nidAtLink !== f) { row.querySelector('.uc-person').value = ''; setExisting(row, null); row._active = []; showConflict(row); say(row, 'NID बदलियो — फेरि खोज्नुहोस्।', 'info'); }
+    }
+    // ९ अङ्क पुग्नेबित्तिकै आफैँ खोज्ने (एउटै नम्बर दोहोर्याएर नखोज्ने)
+    clearTimeout(row._nidTimer);
+    if (d.length === 9 && row.dataset.lastLookup !== f) {
+      row._nidTimer = setTimeout(function () { lookup(row); }, 350);
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('uc-nid')) {
+      e.preventDefault(); lookup(e.target.closest('.uc-row'));
+    }
+    if (e.key === 'Escape') {
+      if (byId('ucCamModal') && !byId('ucCamModal').classList.contains('hidden')) { camClose(); }
+      else if (openRow) { closeDocs(); }
+    }
+  });
+
+  // पेज छोड्दा क्यामेरा बन्द
+  document.addEventListener('htmx:beforeRequest', function () { camStop(); });
+}
+window.__ucInitRoster && window.__ucInitRoster();
+</script>

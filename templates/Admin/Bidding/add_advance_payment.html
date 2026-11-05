@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}अग्रिम भुक्तानी{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+
+  <div>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">अग्रिम भुक्तानी तथा अग्रिम बैंक जमानत विवरण</h1>
+    <p class="text-sm text-slate-500 mt-0.5">ठेक्काको अग्रिम भुक्तानी तथा बैंक जमानत दर्ता गर्नुहोस्</p>
+  </div>
+
+  {% if error %}
+  <div class="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm">
+    <strong>त्रुटि:</strong> {{ error }}
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <form action="{% url 'add_advance_payment' %}" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-file-contract"></i> ठेक्का विवरण</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">योजना / ठेक्का</label>
+              <select id="sealedBidSelect" required onchange="updateContractInfo(this)" class="form-select select2 w-full">
+                <option value="">-- ठेक्का छान्नुहोस् --</option>
+                {% for bid in sealed_bids %}
+                <option data-bidding="{{ bid.bidding_number }}"
+                        data-name="{{ bid.bidder_name_nepali }}"
+                        data-address="{{ bid.bidder_address_nepali }}"
+                        data-contract="{{ bid.contract.id }}">
+                  {{ bid.project.name }} ({{ bid.bidding_number }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="form-label">ठेक्का नम्बर</label>
+              <input type="text" id="bidding_number" readonly class="form-input">
+            </div>
+            <div>
+              <label class="form-label">फर्मको नाम (नेपाली)</label>
+              <input type="text" id="bidder_name" readonly class="form-input">
+            </div>
+            <div>
+              <label class="form-label">फर्मको ठेगाना</label>
+              <input type="text" id="bidder_address" readonly class="form-input">
+            </div>
+            <input type="hidden" name="contract_id" id="contract_id">
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-money-bill-wave"></i> अग्रिम भुक्तानी</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">अग्रिम भुक्तानी रकम</label>
+              <input type="number" name="approved_amount" step="0.01" required class="form-input">
+            </div>
+            <div>
+              <label class="form-label">स्वीकृत मिति</label>
+              <input type="text" name="approval_date" required class="form-input nepali-date">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-university"></i> बैंक जमानत विवरण</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">बैंकको नाम</label>
+              <input type="text" name="bank_name" required class="form-input">
+            </div>
+            <div>
+              <label class="form-label">जमानत रकम</label>
+              <input type="number" name="guaranteed_amount" required class="form-input">
+            </div>
+            <div>
+              <label class="form-label">जमानत नम्बर</label>
+              <input type="text" name="guarantee_number" required class="form-input">
+            </div>
+            <div>
+              <label class="form-label">सुरु मिति</label>
+              <input type="text" name="issue_date" required class="form-input nepali-date">
+            </div>
+            <div>
+              <label class="form-label">अन्तिम मिति</label>
+              <input type="text" name="expiry_date" required class="form-input nepali-date">
+            </div>
+            <div>
+              <label class="form-label">कागजात</label>
+              <input type="file" name="document" class="form-input file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:text-brand-700 file:px-3 file:py-1.5 file:text-xs file:font-semibold">
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> Save Advance Payment
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+function updateContractInfo(selectElement) {
+  const opt = selectElement.options[selectElement.selectedIndex];
+  document.getElementById("bidding_number").value = opt.dataset.bidding || "";
+  document.getElementById("bidder_name").value = opt.dataset.name || "";
+  document.getElementById("bidder_address").value = opt.dataset.address || "";
+  document.getElementById("contract_id").value = opt.dataset.contract || "";
+}
+</script>
+{% endblock %}

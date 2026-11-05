@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}ड्यासबोर्ड — {% if is_sachib %}वडा सचिव{% else %}वडा अध्यक्ष{% endif %}{% endblock %}
+{% block content %}
+<div class="space-y-5" id="ward-dash">
+  {% if is_sachib %}{% with role_label="वडा सचिव" %}{% include 'projects/_home_greet.html' with intro="वडाका योजनाको सिफारिस, समिति गठन र कार्यान्वयनको स्थिति।" actions=actions %}{% endwith %}
+  {% elif is_chair %}{% with role_label="वडा अध्यक्ष" %}{% include 'projects/_home_greet.html' with intro="वडास्तरीय योजना कार्यान्वयन, स्वीकृति र अनुगमन।" actions=actions %}{% endwith %}
+  {% else %}{% with role_label="वडा दृश्य" %}{% include 'projects/_home_greet.html' with intro="वडास्तरीय योजना कार्यान्वयन (सबै वडा)।" actions=actions %}{% endwith %}{% endif %}
+
+  {% if ward_obj %}
+  <div class="card px-4 py-3 flex flex-wrap items-center gap-3">
+    <span class="w-9 h-9 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center"><i data-lucide="building" class="w-5 h-5"></i></span>
+    <div><p class="text-sm font-bold text-slate-800">वडा कार्यालय नं. {{ ward_obj.name|npn }}</p><p class="text-xs text-slate-500">{% if ward_obj.chairperson %}वडा अध्यक्ष: {{ ward_obj.chairperson }}{% else %}वडाका योजना मात्र देखिन्छन्{% endif %}</p></div>
+  </div>
+  {% endif %}
+
+  {# ---------- KPI ---------- #}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="card p-4"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">वडा कुल विनियोजित बजेट</span><span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center"><i data-lucide="wallet" class="w-4 h-4"></i></span></div>
+      <p class="mt-2 text-lg font-bold text-slate-800">रु. {{ d.allocated|money:0 }}</p><p class="text-[11px] text-teal-700">खर्च रु. {{ d.spent|money:0 }} ({{ d.spent_pct|npn }}%)</p></div>
+    <div class="card p-4"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">वडास्तरीय योजना</span><span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center"><i data-lucide="folder-kanban" class="w-4 h-4"></i></span></div>
+      <p class="mt-2 text-lg font-bold text-slate-800">{{ d.count|npn }} वटा</p><p class="text-[11px] text-slate-500 truncate">{% for m in x.methods|slice:":3" %}{{ m.n|npn }} {{ m.label }}{% if not forloop.last %} · {% endif %}{% endfor %}</p></div>
+    <div class="card p-4 relative overflow-hidden"><div class="absolute top-0 inset-x-0 h-1 bg-rose-500"></div><div class="flex items-start justify-between"><span class="text-xs text-rose-700 font-semibold">सिफारिस / स्वीकृति बाँकी</span><span class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center"><i data-lucide="clock-alert" class="w-4 h-4"></i></span></div>
+      <p class="mt-2 text-lg font-bold text-rose-700">{{ x.pending|npn }} वटा</p><p class="text-[11px] text-slate-500">स्वीकृति {{ x.approve_count|npn }} · सिफारिस {{ x.sifaris_count|npn }}</p></div>
+    <div class="card p-4"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">उपभोक्ता समिति गठन</span><span class="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center"><i data-lucide="user-check" class="w-4 h-4"></i></span></div>
+      <p class="mt-2 text-lg font-bold text-slate-800">{{ x.uc_formed|npn }} / {{ x.uc_total|npn }}</p>
+      <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1.5"><div class="bg-teal-600 h-1.5 rounded-full" style="width: {{ x.uc_pct }}%"></div></div><p class="text-[11px] text-slate-500 mt-1">{{ x.uc_pct|npn }}% गठन सम्पन्न</p></div>
+    <div class="card p-4"><div class="flex items-start justify-between"><span class="text-xs text-slate-500 font-medium">भौतिक प्रगति औसत</span><span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center"><i data-lucide="activity" class="w-4 h-4"></i></span></div>
+      {% if x.phys is not None %}<p class="mt-2 text-lg font-bold text-brand-700">{{ x.phys|npn }}%</p><p class="text-[11px] text-slate-500">{{ x.phys_n|npn }} योजनाको साइट फोटोबाट</p>
+      {% else %}<p class="mt-2 text-lg font-bold text-slate-300">—</p><p class="text-[11px] text-slate-500">साइट फोटोमा प्रगति % राखिएको छैन</p>{% endif %}</div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+    <div class="lg:col-span-8 space-y-5 min-w-0">
+      {# ---------- कार्यप्रवाह तथा सिफारिस सूची ---------- #}
+      <section class="card p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-brand-700 text-white flex items-center justify-center"><i data-lucide="list-checks" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">वडास्तरीय योजना कार्यप्रवाह तथा सिफारिस सूची</h2><p class="text-xs text-slate-500">स्वीकृति र सिफारिस पर्खिरहेका पहिले</p></div></div>
+          {% if x.pending %}<span class="self-start sm:self-center badge bg-rose-50 text-rose-700 font-bold">{{ x.pending|npn }} बाँकी</span>{% endif %}
+        </div>
+        <div class="flex flex-wrap gap-2" id="wd-chips">
+          <button type="button" data-cat="all" class="wd-chip is-on px-3 py-1.5 rounded-full text-xs font-semibold">सबै ({{ x.active_count|npn }})</button>
+          {% for k, label, n in x.cats %}{% if n %}<button type="button" data-cat="{{ k }}" class="wd-chip px-3 py-1.5 rounded-full text-xs font-semibold">{{ label }} ({{ n|npn }})</button>{% endif %}{% endfor %}
+        </div>
+        <div class="overflow-x-auto -mx-5 px-5">
+          <table class="w-full text-left min-w-[640px] text-sm">
+            <thead><tr class="bg-slate-50 text-xs text-slate-500"><th class="py-2.5 px-3 rounded-l-lg font-medium">योजना</th><th class="py-2.5 px-3 font-medium">विधि</th><th class="py-2.5 px-3 text-right font-medium">विनियोजित</th><th class="py-2.5 px-3 font-medium">हालको अवस्था</th><th class="py-2.5 px-3 rounded-r-lg text-right font-medium">कार्य</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+              {% for r in x.active %}
+              <tr class="wd-row hover:bg-slate-50/60" data-cat="{{ r.cat }}">
+                <td class="py-3 px-3"><p class="font-semibold text-slate-800">{{ r.name }}</p><p class="text-[11px] text-slate-400">{% if r.ward %}वडा {{ r.ward|npn }}{% else %}पालिका{% endif %}{% if r.overdue %} · <span class="text-rose-600">{{ r.days_late|npn }} दिन म्याद नाघेको</span>{% elif r.days_left is not None %} · {{ r.days_left|npn }} दिन बाँकी{% endif %}</p></td>
+                <td class="py-3 px-3 whitespace-nowrap"><span class="badge {% if r.kind == 'uc' %}bg-teal-50 text-teal-800{% elif r.kind == 'bid' %}bg-slate-100 text-slate-700{% else %}bg-amber-50 text-amber-800{% endif %}">{{ r.kind_label }}</span></td>
+                <td class="py-3 px-3 text-right font-semibold whitespace-nowrap">{{ r.budget|money:0 }}</td>
+                <td class="py-3 px-3"><span class="inline-flex items-center gap-1.5 badge {{ r.cat_tone }}"><span class="w-1.5 h-1.5 rounded-full bg-current"></span>{{ r.label }}</span></td>
+                <td class="py-3 px-3 text-right whitespace-nowrap"><a href="{{ r.url }}" class="inline-flex px-2.5 py-1.5 rounded-lg text-xs font-semibold {% if r.cat == 'approve' or r.cat == 'sifaris' %}bg-brand-700 text-white hover:bg-brand-800{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">{% if r.cat == 'approve' %}स्वीकृत गर्नुहोस्{% elif r.cat == 'sifaris' %}सिफारिस गर्नुहोस्{% elif r.cat == 'audit' %}परीक्षण विवरण{% else %}खोल्नुहोस्{% endif %}</a></td>
+              </tr>
+              {% empty %}<tr><td colspan="5" class="py-8 text-center text-slate-400">चालु योजना छैनन्।</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if x.active_count > 12 %}<a href="{% url 'usercommittee_workflow' %}" class="text-xs text-brand-700 font-semibold">सबै {{ x.active_count|npn }} योजना हेर्नुहोस् →</a>{% endif %}
+      </section>
+
+      {# ---------- योजना प्रगति (फोटोसहित) ---------- #}
+      <section class="card p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center"><i data-lucide="map" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">योजनाको स्थलगत प्रगति</h2><p class="text-xs text-slate-500">पछिल्लो साइट फोटो र भौतिक प्रगतिसहित</p></div></div>
+          <a href="{% url 'field_home' %}" class="text-xs text-brand-700 font-semibold">साइट फोटो →</a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {% for r in x.cards %}
+          <a href="{{ r.url }}" class="p-4 rounded-xl bg-slate-50 hover:shadow-md transition flex flex-col gap-3">
+            <div class="flex gap-3">
+              {% if r.photo %}<img src="{{ r.photo }}" alt="" loading="lazy" class="w-20 h-20 rounded-lg object-cover shrink-0 bg-slate-200" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'w-20 h-20 rounded-lg bg-slate-200 shrink-0'}))">
+              {% else %}<span class="w-20 h-20 rounded-lg bg-slate-200 text-slate-400 flex items-center justify-center shrink-0"><i data-lucide="image-off" class="w-6 h-6"></i></span>{% endif %}
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2"><span class="badge {% if r.pct == 100 %}bg-teal-50 text-teal-800{% elif r.pct %}bg-brand-50 text-brand-700{% else %}bg-slate-200 text-slate-600{% endif %}">{% if r.pct is not None %}प्रगति: {{ r.pct|npn }}%{% else %}प्रगति नराखिएको{% endif %}</span><span class="text-[11px] text-slate-500">{% if r.ward %}वडा {{ r.ward|npn }}{% endif %}</span></div>
+                <p class="text-sm font-bold text-slate-800 truncate mt-1">{{ r.name }}</p>
+                <p class="text-[11px] text-slate-500">विनियोजन: रु. {{ r.budget|money:0 }} · खर्च: रु. {{ r.spent|money:0 }}</p>
+              </div>
+            </div>
+            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden"><div class="h-full rounded-full {% if r.pct == 100 %}bg-teal-600{% else %}bg-brand-600{% endif %}" style="width: {{ r.pct|default:0 }}%"></div></div>
+            <p class="text-[11px] font-semibold text-slate-600 flex items-center justify-between">{{ r.label }}<i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></p>
+          </a>
+          {% empty %}<p class="text-sm text-slate-400 col-span-full text-center py-4">चालु योजना छैनन्।</p>{% endfor %}
+        </div>
+      </section>
+
+      {# ---------- क्षेत्रगत ---------- #}
+      <section class="card p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center"><i data-lucide="pie-chart" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">क्षेत्रगत बजेट खर्च</h2><p class="text-xs text-slate-500">विनियोजन र भुक्तानी खर्च</p></div></div>
+          <span class="text-xs text-slate-500">कुल खर्च: रु. {{ d.spent|money:0 }} / रु. {{ d.allocated|money:0 }} ({{ d.spent_pct|npn }}%)</span>
+        </div>
+        <div class="space-y-4">
+          {% for s in x.sectors %}
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-center justify-between gap-1 text-xs"><span class="font-bold text-slate-800">{{ s.name }} <span class="font-normal text-slate-400">({{ s.n|npn }})</span></span>
+              <span class="text-slate-500">रु. {{ s.spent|money:0 }} / रु. {{ s.budget|money:0 }} · <b class="text-brand-700">{{ s.pct|npn }}%</b></span></div>
+            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden"><div class="h-full rounded-full {% cycle 'bg-brand-700' 'bg-teal-600' 'bg-indigo-500' 'bg-brand-400' 'bg-teal-400' %}" style="width: {% if s.pct > 100 %}100{% else %}{{ s.pct }}{% endif %}%"></div></div>
+          </div>
+          {% empty %}<p class="text-sm text-slate-400 text-center py-4">यस आ.व. मा योजना छैन।</p>{% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <div class="lg:col-span-4 space-y-5 min-w-0">
+      {# ---------- आउँदा म्याद ---------- #}
+      <section class="card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center"><i data-lucide="calendar-clock" class="w-4 h-4"></i></span>
+            <div><h2 class="text-base font-bold text-slate-800">आउँदा म्याद</h2><p class="text-xs text-slate-500">१५ दिनभित्र सक्नुपर्ने</p></div></div>
+          {% if x.overdue_count %}<span class="badge bg-rose-50 text-rose-700">{{ x.overdue_count|npn }} नाघेको</span>{% endif %}
+        </div>
+        <div class="space-y-2">
+          {% for r in x.soon %}
+          <a href="{{ r.url }}" class="block p-3 rounded-xl bg-slate-50 hover:bg-slate-100 relative overflow-hidden">
+            <span class="absolute inset-y-0 left-0 w-1 {% if r.days_left <= 5 %}bg-rose-500{% else %}bg-brand-600{% endif %}"></span>
+            <div class="flex items-center justify-between pl-1.5 text-[11px]"><b class="{% if r.days_left <= 5 %}text-rose-700{% else %}text-brand-700{% endif %}">{% if r.days_left == 0 %}आज{% else %}{{ r.days_left|npn }} दिन बाँकी{% endif %}</b><span class="text-slate-500">{{ r.deadline_bs }}</span></div>
+            <p class="text-xs font-bold text-slate-800 pl-1.5 mt-0.5 truncate">{{ r.name }}</p><p class="text-[11px] text-slate-500 pl-1.5">{{ r.label }}</p>
+          </a>
+          {% empty %}<p class="text-sm text-slate-400 text-center py-3">१५ दिनभित्र म्याद सकिने योजना छैनन्।</p>{% endfor %}
+        </div>
+      </section>
+
+      {# ---------- सार्वजनिक परीक्षण ---------- #}
+      <section class="card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center"><i data-lucide="megaphone" class="w-4 h-4"></i></span>
+            <h2 class="text-base font-bold text-slate-800">सार्वजनिक परीक्षण</h2></div>
+          <span class="badge bg-slate-100 text-slate-600">सुशासन सूचक</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="p-3 rounded-lg bg-teal-50 text-center"><b class="block text-xl text-teal-700">{{ x.audit.done|npn }}</b><span class="text-[11px] text-slate-600">सम्पन्न</span></div>
+          <div class="p-3 rounded-lg {% if x.audit.pending %}bg-rose-50{% else %}bg-slate-50{% endif %} text-center"><b class="block text-xl {% if x.audit.pending %}text-rose-700{% else %}text-slate-400{% endif %}">{{ x.audit.pending|npn }}</b><span class="text-[11px] text-slate-600">गर्न बाँकी</span></div>
+        </div>
+        <p class="text-[11px] text-slate-500">सम्झौता भएका {{ x.audit.total|npn }} उपभोक्ता समिति योजनामध्ये {{ x.audit.pct|npn }}% सम्पन्न</p>
+      </section>
+
+      {# ---------- उपभोक्ता समिति सम्पर्क ---------- #}
+      <section class="card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center"><i data-lucide="contact" class="w-4 h-4"></i></span>
+            <h2 class="text-base font-bold text-slate-800">उपभोक्ता समिति सम्पर्क</h2></div>
+          {% if ward_obj %}<span class="text-[11px] text-slate-500">वडा नं. {{ ward_obj.name|npn }}</span>{% endif %}
+        </div>
+        <div class="space-y-2">
+          {% for u in x.ucs %}
+          <div class="p-2.5 rounded-lg bg-slate-50 flex items-center justify-between gap-2">
+            <div class="min-w-0"><p class="text-xs font-bold text-slate-800 truncate">{{ u.name }}</p><p class="text-[11px] text-slate-500 truncate">अध्यक्ष: {{ u.chairman_name }}</p></div>
+            {% if u.chairman_mobile %}<a href="tel:{{ u.chairman_mobile }}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white text-brand-700 text-[11px] font-semibold shadow-sm hover:bg-brand-50 shrink-0"><i data-lucide="phone" class="w-3 h-3"></i>{{ u.chairman_mobile|npn }}</a>{% endif %}
+          </div>
+          {% empty %}<p class="text-sm text-slate-400 text-center py-3">समिति गठन भएको छैन।</p>{% endfor %}
+        </div>
+        {% if x.uc_count > 4 %}<a href="{% url 'usercommittee_workflow' %}" class="block text-right text-xs text-brand-700 font-semibold">सबै {{ x.uc_count|npn }} उपभोक्ता समिति →</a>{% endif %}
+      </section>
+    </div>
+  </div>
+  <p class="text-[11px] text-slate-400">कानुनी आधार: स्थानीय सरकार सञ्चालन ऐन, २०७४ दफा १२ (वडा समितिको काम, कर्तव्य र अधिकार)। चालु आ.व. का योजना मात्र; ५ मिनेटसम्म cache।</p>
+</div>
+<style>
+  #wd-chips .wd-chip { background:#f1f5f9; color:#334155; }
+  #wd-chips .wd-chip.is-on { background:#2a47a3; color:#fff; }
+</style>
+<script>
+(function () {
+  var root = document.getElementById('ward-dash'); if (!root) return;
+  root.querySelectorAll('.wd-chip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      root.querySelectorAll('.wd-chip').forEach(function (x) { x.classList.remove('is-on'); });
+      b.classList.add('is-on');
+      root.querySelectorAll('.wd-row').forEach(function (r) { r.hidden = b.dataset.cat !== 'all' && r.dataset.cat !== b.dataset.cat; });
+    });
+  });
+})();
+</script>
+{% endblock %}

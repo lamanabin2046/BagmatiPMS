@@ -1,0 +1,15 @@
+{% comment %}सोझै खरिद / अमानत / संस्था-समिति{% endcomment %}
+{% if 'minor.view' in me.perms or 'minor.manage' in me.perms or 'minor.approve' in me.perms %}
+<li class="sidebar-group">
+  <button type="button" onclick="toggleSubmenu(this)" class="nav-link-item w-full">
+    <i data-lucide="shopping-cart" class="nav-icon"></i>
+    <span class="sidebar-label flex-1 text-left">सोझै / अमानत / संस्था</span>
+    <i data-lucide="chevron-right" class="menu-arrow"></i>
+  </button>
+  <ul class="submenu-panel {% if current not in 'minor_list,minor_detail,sanstha_workflow' %}hidden{% endif %} mt-1 ml-5 pl-3 border-l border-white/10 space-y-0.5">
+    <li><a href="{% url 'minor_list' %}?method=direct" class="submenu-link {% if request.GET.method == 'direct' %}active{% endif %}"><i data-lucide="receipt" class="sub-icon"></i><span>सोझै खरिद</span></a></li>
+    <li><a href="{% url 'minor_list' %}?method=amanat" class="submenu-link {% if request.GET.method == 'amanat' %}active{% endif %}"><i data-lucide="hard-hat" class="sub-icon"></i><span>अमानत</span></a></li>
+    <li><a href="{% url 'sanstha_workflow' %}" class="submenu-link {% if current == 'sanstha_workflow' %}active{% endif %}"><i data-lucide="building" class="sub-icon"></i><span>संस्था / समिति</span></a></li>
+  </ul>
+</li>
+{% endif %}

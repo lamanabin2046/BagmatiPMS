@@ -1,0 +1,228 @@
+{% load nepali_datetime_field %}
+{% load letters %}
+<!DOCTYPE html>
+{% load static%}
+{% load nepali_date %}
+{% load nepali_filters %}
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contract Document</title>
+     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+      <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+      <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+<style>
+  @page {
+    size: A4;
+    margin: 40px; /* Adjust margin as needed */
+  }
+
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 13px; /* Set the default font size */
+    line-height: 1.6; /* Set the default line height */
+    margin-left: 20px; /* Apply 20px left margin to the body */
+  }
+
+  .letterhead {
+    padding: 10px;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .contract-content {
+    margin-top: 20px;
+  }
+
+  .contract-content-detail {
+    margin-left: 20px; /* Adjust margin-left for this section as needed */
+    text-align: justify;
+  }
+
+  h1, h2 {
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  h3 {
+    font-size: 16px; /* Override font size for h3 */
+    font-weight: bold; /* Optional: Make it bold */
+    margin-left: 20px; /* Optional: Give h3 the same left margin */
+  }
+
+  p {
+    font-size: 13px; /* Use the same font size as the body */
+    line-height: 1.6;
+  }
+
+  .signature {
+    margin-top: 40px;
+    text-align: center;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    margin-left: 20px; /* Add left margin to the table */
+  }
+
+  th, td {
+    border: 1px solid #ddd;
+    text-align: left;
+    font-size: 13px;
+  }
+
+  th {
+    background-color: #f2f2f2;
+  }
+
+  .signature-container {
+    display: flex;
+    justify-content: space-around; /* or space-between based on your preference */
+    margin-top: 20px;
+  }
+
+  .signature1, .signature2 {
+    text-align: center;
+  }
+
+  .signature1 p, .signature2 p {
+    margin: 5px 0; /* Adjust margin as needed */
+    font-size: 14px; /* Adjust font size as needed */
+    line-height: 1.2; /* Adjust line height as needed */
+  }
+</style>
+
+
+  </head>
+  <body>
+{% editable_letter "quatation.print_quatation_agreement" "दरभाउपत्र सम्झौता" %}
+    <!-- Letterhead -->
+    <div class="letterhead">
+     
+      <h1>( सम्झौता पत्र )</h1>
+    </div>
+
+    <!-- Contract Content -->
+    <div class="contract-content">
+      <h3>{{ palika.full_name }}, {{ palika.district }}  (यस पश्चात यसलाई कार्यालय भनिनेछ ) र श्री {{lowest_firm_name}}
+         (यस पश्चात यसलाई संस्था भनिनेछ ) वीच देहायको शर्तको अधिनमा रही यो सम्झौता गरी सम्झौता पत्र गरी १ - १ प्रति लियौ दियौ ।</h3>
+
+      <div class="contract-content-detail">
+        <p>
+          <h3>(१) सम्झौता गर्ने पक्ष र आयोजनाः </h3>
+          क. निर्माण ब्यवसायी, फर्म , कम्पनी, संस्था को विवरणः {{lowest_firm_name}}   </br>  
+           सम्झौता गर्ने संस्थाको प्रतिनिधिकोः
+          १.नामः {{lowest_firm_onwer}}        २.पदः– प्रोप्राईटर       ३.ठेगानाः {{lowest_firm_address}} 
+        </p>
+        <p>
+          (ख) आयोजनाको विवरणः <br />
+          १. नामः {{quatation.project.name}} <br />
+          २. आयोजना सञ्चालन हुने स्थानः {{quatation.project.address}}<br />
+          ३. आयोजना स्वीकृत गर्ने निकायः {{ palika.name }} {{ palika.executive_office }}, {{ palika.district }} <br />
+         
+        </p>
+      </div>
+      <h3>२. आयोजनाको लागत सम्बन्धी विवरण</h3>
+
+      <div class="contract-content-detail">
+        <p>
+          (क) लागत अनुमान रु {{quatation.cost_estimate|to_nepali_number}} (लइमा भ्याट समेत) <br />
+          (ख) लागत व्यहोर्ने स्रोतहरु <br />
+          १. सम्बन्धित स्थानीय तहबाटः {{quatation.cost_estimate|to_nepali_number}}<br />
+         
+          २. अन्य <br />
+          (ग) निर्माण सामाग्रीको विवरणः १. स्वीकृत टेन्डर बमोजिम                    २. कोटेशन
+        </p>
+        <p>
+          (घ) आयोजनाबाट लाभान्वित हुने <br />
+          १. घरपरिवारको संख्याः गा.पा. भरीका सेवा ग्राहीहरु              २. जनसंख्या       ३. समुदाय सवै <br />
+    
+        </p>
+      </div>
+      <h3>
+        ३. आयोजना सम्बन्धि अनुभवः अनुभव भएको ।   
+      </h3>
+       <h3>
+        ४.आयोजनाको मर्मत सम्भार ब्यहोर्ने ब्यवस्था । </h3> 
+        क) मर्मत सम्भारको जिम्मा लिने फर्म / संस्थाको नाम:{{lowest_firm_onwer}}  </br>
+        ख) श्रोत फर्म/संस्थाको तर्फबाट
+
+     
+      
+     सम्झौताका शर्तहरुः
+      </h3>
+      <div class="contract-content-detail">
+
+        <p>
+          १. प्राप्त रकम तथा निर्माण सामग्री सम्बन्धित आयोजनाको उद्देश्यका लागि मात्र प्रयोग गर्ने/गराउने छौं ।   <br />
+          २. आयोजना सम्पन्न भएपछि स्थानीय तहबाट जाँचपास गरी फरफराक लिनेछौं ।  <br />
+          ३. आम्दानी/खर्चको विवरण र कार्य प्रगतीको जानकारी कार्यालयलाई गराई छलफल गरी अर्को किस्ता माँग गर्नेछौं । <br />
+          ३. नगदी/जिन्सी सामानको प्राप्ती, खर्च र बाँकी तथा आयोजनाको प्रगती विवरण अभिलेख आदि तयार राख्नेछौं । <br />
+          ४. आयोजनाको कुल लागत भन्दा घटी लागतमा आयोजना सम्पन्न भएको अवस्थामा सो मोताविक नै अनुदान र श्रमदानको प्रतिशत निर्धारण गरी भुक्तानी लिन/दिन सहमत छौं ।  <br />
+       
+        ६. आयोजना संचालन गर्ने निकायले आयोजनाको मर्मत संभारको पनि व्यवस्था गर्नेछौं । <br />
+        ७. आयोजनको सबै काम कार्यालयको निर्णय अनुसार गर्ने गराउने छौं । <br />
+        ८. आयोजना शुरु मिति {{agreement_date_nepali|nepali_date}} देखि शुरु गरि मिति {{expire_date_nepali|nepali_date}} गते  सम्ममा पुरा गर्ने गराउने छौं । <br />
+        ९. सार्वजनिक लेखा परिक्षण गराई पेश गर्नू पर्नेछ । <br />
+        १०. दुवै पक्षको सहमतिमा यो सम्झौता पत्र संसोधन गर्न सकिनेछ । <br />
+        ११.यसमा लेखिएको व्यवहोरा यसै बमोजिम र अन्य व्यवहोरा प्रचलित कानुन बमोजिम हुनेछ । <br />
+       
+      </div>
+
+
+      <div class="signature-container">
+            <div class="signature1">
+                <b style="text-decoration: underline; line-height: 1.2; ">निर्माण ब्यवसायी/फर्म/कम्पनी संस्थाको तर्फबाट</b>
+                <p>दस्तखतः.............</p>
+                <p>नाम थरः .............</p>
+                <p>पदः .............</p>
+                <p>मिति .............</p>
+               
+            </div>
+              <div class="signature1">
+                <b style="text-decoration: underline; line-height: 1;">योजना शाखाको तर्फबाट</b>
+                <p>दस्तखतः.............</p>
+                <p>नाम थरः .............</p>
+                <p>पदः .............</p>
+                <p>मिति .............</p>
+               
+            </div>
+
+
+        <div class="signature2">
+            <b style="text-decoration: underline;line-height: 1.2;">कार्यालयको तर्फबाट्ट</b>
+           <p>दस्तखतः.............</p>
+                <p>नाम थरः {{ signer.name|default:"............." }}</p>
+                <p>पदः {{ signer.post|default:"प्रमुख प्रशासकिय अधिकृत" }}</p>{% if signer.note %}
+                <p style="font-size:11px">({{ signer.note }})</p>{% endif %}
+                <p>मिति .............</p>
+        </div>
+        </div>
+
+
+    
+    </div>
+{% endeditable_letter %}
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+       <script> 
+         $('a.printPage').click(function(){
+             window.print();
+             return false;
+         });
+
+      </script>
+      <script type="text/javascript">
+         window.__letterPrint = (function () {
+             window.print();
+             setTimeout("closePrintView()", 3000);
+         });
+         function closePrintView() {
+             window.location.href = "__WF_RETURN__"; 
+         }
+     </script>
+  </body>
+</html>

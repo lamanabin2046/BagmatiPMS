@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}पालिका इन्जिनियर ड्यासबोर्ड{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Fixed chart heights so Chart.js (maintainAspectRatio:false) fills the
+     box instead of growing with the column width — same convention used
+     on the Admin / Ward Sachib / Ward Engineer dashboards. */
+  .chart-box { position: relative; height: 150px; }
+  .chart-card-body { padding: 14px 16px; }
+  .chart-legend-row { margin-top: 8px; font-size: 11px; gap: 10px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ================= PAGE HEADER ================= -->
+<div class="mb-6">
+  <h1 class="text-xl md:text-2xl font-bold text-slate-800">पालिका इन्जिनियर ड्यासबोर्ड</h1>
+  <p class="text-sm text-slate-500 mt-0.5">{{ palika_engineer.name }} — सम्पूर्ण पालिका (सबै वडा)</p>
+</div>
+
+{% include 'includes/_my_work_lazy.html' %}
+
+<!-- ================= STAT CARDS ================= -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  <a href="{% url 'palika_engineer_project_list' %}" class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4 hover:border-brand-300 transition">
+    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-calculator"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ estimate_pending_count }}</p>
+      <p class="text-xs text-slate-500">लागत अनुमान बाँकी</p>
+    </div>
+  </a>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-circle-check"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ estimate_done_count }}</p>
+      <p class="text-xs text-slate-500">लागत अनुमान भइसकेका</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-clipboard-list"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ total_count }}</p>
+      <p class="text-xs text-slate-500">कुल योजना (सबै वडा)</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= उपभोक्ता समिति म्याद अलर्ट ================= -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+  <a href="{% url 'palika_engineer_committee_list' %}" class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4 hover:border-rose-300 transition">
+    <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-hourglass-end"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ usercommittee_expired_count }}</p>
+      <p class="text-xs text-slate-500">उपभोक्ता समिति म्याद नाघेको</p>
+    </div>
+  </a>
+  <a href="{% url 'palika_engineer_committee_list' %}" class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4 hover:border-amber-300 transition">
+    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-hourglass-half"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ usercommittee_expiring_count }}</p>
+      <p class="text-xs text-slate-500">म्याद सकिन लाग्यो (३० दिनभित्र)</p>
+    </div>
+  </a>
+</div>
+
+<!-- ================= CHARTS ================= -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+
+  <!-- फोटो टाइमलाइन (सम्पूर्ण पालिका) (bar) -->
+  <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-card">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+      <i class="fas fa-chart-bar text-brand-500"></i>
+      <h2 class="text-sm font-semibold text-slate-700">फोटो टाइमलाइन चरण अनुसार (सम्पूर्ण पालिका)</h2>
+    </div>
+    <div class="chart-card-body">
+      <div class="chart-box" style="height: 220px;">
+        <canvas id="photoStageChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- लागत अनुमान स्थिति (donut) -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+      <i class="fas fa-chart-pie text-brand-500"></i>
+      <h2 class="text-sm font-semibold text-slate-700">लागत अनुमान स्थिति</h2>
+    </div>
+    <div class="chart-card-body">
+      <div class="chart-box">
+        <canvas id="estimateDonutChart"></canvas>
+      </div>
+      <div class="space-y-2 text-sm mt-3">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-500"><span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>भइसकेको</span>
+          <span class="font-semibold text-slate-800">{{ estimate_done_count }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-500"><span class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-2"></span>बाँकी</span>
+          <span class="font-semibold text-slate-800">{{ estimate_pending_count }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-500"><span class="inline-block w-2 h-2 rounded-full bg-violet-500 mr-2"></span>समिति गठन बाँकी</span>
+          <span class="font-semibold text-slate-800">{{ committee_not_formed_count }}</span>
+        </div>
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+          <span class="text-slate-500">कुल योजना</span>
+          <span class="font-semibold text-slate-800">{{ total_count }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= कुल लागत अनुमान रकम / बजेट दायरा ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card mt-4">
+  <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+    <i class="fas fa-sack-dollar text-emerald-500"></i>
+    <h2 class="text-sm font-semibold text-slate-700">कुल लागत अनुमान रकम तथा बजेट दायरा (सम्पूर्ण पालिका)</h2>
+  </div>
+  <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+    <div>
+      <p class="text-xs text-slate-400">कुल लागत अनुमान रकम</p>
+      <p class="text-2xl font-bold text-emerald-600 mt-1">रु {{ total_estimated|floatformat:2 }}</p>
+    </div>
+    <div class="md:col-span-2">
+      <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+        <span>बजेट दायरा उपयोग</span>
+        <span class="font-semibold text-slate-700">{{ estimate_utilization_percent|floatformat:1 }}%</span>
+      </div>
+      <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
+        <div class="h-full bg-emerald-500 rounded-full" style="width: {{ estimate_utilization_percent|floatformat:0 }}%"></div>
+      </div>
+      <p class="text-xs text-slate-400 mt-2">कुल विनियोजित बजेट: रु {{ total_ward_budget|floatformat:2 }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= RECENT PROJECTS ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card mt-4">
+  <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+    <h2 class="text-sm font-semibold text-slate-700">पछिल्ला योजनाहरु</h2>
+    <a href="{% url 'palika_engineer_project_list' %}" class="btn-chip-brand"><i class="fas fa-arrow-right"></i> सबै हेर्नुहोस्</a>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase tracking-wide text-slate-500 bg-slate-50">
+          <th class="px-5 py-3 font-medium">क्र.सं.</th>
+          <th class="px-5 py-3 font-medium">योजना नाम</th>
+          <th class="px-5 py-3 font-medium">वडा</th>
+          <th class="px-5 py-3 font-medium">स्थिति</th>
+          <th class="px-5 py-3 font-medium">कार्य</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for p in recent_projects %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 text-slate-700">{{ forloop.counter }}</td>
+          <td class="px-5 py-3"><a href="{% url 'palika_engineer_project_detail' p.id %}" class="text-brand-600 font-medium hover:underline">{{ p.name }}</a></td>
+          <td class="px-5 py-3 text-slate-700">{{ p.ward.name|default:"—" }}</td>
+          <td class="px-5 py-3">
+            {% if p.cost_estimate %}
+            <span class="badge bg-emerald-50 text-emerald-700">लागत अनुमान भयो</span>
+            {% elif p.user_committee %}
+            <span class="badge bg-amber-50 text-amber-700">बाँकी</span>
+            {% else %}
+            <span class="badge bg-slate-100 text-slate-500">समिति गठन बाँकी</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3">
+            {% if p.cost_estimate %}
+            <a href="{% url 'edit_cost_estimate' p.cost_estimate.id %}" class="btn-chip-brand"><i class="fas fa-pen"></i> सम्पादन गर्नुहोस्</a>
+            {% elif p.user_committee %}
+            <a href="{% url 'add_cost_estimate_for_project' p.id %}" class="btn-chip-emerald"><i class="fas fa-calculator"></i> लागत अनुमान भर्नुहोस्</a>
+            {% else %}
+            <span class="text-xs text-slate-400">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-5 py-6 text-center text-slate-400">डाटा उपलब्ध छैन</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script>
+// ================= 1) फोटो टाइमलाइन चरण अनुसार (horizontal bar) =================
+new Chart(document.getElementById('photoStageChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ photo_stage_labels_json|safe }},
+    datasets: [{
+      data: {{ photo_stage_counts_json|safe }},
+      backgroundColor: ['#dbeafe', '#60a5fa', '#1d4ed8'],
+      borderRadius: 4,
+      barPercentage: 0.7,
+      categoryPercentage: 0.7,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ctx.parsed.x + ' फोटो' } },
+    },
+    scales: {
+      x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { precision: 0, font: { size: 10 } } },
+      y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+    }
+  }
+});
+
+// ================= 2) लागत अनुमान स्थिति (donut) =================
+new Chart(document.getElementById('estimateDonutChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['भइसकेको', 'बाँकी', 'समिति गठन बाँकी'],
+    datasets: [{
+      data: [{{ estimate_done_count }}, {{ estimate_pending_count }}, {{ committee_not_formed_count }}],
+      backgroundColor: ['#10b981', '#f59e0b', '#8b5cf6'],
+      borderColor: '#ffffff',
+      borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '65%',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ctx.label + ': ' + ctx.parsed + ' योजना' } },
+    }
+  }
+});
+</script>
+{% endblock %}

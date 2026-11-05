@@ -1,0 +1,23 @@
+{% load nepali_date %}
+{# HTMX partial: रुजु / स्वीकृत form inside the workflow panel #}
+<form class="mt-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 space-y-2"
+      hx-post="{% url 'uc_approve' project.id %}" hx-swap="innerHTML" hx-target="this">
+  {% csrf_token %}
+  {% if problems %}
+    {% for p in problems %}<p class="text-xs text-rose-600"><i class="fas fa-circle-exclamation"></i> {{ p }}</p>{% endfor %}
+  {% else %}
+    <p class="text-xs text-slate-600">
+      <b>{{ project.name }}</b> को लागत अनुमान
+      {% if estimate %}रु. {{ estimate.total_cost|floatformat:0|to_nepali_number }}{% endif %}
+      अनुसार उपभोक्ता समितिसँग सम्झौता गर्न रुजु गरी स्वीकृत गरिन्छ।
+    </p>
+    <textarea name="remarks" rows="2" class="form-textarea !text-xs" placeholder="कैफियत / निर्देशन (ऐच्छिक)"></textarea>
+    <div class="flex items-center justify-between gap-2">
+      <span class="text-[11px] text-slate-500">स्वीकृत गर्ने: {{ name }} ({{ post }})</span>
+      <div class="flex gap-1.5">
+        <button type="button" class="btn-chip-slate" onclick="this.closest('[id^=wf-form-]').innerHTML=''">रद्द</button>
+        <button type="submit" class="btn-chip-emerald" hx-confirm="यो योजना रुजु / स्वीकृत गर्ने?"><i class="fas fa-stamp"></i> स्वीकृत गर्नुहोस्</button>
+      </div>
+    </div>
+  {% endif %}
+</form>

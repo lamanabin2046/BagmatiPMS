@@ -1,0 +1,87 @@
+{% load nepali_date outputs %}
+{# HTMX partial (page-wide modal): दरभाउपत्र रुजु / स्वीकृत — प्राप्त दरको तुलना #}
+<div class="flex flex-col max-h-[92vh]">
+  <div class="flex items-start justify-between gap-4 px-6 py-4 border-b border-slate-100">
+    <div class="min-w-0">
+      <p class="text-xs font-medium text-brand-700 flex items-center gap-1.5"><i class="fas fa-stamp"></i> दरभाउपत्र रुजु / स्वीकृत</p>
+      <h2 class="text-lg font-bold text-slate-800 truncate mt-0.5">{{ project.name }}</h2>
+      <p class="text-xs text-slate-500 mt-0.5">वडा नं. {{ project.ward.name|to_nepali_number }} · {{ project.fiscalyear.name }}</p>
+    </div>
+    <button type="button" onclick="closeAppModal()" class="w-9 h-9 shrink-0 rounded-lg text-slate-500 hover:bg-slate-100" title="बन्द (Esc)">
+      <i class="fas fa-xmark text-lg"></i>
+    </button>
+  </div>
+
+  <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5 slim-scroll-light">
+    {% if q %}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="rounded-xl border border-slate-200 p-3"><p class="text-[11px] text-slate-500">विनियोजित रकम</p><p class="font-semibold text-slate-800">रु. {{ project.budget|money:0 }}</p></div>
+      <div class="rounded-xl border border-slate-200 p-3"><p class="text-[11px] text-slate-500">लागत अनुमान</p><p class="font-semibold text-slate-800">रु. {{ q.cost_estimate|money:0 }}</p></div>
+      <div class="rounded-xl border border-slate-200 p-3"><p class="text-[11px] text-slate-500">आमन्त्रित / प्राप्त</p><p class="font-semibold text-slate-800">{{ invited|length|to_nepali_number }} / {{ rows|length|to_nepali_number }}</p></div>
+      <div class="rounded-xl border border-slate-200 p-3">
+        {% for label, d in dates %}<p class="text-[11px] text-slate-500">{{ label }}: <span class="text-slate-700">{{ d|default:'—' }}</span></p>{% endfor %}
+      </div>
+    </div>
+
+    <section class="rounded-xl border border-slate-200 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead><tr class="bg-slate-50 text-xs text-slate-500 text-left"><th class="px-4 py-2 font-medium">क्र.सं.</th><th class="px-4 py-2 font-medium">फर्म</th><th class="px-4 py-2 font-medium text-right">कबोल रकम (रु.)</th><th class="px-4 py-2 font-medium text-right">लागत अनुमानभन्दा</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in rows %}
+          <tr class="{% if r.lowest %}bg-emerald-50/70{% endif %}">
+            <td class="px-4 py-2.5">{{ forloop.counter|to_nepali_number }}</td>
+            <td class="px-4 py-2.5 font-medium text-slate-800">{{ r.firm }}{% if r.lowest %} <span class="badge bg-emerald-100 text-emerald-800 ml-1 !py-0.5">न्यूनतम</span>{% endif %}</td>
+            <td class="px-4 py-2.5 text-right font-semibold">{{ r.price|money:0 }}</td>
+            <td class="px-4 py-2.5 text-right text-xs {% if r.below < 0 %}text-rose-600{% else %}text-slate-500{% endif %}">{% if r.below is not None %}{% if r.below < 0 %}{{ r.below|floatformat:2|cut:'-'|to_nepali_number }}% बढी{% else %}{{ r.below|floatformat:2|to_nepali_number }}% घटी{% endif %}{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-4 py-6 text-center text-slate-400">प्राप्त दरभाउपत्र भरिएको छैन।</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    {% endif %}
+
+    {% if warnings %}
+    <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 space-y-0.5">
+      {% for w in warnings %}<p class="text-xs text-amber-800"><i class="fas fa-triangle-exclamation"></i> {{ w }}</p>{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if approval %}
+    <section class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+      <p class="text-sm font-semibold text-emerald-800"><i class="fas fa-circle-check"></i> रुजु / स्वीकृत भइसकेको — {{ approval.firm_name }} (रु. {{ approval.amount|money:0 }})</p>
+      <p class="text-xs text-emerald-900/80 mt-1">{{ approval.approver_name }} ({{ approval.approver_post }}) · {{ approval.approved_at|date:'Y-m-d H:i' }}</p>
+      {% if approval.remarks %}<p class="text-xs italic text-emerald-900/80 mt-1">“{{ approval.remarks }}”</p>{% endif %}
+    </section>
+    {% endif %}
+  </div>
+
+  {% if can_approve and not approval %}
+  <form class="border-t border-slate-100 px-6 py-4 bg-slate-50/70 rounded-b-2xl space-y-3"
+        hx-post="{% url 'quot_wf_approve' project.id %}" hx-target="#approve-msg" hx-swap="innerHTML">
+    {% csrf_token %}
+    {% if problems %}
+      <div class="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 space-y-0.5">
+        {% for p in problems %}<p class="text-xs text-rose-700"><i class="fas fa-circle-exclamation"></i> {{ p }}</p>{% endfor %}
+      </div>
+    {% endif %}
+    <div id="approve-msg"></div>
+    <textarea name="remarks" rows="2" class="form-textarea" placeholder="कैफियत / निर्देशन (ऐच्छिक)" {% if problems %}disabled{% endif %}></textarea>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="text-xs text-slate-500">स्वीकृत गर्ने: <b>{{ name }}</b> ({{ post }}){% if rows %} · न्यूनतम: <b>{{ rows.0.firm }}</b>{% endif %}</p>
+      <div class="flex gap-2">
+        <button type="button" class="btn-secondary" onclick="closeAppModal()">रद्द</button>
+        <button type="submit" class="btn-success {% if problems %}opacity-50 cursor-not-allowed{% endif %}" {% if problems %}disabled{% endif %}
+                hx-confirm="न्यूनतम दरभाउपत्र स्वीकृत गर्ने?">
+          <i class="fas fa-stamp"></i> रुजु / स्वीकृत गर्नुहोस्
+        </button>
+      </div>
+    </div>
+  </form>
+  {% else %}
+  <div class="border-t border-slate-100 px-6 py-3 flex justify-end">
+    <button type="button" class="btn-secondary" onclick="closeAppModal()">बन्द गर्नुहोस्</button>
+  </div>
+  {% endif %}
+</div>

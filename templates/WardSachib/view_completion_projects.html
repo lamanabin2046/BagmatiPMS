@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}काम सम्पन्न सिफारिस{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <div>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">वडा नं. {{ sachib.ward.name }} – काम सम्पन्न सिफारिस</h1>
+    <p class="text-sm text-slate-500 mt-0.5">अन्तिम मूल्याङ्कन तयार भएका योजनाहरुको काम सम्पन्न सिफारिस स्थिति</p>
+  </div>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>सिन</th>
+            <th>योजनाको नाम</th>
+            <th class="text-right">अन्तिम मूल्याङ्कन</th>
+            <th>उपभोक्ता समिति</th>
+            <th>फोटो टाइमलाइन</th>
+            <th>सिफारिस स्थिति</th>
+            <th>कार्य</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in projects %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ p.name }}</td>
+            <td class="text-right">{{ p.final_payment.final_evaluation|floatformat:2 }}/-</td>
+            <td>{{ p.user_committee.name|default:"—" }}</td>
+            <td>
+              <a href="{% url 'ward_engineer_project_photos' p.id %}" class="btn-chip-brand"><i class="fas fa-camera"></i> फोटो हेर्नुहोस्</a>
+            </td>
+            <td>
+              {% if p.completion_recommendation %}
+              <span class="badge bg-emerald-50 text-emerald-700">जारी भयो</span>
+              {% else %}
+              <span class="badge bg-amber-50 text-amber-700">बाँकी</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if p.completion_recommendation %}
+              <a href="{% url 'print_completion_recommendation' p.id %}" class="btn-chip-emerald"><i class="fas fa-print"></i> सिफारिस हेर्नुहोस्</a>
+              {% else %}
+              <a href="{% url 'add_completion_recommendation' p.id %}" class="btn-chip-amber"><i class="fas fa-file-signature"></i> सिफारिस तयार गर्नुहोस्</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="px-5 py-6 text-center text-slate-400">यस वडामा अन्तिम मूल्याङ्कन तयार भएको कुनै योजना छैन</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

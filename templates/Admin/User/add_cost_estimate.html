@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load outputs %}
+{% block title %}लागत अनुमान{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+
+  <div>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">योजना/आयोजनाको लागत अनुमान थप्नुहोस्</h1>
+  </div>
+
+  <div class="card">
+    <form action="{% if project %}{% url 'add_cost_estimate_for_project' project.id %}{% else %}{% url 'add_cost_estimate' %}{% endif %}" method="post" id="add_project_form" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-building"></i> योजना</h2>
+          {% if project %}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label class="form-label">योजनाको नामः</label>
+              <input type="text" class="form-input bg-slate-50 font-medium" value="{{ project.name }}" readonly>
+            </div>
+          </div>
+          {% else %}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label class="form-label">योजनाको नामः</label>
+              <select class="form-select select2 w-full" name="project" required onchange="updateBudget(this)">
+                <option value="{{ i.id }}" data-budget="{{ i.budget }}">योजना छान्नुहोस</option>
+                {% for i in projects %}
+                <option value="{{ i.id }}" data-budget="{{ i.budget }}">{{ i.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-calculator"></i> लागत अनुमान विवरण</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">विनियोजत रकम</label>
+              <input type="text" class="form-input" name="budget" id="budget" placeholder="Allocated Budget" value="{% if project %}{{ project.budget|default:'' }}{% endif %}" required>
+            </div>
+            <div>
+              <label class="form-label">कन्टेन्जेन्सी कट्टी रकम ({% contingency_pct 'uc' as cr %}{{ cr|npn }}%)</label>
+              <input type="text" class="form-input" name="contingency_amount" id="congtingency" value="congtingency" required>
+            </div>
+            <div>
+              <label class="form-label">श्रमदान रकम</label>
+              <input type="text" class="form-input" name="user_contribution" id="usercontribution" placeholder="User's Contribution" required>
+            </div>
+            <div>
+              <label class="form-label">कुल लागत अनुमान</label>
+              <input type="text" class="form-input" name="totalcost" id="totalcost" placeholder="Total Cost Amount" required readonly>
+            </div>
+          </div>
+          <div class="mt-4">{% include 'Admin/User/_estimate_check.html' with allocated=project.budget %}</div>
+        </div>
+        {% include 'includes/_optional_doc.html' with label="लागत अनुमान कागजात" %}
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" onclick="validateForm()" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+{% if not project %}
+<script>
+  function updateBudget(selectElement) {
+    var selectedOption = selectElement.options[selectElement.selectedIndex];
+    var budgetInput = document.getElementById("budget");
+    budgetInput.value = selectedOption.getAttribute("data-budget");
+    updateTotalCost();
+  }
+</script>
+{% endif %}
+<script>
+  function updateTotalCost() {
+    var budget = parseFloat(document.getElementById("budget").value);
+    var contingencyRate = {% contingency_pct 'uc' %};   // सेटिङ → खरिद विधिका रकम सीमा
+    var contingency = budget * (contingencyRate / 100);
+
+    var userContribution = parseFloat(document.getElementById("usercontribution").value);
+    var contingencyInput = document.getElementById("congtingency");
+    var totalCostInput = document.getElementById("totalcost");
+    var totalCost = budget - contingency + userContribution;
+    totalCostInput.value = totalCost.toFixed(2);
+    contingencyInput.value = contingency.toFixed(2);
+  }
+
+  $(document).on("change", "#budget, #congtingency, #usercontribution", function () {
+    updateTotalCost();
+  });
+
+  function validateForm() {
+    var form = document.getElementById("add_project_form");
+    if (!form.checkValidity()) {
+      event.preventDefault();
+      event.stopPropagation();
+      form.classList.add("was-validated");
+    }
+    form.classList.add("was-validated");
+  }
+
+  {% if project %}
+  // ================= LOCKED PROJECT MODE =================
+  // Pre-fill the कुल लागत अनुमान total as soon as the page loads, since
+  // the budget field is already filled from the project's own budget.
+  $(function () { updateTotalCost(); });
+  {% endif %}
+</script>
+{% endblock %}

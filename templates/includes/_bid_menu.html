@@ -1,0 +1,10 @@
+{% comment %}बोलपत्र ठेक्का: एउटै पेज — हरेक चरण त्यहीँको कार्यप्रवाहबाट (अनुमति अनुसार){% endcomment %}
+{% if 'bid.view' in me.perms %}
+<li>
+  <a href="{% url 'bid_workflow' %}"
+     class="nav-link-item {% if current in 'bid_workflow,add_bid_detail,view_bid_detail,view_approved_projects,view_agreement_projects,add_advance_payment,add_running_evaluation,add_final_payment,view_advance_payment,view_running_evaluations,view_final_payment' or current|slice:':7' == 'bid_wf_' %}active{% endif %}">
+    <i data-lucide="file-text" class="nav-icon"></i>
+    <span class="sidebar-label">बोलपत्र ठेक्का</span>
+  </a>
+</li>
+{% endif %}

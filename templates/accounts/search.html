@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load nepali_date %}
+{% block title %}खोज{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-4">
+  <form method="get" class="card p-3 flex gap-2">
+    <input type="search" name="q" value="{{ q }}" autofocus class="form-input flex-1" placeholder="योजना, बैंक नं., फर्म, PAN वा ठाउँ खोज्नुहोस्…">
+    <button class="btn-primary"><i class="fas fa-magnifying-glass"></i> खोज</button>
+  </form>
+  {% if q|length < 2 %}
+    <p class="text-sm text-slate-500">कम्तीमा २ अक्षर लेख्नुहोस्।</p>
+  {% else %}
+    <p class="text-sm text-slate-500">“{{ q }}” — {{ total|to_nepali_number }} नतिजा</p>
+    {% for g in groups %}
+    <div class="card overflow-hidden">
+      <div class="px-4 py-2.5 border-b border-slate-100 text-sm font-semibold text-slate-700"><i data-lucide="{{ g.icon }}" class="w-4 h-4 inline text-[#2856eb]"></i> {{ g.label }} <span class="text-xs font-normal text-slate-400">({{ g.rows|length|to_nepali_number }})</span></div>
+      <ul class="divide-y divide-slate-100">
+        {% for r in g.rows %}<li><a href="{{ r.url }}" class="block px-4 py-2.5 hover:bg-slate-50"><span class="text-sm font-medium text-slate-800">{{ r.title }}</span><span class="block text-xs text-slate-500">{{ r.sub }}</span></a></li>{% endfor %}
+      </ul>
+    </div>
+    {% empty %}<div class="card p-8 text-center text-sm text-slate-500">केही भेटिएन।</div>{% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

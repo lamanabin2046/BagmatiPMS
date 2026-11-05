@@ -1,0 +1,10 @@
+{% comment %}दरभाउपत्र खरिद: एउटै पेज — हरेक चरण त्यहीँको कार्यप्रवाहबाट (अनुमति अनुसार){% endcomment %}
+{% if 'quot.view' in me.perms %}
+<li>
+  <a href="{% url 'quot_workflow' %}"
+     class="nav-link-item {% if current in 'quot_workflow,add_suchikrit_list,view_suchikrit_list,invite_quatation,view_quatation_projects,view_quatation_all_projects,add_quatation_amount,add_quatation_agreement,add_quatation_final_payment,add_quatation_final_payment_sidebar,view_quatation_final_payment_sidebar' or current|slice:':8' == 'quot_wf_' %}active{% endif %}">
+    <i data-lucide="clipboard-list" class="nav-icon"></i>
+    <span class="sidebar-label">दरभाउपत्र खरिद</span>
+  </a>
+</li>
+{% endif %}

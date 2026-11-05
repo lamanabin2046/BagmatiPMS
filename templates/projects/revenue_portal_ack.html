@@ -1,0 +1,19 @@
+{% extends 'projects/revenue_public_base.html' %}
+{% load outputs %}
+{% block title %}बोलपत्र प्राप्ति-पत्र{% endblock %}
+{% block body %}
+<div class="card p-6 max-w-2xl mx-auto space-y-3">
+  <p class="text-emerald-700 font-semibold">✓ बोलपत्र सिलबन्दी रूपमा प्राप्त भयो</p>
+  <h1 class="text-lg font-bold">बोलपत्र प्राप्ति-पत्र</h1>
+  <table class="w-full text-sm">
+    <tr><td class="py-1 text-slate-500 w-48">राजस्व स्रोत</td><td>{{ o.source.name }}</td></tr>
+    <tr><td class="py-1 text-slate-500">बोलपत्रदाता</td><td>{{ o.bidder.name }}{% if o.bidder.pan %} (PAN {{ o.bidder.pan }}){% endif %}</td></tr>
+    <tr><td class="py-1 text-slate-500">पेश गरेको समय</td><td>{{ o.submitted_at|date:"Y-m-d H:i:s" }}</td></tr>
+    <tr><td class="py-1 text-slate-500">बोलपत्र खुल्ने</td><td>{{ o.source.bid_deadline|bs }} पछि</td></tr>
+    <tr><td class="py-1 text-slate-500">जमानत</td><td>{{ o.security_ref }} · रु. {{ o.security_amount|money:0 }}</td></tr>
+    <tr><td class="py-1 text-slate-500 align-top">सिल प्रमाण (SHA-256)</td><td class="font-mono text-xs break-all">{{ o.digest }}</td></tr>
+  </table>
+  <p class="text-xs text-slate-500">कबोल अङ्क यस पत्रमा देखाइँदैन। सिल प्रमाण बोलपत्र खोल्दा मिलाउन सकिन्छ। यो पत्र प्रिन्ट गरी राख्नुहोस्।</p>
+  <div class="flex gap-2"><button onclick="window.print()" class="btn2">प्रिन्ट</button><a href="{% url 'revenue_portal_mine' %}" class="btn2">मेरा बोलपत्र</a></div>
+</div>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}गतिविधि लग{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+  <h1 class="text-xl md:text-2xl font-bold text-slate-800">परिवर्तन लग (गतिविधि लग)</h1>
+  <p class="text-sm text-slate-500 mt-0.5">उपभोक्ता समिति, लागत अनुमान र अन्तिम भुक्तानीमा भएका सबै थपिने/सम्पादन हुने गतिविधिको अभिलेख — कसले, कहिले, के गर्यो।</p>
+</div>
+
+<!-- ================= FILTERS ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card mb-4">
+  <form method="get" data-live-filter class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+    <div class="sm:col-span-2 lg:col-span-2">
+      <label class="form-label">खोज्नुहोस्</label>
+      <input type="text" name="q" value="{{ selected_q }}" class="form-input"
+             placeholder="योजना नाम, विवरण वा नोटमा खोज्नुहोस्">
+    </div>
+    <div>
+      <label class="form-label">कार्य</label>
+      <select name="action" class="form-select w-full">
+        <option value="">सबै</option>
+        {% for value, label in action_choices %}
+        <option value="{{ value }}" {% if selected_action == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label">मोडेल</label>
+      <select name="model" class="form-select w-full">
+        <option value="">सबै</option>
+        {% for m in model_choices %}
+        <option value="{{ m }}" {% if selected_model == m %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label">प्रयोगकर्ता</label>
+      <select name="user" class="form-select w-full">
+        <option value="">सबै</option>
+        {% for u in log_users %}
+        <option value="{{ u.id }}" {% if selected_user == u.id|stringformat:"s" %}selected{% endif %}>{{ u.mobile }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div><label class="form-label">मितिदेखि</label><input name="from" value="{{ selected_from }}" class="form-input nepali-date" placeholder="YYYY-MM-DD" autocomplete="off"></div>
+    <div><label class="form-label">मितिसम्म</label><input name="to" value="{{ selected_to }}" class="form-input nepali-date" placeholder="YYYY-MM-DD" autocomplete="off"></div>
+    <div class="sm:col-span-2 lg:col-span-5 flex items-center gap-2">
+      <button type="submit" class="btn-success"><i class="fas fa-filter"></i> खोज्नुहोस्</button>
+      <button type="submit" name="export" value="xlsx" class="btn-secondary" hx-boost="false"><i class="fas fa-file-excel text-emerald-600"></i> Excel</button>
+      <a href="{% url 'activity_log' %}" class="btn-secondary"><i class="fas fa-rotate-left"></i> रीसेट</a>
+      <span class="text-xs text-slate-400 ml-auto">जम्मा {{ total_count }} रेकर्ड</span>
+    </div>
+  </form>
+</div>
+
+<!-- ================= LOG TABLE ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase tracking-wide text-slate-500 bg-slate-50">
+          <th class="px-5 py-3 font-medium">समय</th>
+          <th class="px-5 py-3 font-medium">प्रयोगकर्ता</th>
+          <th class="px-5 py-3 font-medium">कार्य</th>
+          <th class="px-5 py-3 font-medium">मोडेल</th>
+          <th class="px-5 py-3 font-medium">विवरण</th>
+          <th class="px-5 py-3 font-medium">योजना</th>
+          <th class="px-5 py-3 font-medium">नोट</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for log in page_obj %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 text-slate-500 whitespace-nowrap">{{ log.created_at|date:"Y-m-d H:i" }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ log.user.mobile|default:"—" }}</td>
+          <td class="px-5 py-3">
+            {% if log.action == "create" %}
+            <span class="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium px-2.5 py-1">{{ log.get_action_display }}</span>
+            {% elif log.action == "update" %}
+            <span class="inline-flex items-center rounded-full bg-amber-50 text-amber-700 text-xs font-medium px-2.5 py-1">{{ log.get_action_display }}</span>
+            {% else %}
+            <span class="inline-flex items-center rounded-full bg-rose-50 text-rose-700 text-xs font-medium px-2.5 py-1">{{ log.get_action_display }}</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3 text-slate-700">{{ log.model_name }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ log.object_repr }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ log.project_name|default:"—" }}</td>
+          <td class="px-5 py-3 text-slate-500">{{ log.note|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="px-5 py-6 text-center text-slate-400">हाल कुनै लग रेकर्ड छैन</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="px-5 py-4 border-t border-slate-100 flex items-center justify-between text-sm">
+    <span class="text-slate-500">पृष्ठ {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    <div class="flex items-center gap-2">
+      {% if page_obj.has_previous %}
+      <a href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}" class="btn-secondary"><i class="fas fa-chevron-left"></i> अघिल्लो</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}" class="btn-secondary">अर्को <i class="fas fa-chevron-right"></i></a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

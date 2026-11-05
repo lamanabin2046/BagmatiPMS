@@ -1,0 +1,94 @@
+name: Test and deploy to cPanel
+
+# main मा push गर्दा: (१) PostgreSQL मा जाँच, (२) पास भए cPanel मा deploy।
+# Actions → "Test and deploy to cPanel" → Run workflow बाट हातैले पनि चलाउन मिल्छ।
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-cpanel
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: pms_ci
+          POSTGRES_USER: pms
+          POSTGRES_PASSWORD: pms
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U pms"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DJANGO_SECRET_KEY: ci-only-not-secret
+      DJANGO_DEBUG: "False"
+      BASE_DOMAIN: ci.test
+      DJANGO_ALLOWED_HOSTS: ci.test,.ci.test,127.0.0.1
+      DB_NAME: pms_ci
+      DB_USER: pms
+      DB_PASSWORD: pms
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+      - name: Install packages
+        run: pip install -r requirements.txt
+      - name: Django checks
+        run: python manage.py check --fail-level ERROR
+      - name: No missing migrations
+        run: python manage.py makemigrations --check --dry-run
+      - name: Migrate public schema
+        run: python manage.py migrate_schemas --shared --noinput
+      - name: Create a test palika (schema + all tables)
+        run: |
+          python manage.py create_palika --code citest --name "CI पालिका" \
+            --district "ललितपुर" --address "CI" --admin-mobile 9800000000
+      - name: Migrate all schemas again (must be a no-op)
+        run: python manage.py migrate_schemas --noinput
+      - name: Collect static
+        run: python manage.py collectstatic --noinput --verbosity 0
+
+  deploy:
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Pull latest code into the cPanel repository
+        env:
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+          CPANEL_USER: ${{ secrets.CPANEL_USER }}
+          CPANEL_TOKEN: ${{ secrets.CPANEL_TOKEN }}
+          REPO_PATH: ${{ secrets.CPANEL_REPO_PATH }}
+        run: |
+          set -euo pipefail
+          out=$(curl -sS --fail-with-body -G "https://${CPANEL_HOST}:2083/execute/VersionControl/update" \
+            -H "Authorization: cpanel ${CPANEL_USER}:${CPANEL_TOKEN}" \
+            --data-urlencode "repository_root=${REPO_PATH}" \
+            --data-urlencode "branch=main")
+          echo "$out" | python3 -c 'import json,sys; d=json.load(sys.stdin); print("status", d.get("status"), d.get("errors")); sys.exit(0 if d.get("status")==1 else 1)'
+      - name: Deploy (runs .cpanel.yml → scripts/deploy.sh)
+        env:
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+          CPANEL_USER: ${{ secrets.CPANEL_USER }}
+          CPANEL_TOKEN: ${{ secrets.CPANEL_TOKEN }}
+          REPO_PATH: ${{ secrets.CPANEL_REPO_PATH }}
+        run: |
+          set -euo pipefail
+          out=$(curl -sS --fail-with-body -G "https://${CPANEL_HOST}:2083/execute/VersionControlDeployment/create" \
+            -H "Authorization: cpanel ${CPANEL_USER}:${CPANEL_TOKEN}" \
+            --data-urlencode "repository_root=${REPO_PATH}")
+          echo "$out" | python3 -c 'import json,sys; d=json.load(sys.stdin); print("status", d.get("status"), d.get("errors")); sys.exit(0 if d.get("status")==1 else 1)'
+          echo "Deployment queued. Server log: ${REPO_PATH}/logs/deploy.log"

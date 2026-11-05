@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login · Project Management System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ['Inter', 'Noto Sans Devanagari', 'sans-serif'] },
+        colors: { brand: { 50:'#eef4ff',100:'#dbe7fe',200:'#bfd6fe',300:'#93bbfd',400:'#6098fa',
+                             500:'#3b76f6',600:'#2856eb',700:'#2143d8',800:'#2138af',900:'#1f358a' } } } }
+    };
+  </script>
+  <link rel="stylesheet" href="{% static 'assets/plugins/fontawesome/css/all.min.css' %}">
+
+  <style>
+    html, body { font-family: 'Inter', 'Noto Sans Devanagari', sans-serif; }
+    .bg-animated {
+      background: linear-gradient(-45deg, #1f358a, #2856eb, #3b76f6, #6098fa);
+      background-size: 400% 400%;
+      animation: gradientBG 14s ease infinite;
+    }
+    @keyframes gradientBG { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+  </style>
+</head>
+<body class="bg-animated min-h-screen flex items-center justify-center px-4 py-10">
+
+  <div class="w-full max-w-md">
+    <div class="bg-white/95 backdrop-blur rounded-3xl shadow-2xl border border-white/40 p-8 md:p-10">
+
+      <img src="{% static 'assets/img/nepal-govt-logo.png' %}" alt="Government of Nepal"
+           class="w-16 h-16 mx-auto mb-4 drop-shadow">
+
+      <h1 class="text-xl font-bold text-slate-800 text-center">{{ palika.full_name }}</h1>
+      <p class="text-sm text-slate-500 text-center mt-1 mb-6">Project Management System</p>
+
+      <div id="div_error"></div>
+      {% include 'accounts/_auth_messages.html' %}
+
+      <form accept-charset="UTF-8" role="form" class="space-y-4" id="form1" name="form1"
+            method="POST" action="{% url 'doLogin' %}"
+            onsubmit="var b=document.getElementById('login'); if(b.disabled){return false;} b.disabled=true; b.classList.add('opacity-70'); b.innerHTML='लगइन हुँदै…';">
+        {% csrf_token %}
+        <div class="login_result"></div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Mobile Number</label>
+          <div class="relative">
+            <i class="fas fa-mobile-screen absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input class="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3.5 py-2.5 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400"
+                   placeholder="98XXXXXXXX" id="mobile" type="text" name="mobile" required>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Password</label>
+          <div class="relative">
+            <i class="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input class="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3.5 py-2.5 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400"
+                   placeholder="••••••••" id="password" type="password" name="password" required>
+          </div>
+        </div>
+
+        <input type="hidden" id="sheight" name="sheight">
+        <input type="hidden" id="swidth" name="swidth">
+        <input type="hidden" id="useraction" name="useraction" value="0">
+        <script>
+          document.getElementById('sheight').value = window.innerHeight;
+          document.getElementById('swidth').value = window.innerWidth;
+        </script>
+
+        <button type="submit" id="login"
+                class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl py-3 shadow-lg shadow-brand-600/20 transition">
+          Login <i class="fas fa-arrow-right ml-1"></i>
+        </button>
+      </form>
+
+      <p class="text-center text-xs text-slate-500 mt-5">
+        <a href="{% url 'forgot_password' %}" class="font-medium" style="color:#2143d8"><i class="fas fa-key"></i> पासवर्ड बिर्सनुभयो?</a>
+      </p>
+
+      <p class="text-center text-xs text-slate-400 mt-3">© {% now "Y" %} {{ palika.full_name }}</p>
+    </div>
+  </div>
+
+  <iframe id="iframe" name="iframe" style="height:0px;width:0px;display:none"></iframe>
+</body>
+</html>

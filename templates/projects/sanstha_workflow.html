@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}संस्था / समिति मार्फत खरिद{% endblock %}
+
+{% block extra_head %}
+<style>
+  .wf-dot { width: 2.4rem; height: 2.4rem; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center;
+            font-size: .85rem; font-weight: 700; transition: transform .15s, box-shadow .15s; }
+  button.wf-dot:hover { transform: scale(1.12); box-shadow: 0 4px 12px rgba(15,23,42,.15); }
+  .wf-done     { background: #86d3a6; color: #fff; }
+  .wf-done-key { background: #4cb37c; color: #fff; }
+  .wf-current  { background: #fff; color: #1f358a; box-shadow: inset 0 0 0 2.5px #2856eb; }
+  .wf-warning  { background: #f0a020; color: #fff; }
+  .wf-pending  { background: #eef2f7; color: #94a3b8; }
+  .wf-optional { background: transparent; color: #cbd5e1; font-size: 1.1rem; }
+  .wf-optional-started { background: #d7f2e3; color: #2f8a57; }
+  .wf-current { animation: wf-pulse 2s ease-in-out infinite; }
+  .wf-warning { animation: wf-pulse-w 2s ease-in-out infinite; }
+  @keyframes wf-pulse   { 50% { box-shadow: inset 0 0 0 2.5px #2856eb, 0 0 0 6px rgba(40,86,235,.12); } }
+  @keyframes wf-pulse-w { 50% { box-shadow: 0 0 0 6px rgba(240,160,32,.22); } }
+  .wf-table th { white-space: nowrap; }
+  .wf-stat-icon { width: 3rem; height: 3rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+  <div>
+    <h1 class="text-2xl md:text-3xl font-bold text-slate-800">संस्था / समिति मार्फत खरिद</h1>
+    <p class="text-sm text-slate-500 mt-0.5">प्रस्ताव आह्वान, मूल्याङ्कन, सम्झौता, किस्ता र अन्तिम भुक्तानीसम्म — दरभाउपत्र जस्तै हरेक चरण एकै ठाउँमा</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="relative">
+      <button type="button" data-dropdown-toggle onclick="toggleDropdown('bid-reports')" class="btn-secondary !py-3">
+        <i class="fas fa-file-lines"></i> सूची / रिपोर्ट <i class="fas fa-chevron-down text-[10px]"></i>
+      </button>
+      <div id="bid-reports" data-dropdown-panel class="hidden absolute right-0 mt-2 w-72 card p-1.5 z-30">
+        {% if 'report.uc' in me.perms %}<a href="{% url 'uc_report_summary' %}?kind=sanstha" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-50 border-b mb-1 pb-2"><i class="fas fa-chart-column text-brand-600 w-4"></i> वित्तीय प्रतिवेदन (प्रिन्ट / Excel)</a>{% endif %}
+        <a href="{% url 'firm_list' %}?kind=organization" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-50"><i class="fas fa-building text-brand-500 w-4"></i> दर्ता भएका संस्था ({{ org_count|to_nepali_number }})</a>
+        <a href="{% url 'ppmo_list' %}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-50"><i class="fas fa-ban text-rose-500 w-4"></i> PPMO कालोसूची</a>
+        <a href="{% url 'app_list' %}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-50 border-t mt-1 pt-2"><i class="fas fa-list-check text-amber-500 w-4"></i> वार्षिक खरिद योजना</a>
+      </div>
+    </div>
+    {% if 'project.manage' in me.perms %}
+    <a href="{% url 'add_project' %}?next={{ return_to|urlencode }}" class="btn-primary !px-6 !py-3">
+      <i class="fas fa-plus"></i> नयाँ योजना
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div id="wf-results">
+{% with base='?q='|add:f.q|add:'&ward='|add:f.ward|add:'&fiscalyear='|add:f.fiscalyear %}
+<div class="grid grid-cols-1 sm:grid-cols-2 {% if is_approver %}xl:grid-cols-4{% else %}xl:grid-cols-3{% endif %} gap-4 mb-5">
+  {% if is_approver %}
+  <a href="{{ base }}&stage=to_approve" class="card p-5 flex items-center gap-4 hover:shadow-soft transition {% if f.stage == 'to_approve' %}ring-2 ring-amber-500{% endif %} {% if counts.to_approve %}bg-amber-50/60{% endif %}">
+    <span class="wf-stat-icon bg-amber-100 text-amber-700"><i class="fas fa-stamp"></i></span>
+    <span><span class="block text-slate-600">स्वीकृत गर्न बाँकी</span><span class="block text-2xl font-bold text-slate-800">{{ counts.to_approve|to_nepali_number }}</span></span>
+  </a>
+  {% endif %}
+  <a href="{{ base }}" class="card p-5 flex items-center gap-4 hover:shadow-soft transition {% if not f.stage %}ring-2 ring-brand-500{% endif %}">
+    <span class="wf-stat-icon bg-brand-50 text-brand-700"><i class="fas fa-layer-group"></i></span>
+    <span><span class="block text-slate-600">कुल खरिद</span><span class="block text-2xl font-bold text-slate-800">{{ counts.all|to_nepali_number }}</span></span>
+  </a>
+  <a href="{{ base }}&stage=completed" class="card p-5 flex items-center gap-4 hover:shadow-soft transition {% if f.stage == 'completed' %}ring-2 ring-emerald-500{% endif %}">
+    <span class="wf-stat-icon bg-emerald-50 text-emerald-700"><i class="far fa-circle-check"></i></span>
+    <span><span class="block text-slate-600">भुक्तानी सम्पन्न</span><span class="block text-2xl font-bold text-slate-800">{{ counts.completed|to_nepali_number }}</span></span>
+  </a>
+  <a href="{{ base }}&stage=overdue" class="card p-5 flex items-center gap-4 hover:shadow-soft transition {% if f.stage == 'overdue' %}ring-2 ring-amber-500{% endif %}">
+    <span class="wf-stat-icon bg-rose-50 text-rose-700"><i class="far fa-bell"></i></span>
+    <span><span class="block text-slate-600">सम्झौता म्याद नाघेको</span><span class="block text-2xl font-bold text-slate-800">{{ counts.overdue|to_nepali_number }}</span></span>
+  </a>
+
+</div>
+{% endwith %}
+
+<div class="card overflow-hidden">
+  <form method="get" data-live-filter class="p-5 flex flex-col lg:flex-row lg:items-center gap-3 border-b border-slate-200">
+    <input type="hidden" name="per_page" value="{{ f.per_page }}">
+    <div class="relative flex-1 max-w-xl">
+      <i class="fas fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      <input type="search" name="q" value="{{ f.q }}" class="form-input !pl-10" placeholder="योजना वा संस्था खोज्नुहोस्..."
+             hx-get="{% url 'sanstha_workflow' %}" hx-trigger="input changed delay:500ms, search"
+             hx-target="#wf-results" hx-select="#wf-results" hx-swap="outerHTML" hx-push-url="true" hx-include="closest form">
+    </div>
+    <div class="flex flex-wrap gap-3 lg:ml-auto">
+      <select name="fiscalyear" class="form-select !w-auto min-w-[9rem]">
+        <option value="">सबै आ.व.</option>
+        {% for fy in fiscal_years %}<option value="{{ fy.id }}" {% if f.fiscalyear == fy.id|stringformat:'s' %}selected{% endif %}>{{ fy.name|to_nepali_number }}</option>{% endfor %}
+      </select>
+      <select name="ward" class="form-select !w-auto min-w-[9rem]">
+        <option value="">सबै वडा</option>
+        {% for w in wards %}<option value="{{ w.id }}" {% if f.ward == w.id|stringformat:'s' %}selected{% endif %}>वडा नं. {{ w.name }}</option>{% endfor %}
+      </select>
+      <select name="stage" class="form-select !w-auto min-w-[11rem]">
+        <option value="">सबै चरण</option>
+        <option value="running" {% if f.stage == 'running' %}selected{% endif %}>प्रक्रियामा</option>
+        {% if is_approver %}<option value="to_approve" {% if f.stage == 'to_approve' %}selected{% endif %}>मैले स्वीकृत गर्न बाँकी</option>{% endif %}
+        {% for key, short, label in columns %}<option value="{{ key }}" {% if f.stage == key %}selected{% endif %}>{{ label }} बाँकी</option>{% endfor %}
+        <option value="overdue" {% if f.stage == 'overdue' %}selected{% endif %}>सम्झौता म्याद नाघेको</option>
+        <option value="completed" {% if f.stage == 'completed' %}selected{% endif %}>सम्पन्न</option>
+      </select>
+    </div>
+  </form>
+
+  <div class="overflow-x-auto">
+    <table class="wf-table w-full text-sm">
+      <thead class="bg-slate-50 text-slate-700 border-b border-slate-200">
+        <tr>
+          <th class="text-left font-semibold px-4 py-4 min-w-[15rem]">योजनाको नाम</th>
+          <th class="text-left font-semibold px-3 py-4">वडा</th>
+          <th class="text-left font-semibold px-3 py-4 min-w-[10rem]">स्वीकृत / सिफारिस संस्था</th>
+          {% for key, short, label in columns %}
+          <th class="font-semibold px-2 py-4 text-center" title="{{ label }}">{{ short }}</th>
+          {% endfor %}
+          <th class="text-left font-semibold px-4 py-4 min-w-[9rem]">स्थिति</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for row in rows %}
+        {% with p=row.project s=row.summary %}
+        <tr class="border-t border-slate-100 hover:bg-slate-50/60{% if open_id == p.id %} bg-brand-50/50{% endif %}" {% if open_id == p.id %}id="wf-open-row"{% endif %}>
+          <td class="px-4 py-4">
+            <button type="button" class="text-left font-medium text-slate-800 hover:text-brand-600"
+                    hx-get="{% url 'sanstha_workflow_detail' p.id %}" hx-target="#wf-detail-{{ p.id }}" hx-swap="innerHTML">
+              {{ p.name }}
+            </button>
+            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-400 mt-0.5">
+              {% if p.fiscalyear %}<span>आ.व. {{ p.fiscalyear.name|to_nepali_number }}</span>{% endif %}
+              {% if s.invited %}<span>{{ s.invited|length|to_nepali_number }} संस्था आमन्त्रित</span>{% endif %}
+              {% if s.quotes %}<span>{{ s.quotes|length|to_nepali_number }} प्रस्ताव</span>{% endif %}
+              {% if s.deadline_passed %}<span class="rounded-full bg-amber-50 text-amber-700 px-2 py-0.5"><i class="far fa-clock"></i> पेश गर्ने म्याद {{ s.submission_bs }} सकियो</span>{% endif %}
+            </div>
+          </td>
+          <td class="px-3 py-4 whitespace-nowrap">{{ p.ward.name|default:"-" }}</td>
+          <td class="px-3 py-4">{{ s.org|default:"—" }}{% if s.amount %}<div class="text-[11px] text-slate-400">रु. {{ s.amount|money:0 }}</div>{% endif %}</td>
+          {% for st in row.cells %}
+          <td class="px-2 py-4 text-center">
+            <button type="button"
+                    class="wf-dot wf-{{ st.state }}{% if st.state == 'done' and st.key in 'agreement,final_tippani' %} wf-done-key{% endif %}{% if st.state == 'current' and st.key == 'approval' and row.waiting_me %} wf-warning{% endif %}"
+                    title="{{ st.label }}{% if st.date_bs %} — {{ st.date_bs }}{% endif %}{% if st.note %} — {{ st.note }}{% endif %}"
+                    hx-get="{% url 'sanstha_workflow_detail' p.id %}?step={{ st.n }}"
+                    hx-target="#wf-detail-{{ p.id }}" hx-swap="innerHTML">
+              {{ st.n|to_nepali_number }}
+            </button>
+          </td>
+          {% endfor %}
+          <td class="px-4 py-4 whitespace-nowrap">
+            {% if s.completed %}
+              <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200">भुक्तानी सम्पन्न</span>
+            {% elif s.overdue %}
+              <span class="badge bg-amber-50 text-amber-700 border border-amber-200">म्याद नाघेको</span>
+              <div class="text-[11px] text-amber-600 mt-1">{{ s.days_late|to_nepali_number }} दिन ढिला</div>
+            {% else %}
+              {% if row.waiting_me %}
+              <button type="button" class="badge bg-amber-50 text-amber-700 border border-amber-300 font-semibold"
+                      hx-get="{% url 'sanstha_workflow_detail' p.id %}?step={{ s.current }}" hx-target="#wf-detail-{{ p.id }}">
+                <i class="fas fa-stamp mr-1"></i> तपाईंको स्वीकृति बाँकी
+              </button>
+              {% else %}
+              <span class="badge bg-brand-50 text-brand-700 border border-brand-200">{{ s.current_label }}</span>
+              {% endif %}
+              {% if s.deadline_bs %}<div class="text-[11px] text-slate-400 mt-1">सम्पन्न गर्नुपर्ने {{ s.deadline_bs }}</div>{% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        <tr><td colspan="14" class="p-0"><div id="wf-detail-{{ p.id }}"{% if open_id == p.id %} hx-get="{% url 'sanstha_workflow_detail' p.id %}" hx-trigger="load" hx-swap="innerHTML"{% endif %}></div></td></tr>
+        {% endwith %}
+      {% empty %}
+        <tr><td colspan="14" class="px-4 py-14 text-center text-slate-500">
+          <i class="fas fa-folder-open text-3xl text-slate-300 mb-2 block"></i>
+          संस्था / समिति मार्फत गर्ने योजना भेटिएन। योजना दर्ता गरी वार्षिक खरिद योजनामा विधि “संस्था / समिति मार्फत” छानेर स्वीकृत गर्नुहोस्।
+        </td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ---------------- footer: count, per page, pages ---------------- #}
+  <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-t border-slate-200 text-sm text-slate-600">
+    <div class="flex flex-wrap items-center gap-4">
+      <span>देखाइँदै छ {{ page.start_index|to_nepali_number }}–{{ page.end_index|to_nepali_number }} मध्ये {{ page.paginator.count|to_nepali_number }}</span>
+      <form method="get" data-live-filter class="flex items-center gap-2">
+        {% for k, v in request.GET.items %}{% if k != 'per_page' and k != 'page' %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+        <i class="fas fa-filter text-slate-400"></i> प्रति पृष्ठ
+        <select name="per_page" class="form-select !w-auto !py-1.5">
+          <option value="10" {% if f.per_page == 10 %}selected{% endif %}>10</option>
+          <option value="25" {% if f.per_page == 25 %}selected{% endif %}>25</option>
+          <option value="50" {% if f.per_page == 50 %}selected{% endif %}>50</option>
+          <option value="100" {% if f.per_page == 100 %}selected{% endif %}>100</option>
+        </select>
+      </form>
+    </div>
+    <nav class="flex items-center gap-1.5">
+      {% if page.has_previous %}
+        <a class="btn-secondary !px-3 !py-2" href="?{{ keep_qs }}&page=1" title="पहिलो"><i class="fas fa-angles-left"></i></a>
+        <a class="btn-secondary !px-3 !py-2" href="?{{ keep_qs }}&page={{ page.previous_page_number }}" title="अघिल्लो"><i class="fas fa-angle-left"></i></a>
+      {% else %}
+        <span class="btn-secondary !px-3 !py-2 opacity-40"><i class="fas fa-angles-left"></i></span>
+        <span class="btn-secondary !px-3 !py-2 opacity-40"><i class="fas fa-angle-left"></i></span>
+      {% endif %}
+      {% for n in page.paginator.page_range %}
+        {% if n == page.number %}
+          <span class="btn-primary !px-3.5 !py-2">{{ n|to_nepali_number }}</span>
+        {% elif n > page.number|add:'-3' and n < page.number|add:'3' %}
+          <a class="btn-secondary !px-3.5 !py-2" href="?{{ keep_qs }}&page={{ n }}">{{ n|to_nepali_number }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if page.has_next %}
+        <a class="btn-secondary !px-3 !py-2" href="?{{ keep_qs }}&page={{ page.next_page_number }}" title="अर्को"><i class="fas fa-angle-right"></i></a>
+        <a class="btn-secondary !px-3 !py-2" href="?{{ keep_qs }}&page={{ page.paginator.num_pages }}" title="अन्तिम"><i class="fas fa-angles-right"></i></a>
+      {% else %}
+        <span class="btn-secondary !px-3 !py-2 opacity-40"><i class="fas fa-angle-right"></i></span>
+        <span class="btn-secondary !px-3 !py-2 opacity-40"><i class="fas fa-angles-right"></i></span>
+      {% endif %}
+    </nav>
+  </div>
+</div>
+
+{# ---------------- legend ---------------- #}
+<div class="flex flex-wrap items-center gap-5 text-xs text-slate-500 mt-4">
+  <span class="flex items-center gap-1.5"><span class="wf-dot wf-done !w-4 !h-4"></span> सम्पन्न</span>
+  <span class="flex items-center gap-1.5"><span class="wf-dot wf-done-key !w-4 !h-4"></span> सम्झौता / अन्तिम टिप्पणी भएको</span>
+  <span class="flex items-center gap-1.5"><span class="wf-dot wf-current !w-4 !h-4" style="animation:none"></span> अहिलेको चरण</span>
+  <span class="flex items-center gap-1.5"><span class="wf-dot wf-warning !w-4 !h-4" style="animation:none"></span> म्याद नाघेको / स्वीकृति कुरेको</span>
+  <span class="flex items-center gap-1.5"><span class="wf-dot wf-pending !w-4 !h-4"></span> बाँकी</span>
+  <span class="ml-auto">गोलो थिच्दा त्यो चरणको विवरण र काम खुल्छ।</span>
+</div>
+{% if open_id %}
+<script>
+  (function () {
+    var row = document.getElementById('wf-open-row');
+    if (row) { setTimeout(function () { row.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 150); }
+    try { var u = new URL(location.href); u.searchParams.delete('open'); history.replaceState(history.state, '', u.pathname + u.search); } catch (e) {}
+  })();
+</script>
+{% endif %}
+</div>{# /#wf-results #}
+{% endblock %}

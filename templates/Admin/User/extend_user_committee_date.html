@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}म्याद थप{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-4">
+
+  <div>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">उपभोक्ता समितिको म्याद थप गर्नुहोस्</h1>
+  </div>
+
+  <div class="card">
+    <form action="{% url 'update_usercommittee_date' %}" method="post" id="add_project_form">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">योजनाको नामः</label>
+            <input type="text" class="form-input" name="name" value="{{ usercommittee.project.name }}" readonly>
+          </div>
+          <div>
+            <label class="form-label">उपभोक्ता समिति गठन मिति</label>
+            <input type="text" class="form-input nepali-date date-required-check" name="formation_date" placeholder="उ.समिति गठन मिति" value="{{ formation_date_nepali }}" required>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="form-label">उपभोक्ता समितिको नामः</label>
+            <input type="text" class="form-input" name="name" placeholder="User Committee's Name" value="{{ usercommittee.name }}" required>
+            <input type="hidden" name="usercommittee_id" value="{{ usercommittee.id }}">
+          </div>
+
+          <div>
+            <label class="form-label">योजना सुरु मिति</label>
+            <input type="text" class="form-input nepali-date date-required-check" name="start_date" placeholder="योजना सुरु मिति" value="{{ start_date_nepali }}" required>
+          </div>
+
+          <div>
+            <label class="form-label">योजना समाप्त मिति</label>
+            <input type="text" class="form-input nepali-date date-required-check" name="accomplish_date" placeholder="योजना समाप्त मिति" value="{{ accomplish_date_nepali }}" required>
+          </div>
+
+          <div>
+            <label class="form-label">म्याद थप गरिएको मिति</label>
+            <input type="text" class="form-input nepali-date date-required-check" name="extended_date" value="{{ extended_date_nepali }}" placeholder="म्याद थप गरिएको मिति" required>
+          </div>
+        </div>
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" onclick="validateForm()" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> UPDATE
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+  function validateForm() {
+    const form = document.getElementById("add_project_form");
+    if (!form.checkValidity()) {
+      event.preventDefault();
+      event.stopPropagation();
+      form.classList.add("was-validated");
+    }
+  }
+</script>
+{% endblock %}

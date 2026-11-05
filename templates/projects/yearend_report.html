@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}आ.व. {{ fy.name }} बन्द प्रतिवेदन{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">आ.व. {{ fy.name }} बन्द प्रतिवेदन</h1>
+      <p class="text-sm text-slate-500 mt-0.5">{% if fy.closed_at %}<i class="fas fa-lock"></i> बन्द: {{ fy.closed_at|date:"Y-m-d H:i" }}{% else %}<span class="text-amber-700"><i class="fas fa-lock-open"></i> लक खोलिएको</span>{% endif %} · {{ fy.close_ref }}</p>
+    </div>
+    <div class="flex gap-2"><a href="?print=1" target="_blank" class="btn-secondary"><i class="fas fa-print"></i> प्रिन्ट</a><a href="{% url 'dashboard' %}?fiscalyear={{ fy.id }}" class="btn-secondary">ड्यासबोर्ड</a>
+      {% if not fy.closed_at %}<a href="{% url 'yearend' %}?fiscalyear={{ fy.id }}" class="btn-primary"><i class="fas fa-lock"></i> फेरि बन्द</a>{% endif %}</div>
+  </div>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="card p-4"><p class="text-xs text-slate-500">विनियोजित</p><p class="text-lg font-bold">रु. {{ total.allocated|money:0 }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">खर्च</p><p class="text-lg font-bold text-emerald-700">रु. {{ total.spent|money:0 }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">क्रमागतका लागि नयाँ आवंटन</p><p class="text-lg font-bold text-brand-700">रु. {{ total.new_allocation|money:0 }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">फिर्ता बाँकी धरौटी</p><p class="text-lg font-bold text-violet-700">रु. {{ total.retention_held|money:0 }}</p></div>
+  </div>
+  {% for g in groups %}
+  <section class="card overflow-x-auto">
+    <div class="card-header"><h2 class="font-semibold text-slate-800">{{ g.label }} ({{ g.lines|length|npn }})</h2><span class="text-xs text-slate-500">विनियोजित रु. {{ g.allocated|money:0 }} · खर्च रु. {{ g.spent|money:0 }}</span></div>
+    <table class="w-full text-[13px]">
+      <thead class="bg-slate-50 text-[11px] text-slate-500"><tr><th class="px-3 py-2 text-left">योजना</th><th class="px-3 py-2 text-left">वडा</th><th class="px-3 py-2 text-left">विधि · स्थिति</th><th class="px-3 py-2 text-right">विनियोजित</th><th class="px-3 py-2 text-right">खर्च</th>{% if g.key == 'carried' %}<th class="px-3 py-2 text-right">नयाँ आवंटन</th>{% endif %}<th class="px-3 py-2 text-right">धरौटी</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">{% for x in g.lines %}<tr><td class="px-3 py-2">{{ x.project_name }}</td><td class="px-3 py-2">{{ x.ward_name|npn }}</td><td class="px-3 py-2 text-xs">{{ x.kind_label }} · {{ x.status_label }}</td><td class="px-3 py-2 text-right">{{ x.allocated|money:0 }}</td><td class="px-3 py-2 text-right">{{ x.spent|money:0 }}</td>{% if g.key == 'carried' %}<td class="px-3 py-2 text-right">{{ x.new_allocation|money:0 }}{% if x.to_fiscalyear %}<span class="block text-[10px] text-slate-400">आ.व. {{ x.to_fiscalyear.name }}</span>{% endif %}</td>{% endif %}<td class="px-3 py-2 text-right">{% if x.retention_held %}{{ x.retention_held|money:0 }}{% endif %}</td></tr>{% endfor %}</tbody>
+    </table>
+  </section>
+  {% empty %}<p class="card p-8 text-center text-slate-400">स्न्यापसट छैन।</p>{% endfor %}
+  {% if rev_out %}
+  <section class="card overflow-x-auto">
+    <div class="card-header"><h2 class="font-semibold text-slate-800">राजस्व — असुल गर्न बाँकी / बक्यौता</h2></div>
+    <table class="w-full text-[13px]"><tbody class="divide-y divide-slate-100">{% for s, ms in rev_out %}<tr><td class="px-3 py-2">{{ s.name }}</td><td class="px-3 py-2">{{ s.selected.name|default:'' }}</td><td class="px-3 py-2 text-right">बाँकी रु. {{ ms.outstanding|money:0 }}</td><td class="px-3 py-2 text-right">{% if s.arrears %}बक्यौता रु. {{ s.arrears|money:0 }}{% endif %}</td></tr>{% endfor %}</tbody></table>
+  </section>
+  {% endif %}
+  {% if can_reopen %}
+  <form method="post" action="{% url 'yearend_reopen' fy.id %}" class="card p-4 flex flex-wrap items-center gap-3">
+    {% csrf_token %}<span class="text-sm text-slate-600">गल्ती सच्याउन लक खोल्ने (सारिएका क्रमागत योजना फर्किँदैनन्):</span>
+    <input name="reason" class="form-input max-w-md" placeholder="कारण / निर्णय"><button class="btn-secondary !text-amber-700" onclick="return confirm('लक खोल्ने?')"><i class="fas fa-lock-open"></i> लक खोल्नुहोस्</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}प्रतिवेदनहरू{% endblock %}
+{% block content %}
+<div class="space-y-6" id="reports-hub">
+
+  {# ---------- शीर्ष: शीर्षक, आ.व., खोज, छाप्ने ---------- #}
+  <div class="card p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2.5">
+        <span class="w-9 h-9 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center"><i data-lucide="bar-chart-3" class="w-5 h-5"></i></span>
+        <h1 class="text-2xl md:text-3xl font-bold text-slate-800">प्रतिवेदनहरू</h1>
+      </div>
+      <p class="text-sm text-slate-500 mt-1">सबै प्रतिवेदन एकै ठाउँमा — शीर्षक छानेर खोल्नुहोस्, Excel वा छाप्न सकिन्छ।</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <form method="get" class="flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-1.5">
+        <i data-lucide="calendar-days" class="w-4 h-4 text-slate-500"></i>
+        <select name="fiscalyear" class="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer" onchange="this.form.submit()">
+          {% for x in fiscal_years %}<option value="{{ x.id }}" {% if fy and x.id == fy.id %}selected{% endif %}>आ.व. {{ x.name|npn }}{% if x.is_current %} (चालु){% elif x.closed_at %} (बन्द){% endif %}</option>{% endfor %}
+        </select>
+      </form>
+      <div class="relative flex-1 sm:w-64">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input id="hub-search" type="search" placeholder="प्रतिवेदन खोज्नुहोस्…" autocomplete="off"
+               class="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30">
+      </div>
+      <button type="button" onclick="window.print()" class="btn-secondary !py-2 !px-3" title="यो सूची छाप्नुहोस्"><i class="fas fa-print"></i><span class="hidden md:inline">प्रिन्ट सूची</span></button>
+    </div>
+  </div>
+
+  {# ---------- खण्ड छान्ने pills ---------- #}
+  <div class="overflow-x-auto -mx-1 px-1 pb-1">
+    <div class="flex items-center gap-2 min-w-max" id="hub-chips">
+      <button type="button" data-cat="all" class="hub-chip is-on inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-sm border transition">
+        सबै <span class="hub-count px-1.5 rounded-full text-[10px]">{{ total|npn }}</span></button>
+      {% for s in sections %}
+      <button type="button" data-cat="{{ s.key }}" class="hub-chip inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-sm border transition">
+        {{ s.chip }} <span class="hub-count px-1.5 rounded-full text-[10px]">{{ s.items|length|npn }}</span></button>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ---------- धेरै हेरिने ---------- #}
+  {% if stars %}
+  <div id="hub-stars">
+    <div class="flex items-center gap-2 mb-2"><i data-lucide="star" class="w-4 h-4 text-amber-500"></i>
+      <h2 class="text-base font-bold text-slate-800">धेरै हेरिने प्रतिवेदन</h2></div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {% for it in stars %}
+      <a href="{{ it.url }}" class="group card p-4 flex items-start gap-3 hover:shadow-md hover:border-brand-300 transition">
+        <span class="w-10 h-10 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition"><i data-lucide="{{ it.icon }}" class="w-5 h-5"></i></span>
+        <span class="flex-1 min-w-0">
+          <span class="block text-sm font-bold text-slate-800 group-hover:text-brand-700 truncate">{{ it.title }}</span>
+          <span class="block text-xs text-slate-500 truncate">{{ it.desc }}</span>
+        </span>
+        <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# ---------- खण्डहरू ---------- #}
+  <div class="space-y-8" id="hub-sections">
+    {% for s in sections %}
+    <section class="hub-section space-y-3" data-section="{{ s.key }}">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span class="w-10 h-10 rounded-full {{ s.icon_tone }} flex items-center justify-center shrink-0"><i data-lucide="{{ s.icon }}" class="w-5 h-5"></i></span>
+          <div>
+            <h3 class="text-lg font-bold text-slate-800">{{ s.label }}</h3>
+            <p class="text-xs text-slate-500">{{ s.desc }}</p>
+          </div>
+        </div>
+        <span class="hub-sec-count badge bg-slate-100 text-slate-600 shrink-0">{{ s.items|length|npn }} प्रतिवेदन</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {% for it in s.items %}
+        <div class="hub-card group card flex flex-col justify-between hover:shadow-md hover:border-brand-300 transition"
+             data-search="{{ it.title }} {{ it.desc }} {{ it.code }} {{ s.label }}">
+          <a href="{{ it.url }}" class="block p-4 pb-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold text-brand-700 tracking-wide">{{ it.code }}</span>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 group-hover:text-brand-600 transition"></i>
+            </div>
+            <div class="flex items-start gap-3 mt-1.5">
+              <span class="w-9 h-9 rounded-lg {{ s.icon_tone }} flex items-center justify-center shrink-0"><i data-lucide="{{ it.icon }}" class="w-[18px] h-[18px]"></i></span>
+              <span class="min-w-0">
+                <span class="block text-[15px] font-bold text-slate-800 group-hover:text-brand-700 leading-snug">{{ it.title }}</span>
+                <span class="block text-xs text-slate-500 mt-0.5 leading-relaxed">{{ it.desc }}{% if it.note %} · {{ it.note|npn }}{% endif %}</span>
+              </span>
+            </div>
+          </a>
+          <div class="flex items-center justify-between gap-2 px-4 py-2.5 bg-slate-50/70 border-t border-slate-100 rounded-b-xl">
+            <div class="flex items-center gap-1.5">
+              {% if it.xlsx %}<a href="{{ it.xlsx_url }}" hx-boost="false" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold hover:bg-emerald-100" title="Excel मा डाउनलोड"><i class="fas fa-file-excel"></i> Excel</a>{% endif %}
+              <a href="{{ it.print_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white text-slate-700 border border-slate-200 text-[11px] font-semibold hover:bg-slate-100" title="छाप्ने वा PDF सुरक्षित गर्ने"><i class="fas fa-print"></i> PDF / छाप्ने</a>
+            </div>
+            {% if it.fy and fy %}<span class="text-[10px] text-slate-400">आ.व. {{ fy.name|npn }}</span>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+    <p id="hub-empty" class="hidden card p-8 text-center text-sm text-slate-500">खोजेको प्रतिवेदन भेटिएन।</p>
+  </div>
+
+  <p class="text-[11px] text-slate-400">अङ्क खरिद तथा भुक्तानी अभिलेखबाट; आ.व. छानेर हेर्नुहोस्। तपाईंको भूमिका र अनुमतिअनुसारका प्रतिवेदन मात्र देखिन्छन्।</p>
+</div>
+
+<style>
+  #hub-chips .hub-chip { background:#fff; color:#334155; border-color:#e2e8f0; }
+  #hub-chips .hub-chip .hub-count { background:#f1f5f9; color:#475569; }
+  #hub-chips .hub-chip.is-on { background:#2a47a3; color:#fff; border-color:#2a47a3; }
+  #hub-chips .hub-chip.is-on .hub-count { background:rgba(255,255,255,.2); color:#fff; }
+  @media print {
+    #hub-chips, #hub-stars, #hub-search, .hub-card a[title] { display:none !important; }
+    .hub-section { break-inside: avoid; }
+  }
+</style>
+<script>
+(function () {
+  var root = document.getElementById('reports-hub');
+  if (!root) return;
+  var cat = 'all';
+  var search = document.getElementById('hub-search');
+  function apply() {
+    var q = (search.value || '').trim().toLowerCase(), shown = 0;
+    root.querySelectorAll('.hub-section').forEach(function (sec) {
+      var n = 0, okCat = cat === 'all' || sec.dataset.section === cat;
+      sec.querySelectorAll('.hub-card').forEach(function (c) {
+        var ok = okCat && (!q || c.dataset.search.toLowerCase().indexOf(q) !== -1);
+        c.hidden = !ok; if (ok) n++;
+      });
+      sec.hidden = n === 0; shown += n;
+    });
+    document.getElementById('hub-empty').classList.toggle('hidden', shown > 0);
+    var stars = document.getElementById('hub-stars');
+    if (stars) stars.hidden = !!q || cat !== 'all';
+  }
+  root.querySelectorAll('.hub-chip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      root.querySelectorAll('.hub-chip').forEach(function (x) { x.classList.remove('is-on'); });
+      b.classList.add('is-on'); cat = b.dataset.cat; apply();
+    });
+  });
+  search.addEventListener('input', apply);
+})();
+</script>
+{% endblock %}

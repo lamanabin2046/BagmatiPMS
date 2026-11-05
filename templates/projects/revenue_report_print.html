@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+{% load outputs %}
+<html lang="ne"><head><meta charset="UTF-8"><title>राजस्व ठेक्का प्रतिवेदन</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 landscape; margin: 12mm; }
+  body { font-family: 'Noto Sans Devanagari', sans-serif; font-size: 12px; color: #111; }
+  h2 { text-align: center; margin: 6px 0 2px; font-size: 16px; } p.c { text-align: center; margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #555; padding: 3px 5px; } th { background: #eee; }
+  td.r { text-align: right; white-space: nowrap; } tr.t td { font-weight: 700; background: #f6f6f6; }
+</style></head>
+<body onload="window.print()">
+  {% include 'includes/letterhead.html' with branch="(राजस्व शाखा)" %}
+  <h2>राजस्व ठेक्का प्रतिवेदन{% if fy_name %} — आ.व. {{ fy_name }}{% endif %}</h2>
+  <p class="c">मिति: {{ today|bs }}</p>
+  <table>
+    <tr><th>क्र.सं.</th><th>राजस्व स्रोत</th><th>वडा</th><th>प्रकार</th><th>ठेकेदार</th><th>अनुमानित</th><th>न्यूनतम कबोल</th><th>सम्झौता</th><th>असुल</th><th>विलम्ब शुल्क</th><th>बाँकी</th><th>बक्यौता</th><th>स्थिति</th></tr>
+    {% for r in rows %}<tr><td>{{ forloop.counter|npn }}</td><td>{{ r.s.name }}</td><td>{{ r.s.ward.name|default:''|npn }}</td><td>{{ r.s.get_category_display }}</td><td>{{ r.s.selected.name|default:'' }}</td>
+      <td class="r">{{ r.est|money:0 }}</td><td class="r">{{ r.min_bid|money:0 }}</td><td class="r">{{ r.contract|money:0 }}</td><td class="r">{{ r.collected|money:0 }}</td><td class="r">{{ r.late|money:0 }}</td><td class="r">{{ r.outstanding|money:0 }}</td><td class="r">{{ r.arrears|money:0 }}</td><td>{{ r.status }}</td></tr>{% endfor %}
+    <tr class="t"><td colspan="5">जम्मा ({{ total.n|npn }})</td><td class="r">{{ total.est|money:0 }}</td><td class="r">{{ total.min_bid|money:0 }}</td><td class="r">{{ total.contract|money:0 }}</td><td class="r">{{ total.collected|money:0 }}</td><td class="r">{{ total.late|money:0 }}</td><td class="r">{{ total.outstanding|money:0 }}</td><td class="r">{{ total.arrears|money:0 }}</td><td></td></tr>
+  </table>
+</body></html>

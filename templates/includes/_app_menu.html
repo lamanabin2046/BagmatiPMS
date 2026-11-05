@@ -1,0 +1,9 @@
+{% comment %}वार्षिक खरिद योजना — योजनाअनुसार खरिद विधि छनौट{% endcomment %}
+{% if 'app.view' in me.perms or 'app.manage' in me.perms or 'app.approve' in me.perms %}
+<li>
+  <a href="{% url 'app_list' %}" class="nav-link-item {% if current == 'app_list' or current == 'app_plan' %}active{% endif %}">
+    <i data-lucide="refresh-cw" class="nav-icon"></i>
+    <span class="sidebar-label">वार्षिक खरिद योजना</span>
+  </a>
+</li>
+{% endif %}

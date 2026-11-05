@@ -1,0 +1,31 @@
+{% extends 'projects/revenue_public_base.html' %}
+{% load outputs %}
+{% block body %}
+<h1 class="text-xl font-bold">राजस्व ठेक्काका बोलपत्र सूचना</h1>
+<section class="card overflow-hidden">
+  <div class="px-5 py-3 border-b bg-emerald-50 font-semibold text-emerald-800">खुला बोलपत्र ({{ active|length|npn }})</div>
+  <div class="divide-y">
+    {% for s in active %}
+    <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+      <div><p class="font-semibold">{{ s.name }}</p>
+        <p class="text-xs text-slate-500">{{ s.get_category_display }}{% if s.ward %} · वडा नं. {{ s.ward.name|npn }}{% endif %}{% if s.location %} · {{ s.location }}{% endif %} · {{ s.contract_months|npn }} महिना</p>
+        <p class="text-sm mt-1">न्यूनतम कबोल <b>रु. {{ s.min_bid|money:0 }}</b> · पेश गर्ने अन्तिम मिति <b>{{ s.bid_deadline|bs }}</b> · जमानत {{ s.bid_security_pct|floatformat:"-2"|npn }}%</p></div>
+      <div class="flex gap-2"><a href="{% url 'revenue_public_notice' s.id %}" class="btn2" target="_blank">सूचना हेर्नुहोस्</a>
+        {% if portal %}<a href="{% url 'revenue_portal_bid' s.id %}" class="btn">अनलाइन बोलपत्र</a>{% endif %}</div>
+    </div>
+    {% empty %}<p class="px-5 py-8 text-center text-slate-400">हाल खुला बोलपत्र छैन।</p>{% endfor %}
+  </div>
+</section>
+{% if closed %}
+<section class="card overflow-hidden">
+  <div class="px-5 py-3 border-b bg-slate-50 font-semibold">म्याद सकिएका (मूल्याङ्कनमा)</div>
+  <div class="divide-y text-sm">{% for s in closed %}<div class="px-5 py-3 flex justify-between gap-3"><span>{{ s.name }}</span><span class="text-slate-500">{{ s.bid_deadline|bs }}</span></div>{% endfor %}</div>
+</section>
+{% endif %}
+{% if awarded %}
+<section class="card overflow-hidden">
+  <div class="px-5 py-3 border-b bg-slate-50 font-semibold">ठेक्का स्वीकृत भएका</div>
+  <div class="divide-y text-sm">{% for s in awarded %}<div class="px-5 py-3 flex flex-wrap justify-between gap-3"><span>{{ s.name }} <span class="text-slate-400">· आ.व. {{ s.fiscalyear.name }}</span></span><span>{{ s.selected.name }} — रु. {{ s.selected.amount|money:0 }}</span></div>{% endfor %}</div>
+</section>
+{% endif %}
+{% endblock %}

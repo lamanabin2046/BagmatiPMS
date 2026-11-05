@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}मुख्य ड्यासबोर्ड{% endblock %}
+{% block content %}
+<div class="space-y-5">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold text-slate-800">मुख्य ड्यासबोर्ड</h1>
+      <p class="text-sm text-slate-500 mt-0.5">आ.व. {{ fy.name }}{% if fy.closed_at %} <span class="badge bg-slate-200 text-slate-700 ml-1"><i class="fas fa-lock"></i> बन्द भइसकेको</span>{% endif %}{% if scoped %} · तपाईंको वडा{% endif %} · बजेट, खर्च, खरिद विधि, वडा र राजस्व एकै ठाउँमा</p>
+    </div>
+    <div class="flex flex-wrap gap-2 items-center">
+      <form method="get"><select name="fiscalyear" class="form-select !w-auto" onchange="this.form.submit()">{% for x in fiscal_years %}<option value="{{ x.id }}" {% if x.id == fy.id %}selected{% endif %}>आ.व. {{ x.name }}{% if x.closed_at %} (बन्द){% endif %}</option>{% endfor %}</select></form>
+      {% if 'report.uc' in me.perms %}<a href="{% url 'audit_pack' %}?fiscalyear={{ fy.id }}" class="btn-secondary"><i class="fas fa-file-shield"></i> लेखापरीक्षण प्याकेट</a>{% endif %}
+      {% if can_close %}{% if fy.closed_at %}<a href="{% url 'yearend_report' fy.id %}" class="btn-secondary"><i class="fas fa-file-lines"></i> बन्द प्रतिवेदन</a>
+      {% else %}<a href="{% url 'yearend' %}?fiscalyear={{ fy.id }}" class="btn-secondary"><i class="fas fa-lock"></i> आ.व. बन्द</a>{% endif %}{% endif %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 xl:grid-cols-5 gap-4">
+    <div class="card p-5"><p class="text-sm text-slate-500">योजना</p><p class="text-2xl font-bold text-slate-800">{{ d.count|npn }}</p>
+      <p class="text-[11px] text-slate-400">{% if d.carried %}{{ d.carried|npn }} क्रमागत · {% endif %}{% if d.unassigned %}<a href="{% url 'app_list' %}" class="text-amber-600">{{ d.unassigned|npn }} को विधि नतोकिएको</a>{% endif %}</p></div>
+    <div class="card p-5"><p class="text-sm text-slate-500">विनियोजित बजेट</p><p class="text-2xl font-bold text-slate-800">रु. {{ d.allocated|money:0 }}</p></div>
+    <div class="card p-5"><p class="text-sm text-slate-500">खर्च (भुक्तानी)</p><p class="text-2xl font-bold text-emerald-700">रु. {{ d.spent|money:0 }}</p>
+      <div class="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width: {% if d.spent_pct > 100 %}100{% else %}{{ d.spent_pct }}{% endif %}%"></div></div>
+      <p class="text-[11px] text-slate-500 mt-1">{{ d.spent_pct|npn }}% खर्च</p></div>
+    <div class="card p-5"><p class="text-sm text-slate-500">प्रतिबद्धता (सम्झौता / लागत अनुमान)</p><p class="text-2xl font-bold text-brand-700">रु. {{ d.committed|money:0 }}</p><p class="text-[11px] text-slate-500">{{ d.committed_pct|npn }}% विनियोजनको</p></div>
+    <div class="card p-5"><p class="text-sm text-slate-500">बाँकी बजेट</p><p class="text-2xl font-bold {% if d.remaining < 0 %}text-rose-700{% else %}text-slate-800{% endif %}">रु. {{ d.remaining|money:0 }}</p></div>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-4">
+    <section class="card lg:col-span-2">
+      <div class="card-header"><h2 class="font-semibold text-slate-800"><i class="fas fa-diagram-project text-brand-600"></i> खरिद विधि अनुसार</h2>
+        <div class="flex gap-2 text-xs">{% for k, s in d.status.items %}<span class="badge {% if k == 'completed' or k == 'paid' %}bg-emerald-50 text-emerald-700{% elif k == 'running' %}bg-brand-50 text-brand-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ s.label }} {{ s.n|npn }}</span>{% endfor %}</div></div>
+      <div class="overflow-x-auto"><table class="w-full text-sm">
+        <thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="px-4 py-2.5 text-left font-medium">विधि</th><th class="px-3 py-2.5 text-right font-medium">योजना</th><th class="px-3 py-2.5 text-right font-medium">विनियोजित</th><th class="px-3 py-2.5 text-right font-medium">खर्च</th><th class="px-3 py-2.5 font-medium min-w-[8rem]">प्रगति</th><th class="px-3 py-2.5 text-right font-medium">सम्पन्न / चालु / सुरु नभएको</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for m in d.methods %}<tr>
+            <td class="px-4 py-2.5 font-medium">{{ m.label }}</td><td class="px-3 py-2.5 text-right">{{ m.n|npn }}</td>
+            <td class="px-3 py-2.5 text-right">{{ m.allocated|money:0 }}</td><td class="px-3 py-2.5 text-right">{{ m.spent|money:0 }}</td>
+            <td class="px-3 py-2.5"><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width: {% if m.pct > 100 %}100{% else %}{{ m.pct }}{% endif %}%"></div></div><span class="text-[11px] text-slate-500">{{ m.pct|npn }}%</span></td>
+            <td class="px-3 py-2.5 text-right text-xs"><span class="text-emerald-700">{{ m.completed|npn }}</span> / <span class="text-brand-700">{{ m.running|npn }}</span> / <span class="text-slate-500">{{ m.not_started|npn }}</span></td></tr>
+          {% empty %}<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">यस आ.व. मा योजना छैन।</td></tr>{% endfor %}
+        </tbody></table></div>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2 class="font-semibold text-slate-800"><i class="fas fa-bell text-rose-500"></i> ध्यान दिनुपर्ने</h2><a href="{% url 'my_work' %}" class="text-xs text-brand-700">मेरो काम ({{ work_total|npn }})</a></div>
+      <ul class="divide-y divide-slate-100 text-sm">
+        {% for i in attention %}<li><a href="{{ i.url }}" class="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50">
+          <i class="fas {{ i.icon }} {% if i.tone == 'urgent' %}text-rose-500{% else %}text-amber-500{% endif %} w-4"></i>
+          <span class="flex-1 min-w-0"><span class="block truncate">{{ i.label }}</span><span class="block text-[11px] text-slate-400">{{ i.group }}</span></span>
+          <span class="badge {% if i.tone == 'urgent' %}bg-rose-50 text-rose-700{% else %}bg-amber-50 text-amber-700{% endif %}">{{ i.count|npn }}</span></a></li>
+        {% empty %}<li class="px-4 py-8 text-center text-slate-400">अहिले केही बाँकी छैन।</li>{% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  {% if trend.series %}
+  <section class="card p-5">
+    <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+      <h2 class="font-semibold text-slate-800"><i class="fas fa-chart-column text-brand-600"></i> महिनावार भुक्तानी — आ.व. {{ fy.name|npn }}</h2>
+      <p class="text-[11px] text-slate-400">किस्ता, अग्रिम, रनिङ बिल र अन्तिम भुक्तानी भएको मितिअनुसार (कट्टी सहित कुल रकम)</p>
+    </div>
+    <div style="height: 260px"><canvas id="trendChart"></canvas></div>
+    {% if trend.undated or trend.outside %}<p class="text-[11px] text-amber-700 mt-2"><i class="fas fa-circle-info"></i>
+      {% if trend.undated %}भुक्तानी मिति नभरिएको रु. {{ trend.undated|money:0 }} चार्टमा छैन (कुल खर्चमा छ)।{% endif %}
+      {% if trend.outside %}अर्को आ.व. को मितिमा परेको रु. {{ trend.outside|money:0 }} पनि चार्टमा छैन।{% endif %}</p>{% endif %}
+  </section>
+  {% endif %}
+
+  <div class="grid lg:grid-cols-3 gap-4">
+    <section class="card lg:col-span-2 p-5">
+      <h2 class="font-semibold text-slate-800 mb-3"><i class="fas fa-map-location-dot text-brand-600"></i> वडा अनुसार बजेट र खर्च</h2>
+      <div style="height: 260px"><canvas id="wardChart"></canvas></div>
+      <div class="overflow-x-auto mt-4"><table class="w-full text-xs">
+        <thead class="text-slate-500"><tr><th class="py-1.5 text-left font-medium">वडा</th><th class="py-1.5 text-right font-medium">योजना</th><th class="py-1.5 text-right font-medium">सम्पन्न</th><th class="py-1.5 text-right font-medium">विनियोजित</th><th class="py-1.5 text-right font-medium">खर्च</th><th class="py-1.5 text-right font-medium">%</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">{% for w in d.wards %}<tr><td class="py-1.5">{% if w.name == 'पालिका' %}पालिका स्तर{% else %}वडा नं. {{ w.name|npn }}{% endif %}</td><td class="py-1.5 text-right">{{ w.n|npn }}</td><td class="py-1.5 text-right">{{ w.completed|npn }}</td><td class="py-1.5 text-right">{{ w.allocated|money:0 }}</td><td class="py-1.5 text-right">{{ w.spent|money:0 }}</td><td class="py-1.5 text-right {% if w.pct < 30 %}text-amber-600{% endif %}">{{ w.pct|npn }}%</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </section>
+    <div class="space-y-4">
+      {% if guarantees %}
+      <section class="card">
+        <div class="card-header"><h2 class="font-semibold text-slate-800"><i class="fas fa-building-columns text-amber-600"></i> म्याद सकिन लागेका बैंक ग्यारेन्टी</h2>
+          <span class="text-xs"><a href="{{ guarantees.pg_url }}" class="text-brand-700">PG</a> · <a href="{{ guarantees.apg_url }}" class="text-brand-700">APG</a> →</span></div>
+        <ul class="divide-y divide-slate-100 text-sm">
+          {% for g in guarantees.rows %}<li><a href="{{ g.url }}" class="flex items-center gap-3 px-5 py-2.5 hover:bg-slate-50">
+            <span class="flex-1 min-w-0">
+              <span class="block font-medium text-slate-800 truncate">{{ g.p.name }}</span>
+              <span class="block text-[11px] text-slate-500 truncate">{% if g.which == 'pg' %}कार्यसम्पादन (PG){% else %}अग्रिम (APG){% endif %} · {{ g.bank|default:'—' }} · रु. {{ g.amount|money:0 }}{% if g.party %} · {{ g.party }}{% endif %}</span>
+              <span class="block text-[11px] text-slate-400">म्याद {{ g.expiry_bs }}{% if g.extended %} (थपिएको){% endif %}</span>
+            </span>
+            <span class="badge shrink-0 {% if g.days <= 7 %}bg-rose-50 text-rose-700{% elif g.days <= 30 %}bg-amber-50 text-amber-700{% else %}bg-slate-100 text-slate-600{% endif %}">{% if g.days == 0 %}आज{% else %}{{ g.days|npn }} दिन{% endif %}</span></a></li>
+          {% empty %}<li class="px-5 py-6 text-center text-slate-400">बहाल बैंक ग्यारेन्टी छैन।</li>{% endfor %}
+        </ul>
+        {% if guarantees.expired %}<a href="{{ guarantees.expired_url }}" class="block px-5 py-2 text-xs text-rose-700 bg-rose-50/60 border-t border-rose-100 rounded-b-xl hover:bg-rose-50"><i class="fas fa-triangle-exclamation"></i> {{ guarantees.expired|npn }} ग्यारेन्टीको म्याद सकिइसक्यो (फिर्ता / थप नभएको) →</a>{% endif %}
+      </section>
+      {% endif %}
+      <section class="card">
+        <div class="card-header"><h2 class="font-semibold text-slate-800"><i class="fas fa-users text-brand-600"></i> हालै दर्ता भएका उपभोक्ता समिति</h2>
+          <a href="{% url 'usercommittee_workflow' %}" class="text-xs text-brand-700">सबै →</a></div>
+        <ul class="divide-y divide-slate-100 text-sm">
+          {% for uc in latest_ucs %}<li><a href="{% url 'usercommittee_workflow' %}?open={{ uc.project_id }}" class="block px-5 py-2.5 hover:bg-slate-50">
+            <span class="block font-medium text-slate-800 truncate">{{ uc.name }}</span>
+            <span class="block text-[11px] text-slate-500 truncate">{{ uc.project.name }}{% if uc.project.ward %} · वडा {{ uc.project.ward.name|npn }}{% endif %}{% if uc.chairman_name %} · अध्यक्ष {{ uc.chairman_name }}{% endif %}{% if uc.project.cost_estimate %} · रु. {{ uc.project.cost_estimate.total_cost|money:0 }}{% endif %}</span></a></li>
+          {% empty %}<li class="px-5 py-6 text-center text-slate-400">यस आ.व. मा उपभोक्ता समिति दर्ता भएको छैन।</li>{% endfor %}
+        </ul>
+      </section>
+      <section class="card p-5">
+        <h2 class="font-semibold text-slate-800 mb-3"><i class="fas fa-landmark text-emerald-600"></i> राजस्व आम्दानी</h2>
+        {% with r=d.revenue %}
+        <div class="space-y-1.5 text-sm">
+          <div class="flex justify-between"><span class="text-slate-500">राजस्व स्रोत</span><b>{{ r.n|npn }}</b></div>
+          <div class="flex justify-between"><span class="text-slate-500">सम्झौता रकम</span><b>रु. {{ r.contract|money:0 }}</b></div>
+          <div class="flex justify-between"><span class="text-slate-500">असुल</span><b class="text-emerald-700">रु. {{ r.collected|money:0 }}</b></div>
+          <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width: {% if r.pct > 100 %}100{% else %}{{ r.pct }}{% endif %}%"></div></div>
+          <div class="flex justify-between"><span class="text-slate-500">बाँकी</span><b>रु. {{ r.outstanding|money:0 }}</b></div>
+          {% if r.overdue %}<div class="flex justify-between text-rose-700"><span>म्याद नाघेको</span><b>रु. {{ r.overdue|money:0 }}</b></div>{% endif %}
+          {% if r.arrears %}<div class="flex justify-between text-rose-700"><span>बक्यौता</span><b>रु. {{ r.arrears|money:0 }}</b></div>{% endif %}
+        </div>
+        <a href="{% url 'revenue_list' %}?fiscalyear={{ fy.id }}" class="text-xs text-brand-700 mt-3 inline-block">राजस्व आम्दानी →</a>
+        {% endwith %}
+      </section>
+      <section class="card p-5">
+        <h2 class="font-semibold text-slate-800 mb-3"><i class="fas fa-shield-halved text-violet-600"></i> धरौटी (दायित्व)</h2>
+        <div class="space-y-1.5 text-sm">
+          <div class="flex justify-between"><span class="text-slate-500">फिर्ता बाँकी धरौटी</span><b>रु. {{ d.retention.held|money:0 }}</b></div>
+          <div class="flex justify-between"><span class="text-slate-500">योजना</span><b>{{ d.retention.n|npn }}</b></div>
+          {% if d.retention.due %}<div class="flex justify-between text-amber-700"><span>फिर्ता योग्य / प्रक्रियामा</span><b>{{ d.retention.due|npn }}</b></div>{% endif %}
+        </div>
+        <a href="{% url 'retention_list' %}" class="text-xs text-brand-700 mt-3 inline-block">धरौटी फिर्ता →</a>
+      </section>
+    </div>
+  </div>
+  <p class="text-[11px] text-slate-400">अङ्क खरिद तथा भुक्तानी प्रतिवेदनकै हिसाबबाट; क्रमागत योजनाको अघिल्ला आ.व. को खर्च यस आ.व. मा गनिँदैन। ५ मिनेटसम्म cache — फारम सुरक्षित हुँदा आफैँ ताजा हुन्छ।</p>
+</div>
+{% endblock %}
+{% block script %}
+{{ chart|json_script:"ward-data" }}
+{{ trend|json_script:"trend-data" }}
+<script>
+(function () {
+  var el = document.getElementById('wardChart');
+  if (!el || typeof Chart === 'undefined') return;
+  var d = JSON.parse(document.getElementById('ward-data').textContent);
+  new Chart(el, { type: 'bar', data: { labels: d.labels, datasets: [
+      { label: 'विनियोजित', data: d.allocated, backgroundColor: '#c7d2fe', borderRadius: 4 },
+      { label: 'खर्च', data: d.spent, backgroundColor: '#10b981', borderRadius: 4 } ] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } },
+      scales: { y: { ticks: { callback: function (v) { return (v / 100000).toLocaleString() + ' लाख'; } } } } } });
+})();
+(function () {
+  var el = document.getElementById('trendChart');
+  if (!el || typeof Chart === 'undefined') return;
+  var t = JSON.parse(document.getElementById('trend-data').textContent);
+  var colors = { uc: '#2a47a3', bid: '#10b981', quot: '#f59e0b', direct: '#8b5cf6', amanat: '#ec4899', sanstha: '#64748b' };
+  new Chart(el, { type: 'bar', data: { labels: t.labels, datasets: t.series.map(function (s) {
+      return { label: s.label, data: s.data, backgroundColor: colors[s.kind] || '#94a3b8', borderRadius: 3, stack: 'pay' }; }) },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } },
+      scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: function (v) { return (v / 100000).toLocaleString() + ' लाख'; } } } } } });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}पासवर्ड{% endblock %} · Project Management System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{% static 'assets/plugins/fontawesome/css/all.min.css' %}">
+  <style>
+    html, body { font-family: 'Inter', 'Noto Sans Devanagari', sans-serif; }
+    body { background: linear-gradient(-45deg, #1f358a, #2856eb, #3b76f6, #6098fa); min-height: 100vh; }
+    .inp { width: 100%; border: 1px solid #e2e8f0; background: #f8fafc; border-radius: .75rem; padding: .65rem .9rem; font-size: .9rem; }
+    .inp:focus { outline: 2px solid #93bbfd; border-color: #6098fa; }
+    .btn { width: 100%; background: #2856eb; color: #fff; font-weight: 600; font-size: .9rem; border-radius: .75rem; padding: .75rem; }
+    .btn:hover { background: #2143d8; }
+  </style>
+</head>
+<body class="flex items-center justify-center px-4 py-10">
+  <div class="w-full max-w-md">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-10" style="background:rgba(255,255,255,.96)">
+      <img src="{% static 'assets/img/nepal-govt-logo.png' %}" alt="" class="w-14 h-14 mx-auto mb-3">
+      <h1 class="text-lg font-bold text-slate-800 text-center">{{ palika.full_name }}</h1>
+      <p class="text-sm text-slate-500 text-center mt-1 mb-5">{% block subtitle %}{% endblock %}</p>
+      {% include 'accounts/_auth_messages.html' %}
+      {% block body %}{% endblock %}
+      <p class="text-center text-xs mt-6"><a href="{% url 'login' %}" style="color:#2143d8">← लगइन पेजमा फर्कनुहोस्</a></p>
+    </div>
+  </div>
+</body>
+</html>

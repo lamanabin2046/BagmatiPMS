@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load outputs nepali_filters %}
+{% block title %}वार्षिक खरिद योजना{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">वार्षिक खरिद योजना</h1>
+      <p class="text-sm text-slate-500 mt-0.5">योजना छानेर खरिद विधि तोक्नुहोस् — कानुनी सीमा र आधार आफैँ जाँचिन्छ। विधि तोकेपछि मात्र योजना त्यस विधिको कार्यप्रवाहमा देखिन्छ।</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {% if can_approve and counts.draft %}
+      <button type="button" class="btn-primary" onclick="document.getElementById('approve-box').classList.toggle('hidden')"><i class="fas fa-check-double"></i> अनुमोदन ({{ counts.draft|npn }})</button>
+      {% endif %}
+      <a href="?{{ qs }}{% if qs %}&{% endif %}export=xlsx" hx-boost="false" class="btn-secondary"><i class="fas fa-file-excel text-emerald-600"></i> Excel</a>
+      {% if can_limits %}<a href="{% url 'app_limits' %}" class="btn-secondary"><i class="fas fa-scale-balanced"></i> सीमा सेटिङ</a>{% endif %}
+    </div>
+  </div>
+
+  {% if can_approve and counts.draft %}
+  <form method="post" id="approve-box" class="hidden card p-4 flex flex-wrap items-end gap-3 border-brand-200 bg-brand-50/40">
+    {% csrf_token %}<input type="hidden" name="action" value="approve"><input type="hidden" name="fiscalyear" value="{{ fy.id }}">
+    <div class="flex-1 min-w-[16rem]"><label class="form-label">स्वीकृत निर्णय नं. / मिति <span class="text-rose-500">*</span></label>
+      <input name="approval_ref" class="form-input" required placeholder="जस्तै कार्यपालिका निर्णय नं. ५, २०८३-०४-१०"></div>
+    <p class="text-xs text-slate-600 basis-full md:basis-auto">{{ fy.name }} का स्वीकृत हुन बाँकी सबै ({{ counts.draft|npn }}) खरिद योजना स्वीकृत हुनेछन्।</p>
+    <button class="btn-primary"><i class="fas fa-check"></i> स्वीकृत गर्नुहोस्</button>
+  </form>
+  {% endif %}
+
+  {# ---------- कानुनी आवश्यकता ---------- #}
+  <div class="grid md:grid-cols-3 gap-3">
+    <div class="card p-4"><p class="text-xs text-slate-500">यस आ.व.को जम्मा खरिद (अनुमानित)</p>
+      <p class="text-xl font-bold text-slate-800">रु. {{ total|money:0 }}</p></div>
+    <div class="card p-4 {% if app_required %}bg-amber-50/60{% endif %}"><p class="text-xs text-slate-500">वार्षिक खरिद योजना (APP)</p>
+      <p class="text-sm font-semibold {% if app_required %}text-amber-800{% else %}text-slate-700{% endif %}">
+        {% if app_required %}अनिवार्य — वार्षिक खरिद रु. {{ L.app_required_above|money:0 }} भन्दा बढी{% else %}अनिवार्य होइन (रु. {{ L.app_required_above|money:0 }} सम्म){% endif %}</p></div>
+    <div class="card p-4 {% if mpp_required %}bg-amber-50/60{% endif %}"><p class="text-xs text-slate-500">खरिद गुरुयोजना (MPP)</p>
+      <p class="text-sm font-semibold {% if mpp_required %}text-amber-800{% else %}text-slate-700{% endif %}">
+        {% if mpp_required %}आवश्यक — बहुवर्षीय योजना वा वार्षिक खरिद रु. {{ L.mpp_required_above|money:0 }} भन्दा बढी{% else %}आवश्यक छैन{% endif %}</p></div>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+    {% for m in by_method %}
+    <a href="?fiscalyear={{ fy.id }}&method={{ m.code }}" class="card p-3 hover:shadow-soft {% if f.method == m.code %}ring-2 ring-brand-500{% endif %}">
+      <p class="text-[11px] text-slate-500"><i class="fas {{ m.icon }} text-brand-600"></i> {{ m.label }}</p>
+      <p class="text-lg font-bold text-slate-800">{{ m.count|npn }} <span class="text-xs font-normal text-slate-400">योजना</span></p>
+      <p class="text-[11px] text-slate-500">रु. {{ m.amount|money:0 }}</p>
+    </a>
+    {% endfor %}
+  </div>
+
+  <form method="get" class="card p-4" data-live-filter>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
+      <div><label class="form-label">आर्थिक वर्ष</label>
+        <select name="fiscalyear" class="form-select">{% for y in fiscal_years %}<option value="{{ y.id }}" {% if fy.id == y.id %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
+      <div><label class="form-label">वडा</label>
+        <select name="ward" class="form-select"><option value="">सबै वडा</option>
+          {% for w in all_wards %}<option value="{{ w.id }}" {% if f.ward == w.id|stringformat:'s' %}selected{% endif %}>वडा नं. {{ w.name }}</option>{% endfor %}</select></div>
+      <div><label class="form-label">खरिद विधि</label>
+        <select name="method" class="form-select"><option value="">सबै</option>
+          {% for c, m in methods %}<option value="{{ c }}" {% if f.method == c %}selected{% endif %}>{{ m.label }}</option>{% endfor %}</select></div>
+      <div><label class="form-label">स्थिति</label>
+        <select name="status" class="form-select"><option value="">सबै</option>
+          {% for k, v in statuses %}<option value="{{ k }}" {% if f.status == k %}selected{% endif %}>{{ v }} ({{ counts|get_item:k|npn }})</option>{% endfor %}</select></div>
+      <div><label class="form-label">खोज्नुहोस् (योजनाको नाम)</label>
+        <input type="search" name="q" value="{{ f.q }}" class="form-input" placeholder="योजनाको नाम वा ठेगाना"></div>
+    </div>
+  </form>
+
+  <section class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-[13px]">
+        <thead><tr class="bg-slate-50 text-[11px] text-slate-500">
+          <th class="px-3 py-3 text-left font-medium">क्र.सं.</th>
+          <th class="px-3 py-3 text-left font-medium min-w-[18rem]">योजनाको नाम</th>
+          <th class="px-3 py-3 text-left font-medium">वडा</th>
+          <th class="px-3 py-3 text-right font-medium">बजेट (रु.)</th>
+          <th class="px-3 py-3 text-left font-medium min-w-[11rem]">खरिद विधि</th>
+          <th class="px-3 py-3 text-center font-medium">MPP</th>
+          <th class="px-3 py-3 text-left font-medium">APP स्थिति</th>
+          <th class="px-3 py-3"></th>
+        </tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in rows %}
+          <tr>
+            <td class="px-3 py-2.5 text-slate-400">{{ forloop.counter|npn }}</td>
+            <td class="px-3 py-2.5"><span class="font-medium text-slate-800">{{ r.p.name }}</span>
+              {% if r.nature %}<span class="block text-[11px] text-slate-400">{{ r.nature }}{% if r.cost != r.p.budget %} · अनुमानित रु. {{ r.cost|money:0 }}{% endif %}</span>{% endif %}</td>
+            <td class="px-3 py-2.5">{{ r.p.ward.name|default:'—'|npn }}</td>
+            <td class="px-3 py-2.5 text-right whitespace-nowrap">{{ r.p.budget|money }}</td>
+            <td class="px-3 py-2.5">{% if r.method %}<span class="inline-flex items-center gap-1.5"><i class="fas {{ r.icon }} text-brand-600"></i> {{ r.method }}</span>{% else %}<span class="text-amber-700">— नतोकिएको —</span>{% endif %}</td>
+            <td class="px-3 py-2.5 text-center">{% if r.mpp %}<span class="badge bg-violet-50 text-violet-700">बहुवर्षीय</span>{% else %}—{% endif %}</td>
+            <td class="px-3 py-2.5 whitespace-nowrap">
+              <span class="badge {% if r.status == 'approved' %}bg-emerald-50 text-emerald-700{% elif r.status == 'draft' %}bg-amber-50 text-amber-800{% elif r.status == 'none' %}bg-rose-50 text-rose-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ r.status_label }}</span>
+              {% if r.plan.approval_ref %}<span class="block text-[10px] text-slate-400">{{ r.plan.approval_ref }}</span>{% endif %}</td>
+            <td class="px-3 py-2.5 text-right"><a href="{% url 'app_plan' r.p.id %}" class="btn-primary !py-1.5 !px-3 text-xs whitespace-nowrap">खरिद योजना</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="px-3 py-10 text-center text-slate-400">कुनै योजना भेटिएन।</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

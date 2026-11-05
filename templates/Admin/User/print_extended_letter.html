@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+{% load static %}
+{% load letters %}
+{% load nepali_date %}
+{% load nepali_filters %}
+
+<html lang="ne">
+<head>
+  <meta charset="UTF-8">
+  <title>म्याद थप पत्र</title>
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+
+  <style>
+    body {
+      font-family: "Kalimati", "Mangal", Arial, sans-serif;
+      margin: 30px;
+      color: #000;
+    }
+
+    /* ================= LETTER HEAD ================= */
+    .letterhead {
+      border-bottom: 3px solid darkred;
+      padding-bottom: 10px;
+      margin-bottom: 25px;
+    }
+
+    .letterhead h1 {
+      color: darkred;
+      font-weight: 700;
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .letterhead h2 {
+      color: darkred;
+      font-size: 18px;
+      margin: 2px 0;
+    }
+
+    .letterhead p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .logo {
+      max-height: 90px;
+    }
+
+    /* ================= META ================= */
+    .meta {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .meta .right {
+      text-align: right;
+    }
+
+    /* ================= CONTENT ================= */
+    .subject {
+      text-align: center;
+      margin: 25px 0 15px;
+      font-weight: bold;
+      text-decoration: underline;
+    }
+
+    .content {
+      font-size: 15px;
+      line-height: 1.9;
+      text-align: justify;
+    }
+
+    /* ================= SIGNATURE ================= */
+    .signature {
+      margin-top: 60px;
+      text-align: right;
+      font-size: 14px;
+    }
+
+    @media print {
+      body {
+        margin: 15mm;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ================= LETTER HEAD ================= -->
+{% include 'includes/letterhead.html' with branch="(योजना शाखा)" %}
+{% editable_letter "user.print_extended_letter" "म्याद थप पत्र" %}
+
+<!-- ================= META ================= -->
+<div class="row meta">
+  <div class="col-6">
+    <p><strong>पत्र संख्या:</strong>
+      {{ project.fiscalyear.name|to_nepali_number }}
+    </p>
+    <p><strong>चलानी नं:</strong> __________</p>
+  </div>
+
+  <div class="col-6 right">
+    <p><strong>मिति:</strong> {{ today_nepali|nepali_date }}</p>
+  </div>
+</div>
+
+<!-- ================= SUBJECT ================= -->
+<p class="subject">
+  विषयः म्याद थप गरिएको सम्बन्धमा ।
+</p>
+
+<!-- ================= ADDRESS ================= -->
+<p>
+  श्री {{ usercommittee.name }} <br>
+  {{ project.address }}
+</p>
+
+<!-- ================= CONTENT ================= -->
+<div class="content">
+  <p>
+    प्रस्तुत विषयमा यस
+    {% include 'includes/officename.html' %}
+    को चालु आ.ब.
+    {{ project.fiscalyear.name|to_nepali_number }}
+    को {{ palika.assembly }}बाट स्वीकृत
+    {{ project.ward.name|to_nepali_number }} नं. वडाको
+    वडा/पालिका स्तरीय योजना
+    <strong>{{ project.name }}</strong>
+    ल.ई. रकम रु.
+    {{ cost_estimate.cost_estimate|floatformat:0|to_nepali_number }}/-
+    (अक्षरेपी
+    {{ cost_estimate.cost_estimate|floatformat:0|to_devanagari_words }})
+    सञ्चालनका लागि
+    यस कार्यालयसँग मिति
+    {{ start_date_nepali|nepali_date }}
+    मा सम्झौता भएकोमा
+    {{ accomplish_date_nepali|nepali_date }}
+    भित्र कार्य सम्पन्न गर्नु पर्नेमा
+    समयमै सम्पन्न हुन नसकेको भनी
+    प्राप्त निवेदन अनुसार
+    मिति
+    {{ extended_date_nepali|nepali_date }}
+    सम्म कार्य सम्पन्न गर्न
+    म्याद थप गरिएको व्यहोरा
+    जानकारी गराइन्छ।
+  </p>
+</div>
+
+<!-- ================= SIGNATURE ================= -->
+<div class="signature">
+  {% include 'includes/cao.html' %}
+</div>
+
+<!-- ================= AUTO PRINT ================= -->
+{% endeditable_letter %}
+<script>
+  window.__letterPrint = function () {
+    window.print();
+    setTimeout(function () {
+      window.location.href = "/UserCommittee/Workflow/";
+    }, 3000);
+  };
+</script>
+
+</body>
+</html>

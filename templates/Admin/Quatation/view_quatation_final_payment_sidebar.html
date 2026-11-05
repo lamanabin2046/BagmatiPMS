@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load nepali_date %}
+{% load nepali_filters %}
+{% block title %}अन्तिम विल विवरणहरु{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">Quotation Details</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>योजना/आयोजनाको विवरण</th>
+            <th>लागत अनुमान</th>
+            <th>सम्झौता रकम</th>
+            <th>निर्माण व्यवसायी</th>
+            <th>मुल्यांकन रकम</th>
+            <th>रिटेन्सन कट्टी</th>
+            <th>कर कट्टी</th>
+            <th>अन्तिम भुक्तानी</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in data %}
+          <tr>
+            <td>{{ i.project_name }}</td>
+            <td>{{ i.cost_estimate|to_nepali_number }}</td>
+            <td>{{ i.lowest_bidded_price|to_nepali_number }}</td>
+            <td>{{ i.lowest_bidder_firm|to_nepali_number }}</td>
+            <td>{{ i.total_valuation|to_nepali_number }}</td>
+            <td>{{ i.retention|to_nepali_number }}</td>
+            <td>{{ i.tax_deduction|to_nepali_number }}</td>
+            <td>{{ i.final_payment|to_nepali_number }}</td>
+            <td>
+              <a href="{% url 'print_quatation_final_payment_tippani' i.id %}" class="btn-chip-rose">
+                <i class="fas fa-pen"></i> टिप्पणी प्रिन्ट
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

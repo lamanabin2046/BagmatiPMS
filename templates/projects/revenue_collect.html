@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}राजस्व असुली{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <p class="text-xs font-medium text-brand-700"><i class="fas fa-landmark"></i> {{ module_label }}</p>
+      <h1 class="text-lg md:text-xl font-bold text-slate-800 mt-0.5"><i class="fas fa-coins text-emerald-600"></i> राजस्व असुली (किस्ता)</h1>
+      <p class="text-sm text-slate-500 mt-0.5">{{ s.name }} · {{ s.selected.name }} · सम्झौता रु. {{ s.contract_amount|money:0 }}</p>
+    </div>
+    <a href="{{ back }}" class="btn-secondary"><i class="fas fa-arrow-left"></i> कार्यप्रवाहमा फर्कनुहोस्</a>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div class="card p-3"><p class="text-[11px] text-slate-500">सम्झौता</p><p class="font-semibold">रु. {{ ms.due|money:0 }}</p></div>
+    <div class="card p-3"><p class="text-[11px] text-slate-500">असुल भएको</p><p class="font-semibold text-emerald-700">रु. {{ ms.paid|money:0 }}</p></div>
+    <div class="card p-3"><p class="text-[11px] text-slate-500">बाँकी</p><p class="font-semibold text-brand-700">रु. {{ ms.outstanding|money:0 }}</p></div>
+    <div class="card p-3 {% if ms.overdue %}bg-rose-50/60{% endif %}"><p class="text-[11px] text-slate-500">म्याद नाघेको</p><p class="font-semibold text-rose-700">रु. {{ ms.overdue_amount|money:0 }}</p></div>
+  </div>
+  {% if errors %}<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 space-y-0.5">{% for e in errors %}<p class="text-sm text-rose-700"><i class="fas fa-circle-exclamation"></i> {{ e }}</p>{% endfor %}</div>{% endif %}
+  <div class="card overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-xs text-slate-500"><tr>
+        <th class="px-3 py-2.5 text-left font-medium">किस्ता</th><th class="px-3 py-2.5 text-left font-medium">बुझाउनुपर्ने मिति</th>
+        <th class="px-3 py-2.5 text-right font-medium">रकम</th><th class="px-3 py-2.5 text-right font-medium">असुल</th>
+        <th class="px-3 py-2.5 text-left font-medium min-w-[30rem]">असुली दर्ता / रसिद</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for i in ms.instalments %}
+        <tr class="{% if i in ms.overdue %}bg-rose-50/50{% elif i.paid_amount >= i.amount %}bg-emerald-50/40{% endif %}">
+          <td class="px-3 py-2.5 font-medium">{{ i.n|to_nepali_number }}</td>
+          <td class="px-3 py-2.5">{{ i.due_date|bs }}{% if i in ms.overdue %}<span class="block text-[11px] text-rose-600">म्याद नाघेको</span>{% endif %}</td>
+          <td class="px-3 py-2.5 text-right">{{ i.amount|money:0 }}</td>
+          <td class="px-3 py-2.5 text-right">{{ i.paid_amount|money:0 }}</td>
+          <td class="px-3 py-2">
+            {% for p in i.payments.all %}
+              <div class="text-emerald-700 text-xs mb-1"><i class="fas fa-check"></i> {{ p.date|bs }} · रु. {{ p.amount|money:0 }}{% if p.late_fee %} + विलम्ब शुल्क {{ p.late_fee|money:0 }}{% endif %} · रसिद {{ p.receipt_no }}
+                {% if can_print %}<a href="{% url 'revenue_print' s.id 'receipt' %}?p={{ p.id }}" target="_blank" rel="noopener" class="ml-1 text-brand-700"><i class="fas fa-print"></i> रसिद</a>{% endif %}</div>
+            {% endfor %}
+            {% if i.paid_amount < i.amount %}
+            <form method="post" class="flex items-center gap-1.5" style="flex-wrap:wrap">
+              {% csrf_token %}<input type="hidden" name="instalment" value="{{ i.id }}"><input type="hidden" name="next" value="{{ next }}">
+              <input name="paid_amount" title="असुल रकम" value="{% if d.instalment == i.id|stringformat:'s' %}{{ d.paid_amount }}{% else %}{{ i.amount|sub:i.paid_amount|floatformat:0 }}{% endif %}" class="form-input !py-1.5" style="width:8rem" inputmode="decimal" placeholder="रकम">
+              <input name="paid_on" title="असुल मिति" value="{% if d.instalment == i.id|stringformat:'s' %}{{ d.paid_on }}{% else %}{{ today_bs }}{% endif %}" class="form-input nepali-date !py-1.5" style="width:8rem" autocomplete="off">
+              <input name="late_fee" title="विलम्ब शुल्क" value="{% if d.instalment == i.id|stringformat:'s' %}{{ d.late_fee }}{% elif i.fee_now %}{{ i.fee_now|floatformat:0 }}{% endif %}" class="form-input !py-1.5" style="width:7rem" inputmode="decimal" placeholder="विलम्ब शुल्क">
+              <input name="receipt_no" value="{% if d.instalment == i.id|stringformat:'s' %}{{ d.receipt_no }}{% endif %}" class="form-input !py-1.5" style="width:7rem" placeholder="रसिद नं.">
+              <button class="btn-chip-brand"><i class="fas fa-floppy-disk"></i> असुल</button>
+              {% if i.fee_now %}<input name="fee_reason" class="form-input !py-1.5" style="width:14rem" placeholder="विलम्ब शुल्क कम लिए कारण" value="{% if d.instalment == i.id|stringformat:'s' %}{{ d.fee_reason }}{% endif %}">{% endif %}
+            </form>
+            {% if i.fee_now %}<p class="text-[11px] text-rose-600 mt-1">आज असुल गर्दा विलम्ब शुल्क रु. {{ i.fee_now|money:0 }} ({{ L.rev_late_fee_pct|floatformat:"-2"|to_nepali_number }}% प्रति महिना)</p>{% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="text-xs text-slate-500">SuTRA मा राजस्व खातामा आम्दानी बाँधेपछि रसिद नं. यहाँ दर्ता गर्नुहोस् — असुलीको हिसाब मिलान (reconciliation) यसैबाट हुन्छ।</p>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}खरिद विधि सीमा{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-4">
+  <div>
+    <h1 class="text-xl md:text-2xl font-bold text-slate-800">खरिद विधिका रकम सीमा</h1>
+    <p class="text-sm text-slate-500 mt-0.5">वार्षिक खरिद योजनामा विधि छान्दा यही सीमा जाँचिन्छ। सार्वजनिक खरिद ऐन / नियमावली संशोधन भएमा यहाँ मिलाउनुहोस्।</p>
+  </div>
+  <form method="post" class="card p-5 space-y-4">
+    {% csrf_token %}
+    <div class="grid sm:grid-cols-2 gap-4">
+      {% for k, label, v in fields %}
+      <div><label class="form-label">{{ label }} (रु.)</label>
+        <input name="{{ k }}" value="{{ v|floatformat:'0' }}" class="form-input" inputmode="decimal" required>
+        <p class="text-[11px] text-slate-400 mt-0.5">हाल: रु. {{ v|money:0 }}</p></div>
+      {% endfor %}
+    </div>
+    <div class="rounded-xl border border-slate-200 p-4">
+      <p class="font-semibold text-slate-700 text-sm">कन्टिन्जेन्सी कट्टी दर (लागत अनुमानको %)</p>
+      <p class="text-[11px] text-slate-500 mb-3">लागत अनुमान / आह्वान फारममा यही दरले कन्टिन्जेन्सी आफैँ हिसाब हुन्छ (फारममा हातैले बदल्न पनि मिल्छ)। पहिले भरिसकेका योजनाको रकम बदलिँदैन।</p>
+      <div class="grid sm:grid-cols-3 gap-4">
+        {% for k, label, v in contingency_fields %}
+        <div><label class="form-label">{{ label }} (%)</label>
+          <input name="{{ k }}" value="{{ v|floatformat:'-2' }}" class="form-input" inputmode="decimal" required></div>
+        {% endfor %}
+      </div>
+      <p class="text-[11px] text-slate-400 mt-2">सोझै खरिद, अमानत र संस्था/समितिमा कन्टिन्जेन्सी कट्टी हुँदैन।</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 p-4">
+      <p class="font-semibold text-slate-700 mb-3 text-sm">बोलपत्र सम्झौता: ढिलाइ हर्जाना, भेरिएसन र म्याद थप</p>
+      <div class="grid sm:grid-cols-2 gap-4">
+        {% for k, label, v, unit in contract_fields %}
+        <div><label class="form-label">{{ label }} ({{ unit }})</label>
+          <input name="{{ k }}" value="{{ v }}" class="form-input" inputmode="decimal" required></div>
+        {% endfor %}
+      </div>
+      <p class="text-[11px] text-slate-500 mt-2">भेरिएसन (ऐन दफा ५४, २०८३): ५% सम्म तृतीय, १०% सम्म द्वितीय, १५% सम्म प्रथम श्रेणीको कार्यालय प्रमुख; १५% भन्दा बढी विभागीय प्रमुख — पालिकाको कार्यालय प्रमुखको श्रेणीअनुसार प्रतिशत राख्नुहोस्। ढिलाइ हर्जाना सम्झौताको विशेष शर्त (SCC) अनुसार मिलाउनुहोस्।</p>
+    </div>
+    <label class="flex items-start gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
+      <input type="checkbox" name="require_approved_plan" value="1" class="mt-0.5" {% if L.require_approved_plan %}checked{% endif %}>
+      <span><b>खरिद योजना स्वीकृत नभई खरिद प्रक्रिया सुरु गर्न नदिने</b>
+        <span class="block text-xs text-slate-500">समिति गठन, बोलपत्र आह्वान, दरभाउपत्र आह्वान, सोझै खरिद / अमानत / संस्थाको लागत अनुमान — स्वीकृत खरिद योजना चाहिन्छ। पहिले नै सुरु भइसकेका योजनालाई असर गर्दैन।</span></span>
+    </label>
+    <div class="rounded-xl border border-slate-200 p-4 space-y-3">
+      <p class="font-semibold text-slate-700 text-sm">राजस्व आम्दानी (राजस्व ठेक्का)</p>
+      <div class="grid sm:grid-cols-3 gap-3">
+        <div><label class="form-label">विलम्ब शुल्क (% प्रति महिना)</label><input name="rev_late_fee_pct" value="{{ L.rev_late_fee_pct }}" class="form-input" inputmode="decimal">
+          <p class="text-[11px] text-slate-400 mt-1">० राखे लाग्दैन; अधुरो महिना पूरा गनिन्छ</p></div>
+        <div><label class="form-label">किस्ता सम्झाउने (दिन अगाडि)</label><input name="rev_reminder_days" value="{{ L.rev_reminder_days }}" class="form-input" inputmode="numeric"></div>
+        <div><label class="form-label">स्वीकृतपछि सम्झौता गर्ने म्याद (दिन)</label><input name="rev_sign_days" value="{{ L.rev_sign_days }}" class="form-input" inputmode="numeric"></div>
+      </div>
+      <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="rev_portal" value="1" class="mt-0.5" {% if L.rev_portal %}checked{% endif %}>
+        <span><b>अनलाइन बोलपत्र खुला गर्ने</b><span class="block text-xs text-slate-500">सार्वजनिक पेज <code>/Projects/Public/Revenue/</code> बाट बोलपत्रदाताले दर्ता भई सिलबन्दी बोलपत्र पेश गर्न सक्छन्; सूचना पेज सधैँ खुला रहन्छ।</span></span></label>
+    </div>
+    <div class="rounded-xl border border-slate-200 p-4 space-y-3">
+      <p class="font-semibold text-slate-700 text-sm">साइट फोटो (मोबाइल) र नागरिक पेज</p>
+      <div class="grid sm:grid-cols-3 gap-3">
+        <div><label class="form-label">योजना स्थलबाट अधिकतम दूरी (मिटर)</label><input name="field_max_distance" value="{{ L.field_max_distance }}" class="form-input" inputmode="numeric">
+          <p class="text-[11px] text-slate-400 mt-1">योभन्दा टाढाबाट खिचेको फोटो कारण नलेखी सुरक्षित हुँदैन</p></div>
+      </div>
+      <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="citizen_portal" value="1" class="mt-0.5" {% if L.citizen_portal %}checked{% endif %}>
+        <span><b>नागरिक पेज खुला गर्ने</b><span class="block text-xs text-slate-500">सार्वजनिक पेज <code>/Projects/Public/Projects/</code> — योजनाको नाम, वडा, बजेट, सम्झौता, भुक्तानी, प्रगति र सार्वजनिक फोटो (लगइन नचाहिने)। व्यक्तिगत विवरण (फोन, नागरिकता) देखिँदैन।</span></span></label>
+    </div>
+    <div class="rounded-xl border border-slate-200 p-4 space-y-3">
+      <p class="font-semibold text-slate-700 text-sm">फर्मको PAN — आन्तरिक राजस्व विभाग (IRD) बाट विवरण</p>
+      <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="ird_lookup_enabled" value="1" class="mt-0.5" {% if L.ird_lookup_enabled %}checked{% endif %}>
+        <span><b>फर्म दर्ता गर्दा PAN बाट IRD विवरण ल्याउने</b>
+        <span class="block text-xs text-slate-500">IRD को आधिकारिक API छैन — ird.gov.np/pan-search पेजकै भित्री सेवा प्रयोग हुन्छ। सर्भरबाट इन्टरनेट चाहिन्छ; IRD ले वेबसाइट बदलेमा नचल्न सक्छ, त्यसबेला विवरण हातैले भर्नुहोस्।</span></span></label>
+      <div class="grid sm:grid-cols-2 gap-3">
+        <div><label class="form-label">PAN खोज पेज</label><input name="ird_page_url" value="{{ L.ird_page_url }}" class="form-input text-xs"></div>
+        <div><label class="form-label">विवरण ल्याउने URL</label><input name="ird_api_url" value="{{ L.ird_api_url }}" class="form-input text-xs"></div>
+      </div>
+    </div>
+    <div><label class="form-label">कानुनी आधार / टिप्पणी</label>
+      <textarea name="note" rows="3" class="form-input">{{ L.note }}</textarea></div>
+    <div class="rounded-xl bg-slate-50 p-3 text-xs text-slate-600 leading-relaxed">
+      <p class="font-semibold text-slate-700 mb-1">रकम सीमा नभएका कानुनी शर्त (प्रणालीले आफैँ जाँच्छ)</p>
+      <p>• उपभोक्ता समिति (ऐन दफा ४४): निर्माण कार्य मात्र; जटिल प्राविधिक क्षमता नचाहिने, स्थानीय स्रोत/सीप, रोजगारी, मर्मत सम्भार गर्न सक्ने आदि कम्तीमा एउटा आधार।</p>
+      <p>• अमानत (दफा ४५): नियमित मर्मत/सरसफाइ, सेवा सञ्चालनसँग जोडिएको, जरुरी, जोखिमपूर्ण काम।</p>
+      <p>• संस्था / समिति (दफा ४६): सचेतना, तालिम, सशक्तीकरण जस्ता अन्य सेवा।</p>
+      <p>• मालसामानमा उपभोक्ता समिति / अमानत / संस्था नमिल्ने; परामर्श सेवामा बोलपत्र (प्रस्ताव) वा सोझै खरिद मात्र।</p>
+    </div>
+    <div class="flex justify-end"><button class="btn-primary"><i class="fas fa-floppy-disk"></i> सुरक्षित गर्नुहोस्</button></div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% comment %}उपभोक्ता समितिको बैंक खाता — भुक्तानी (किस्ता / अन्तिम) यसैमा जान्छ। uc: UserCommittee वा None{% endcomment %}
+<div>
+  <h2 class="section-title"><i class="fas fa-building-columns"></i> बैंक खाता </h2>
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div><label class="form-label">बैंक</label><input name="bank_name" class="form-input" value="{% if form %}{{ form.bank_name }}{% elif uc %}{{ uc.bank_name }}{% endif %}" placeholder="जस्तै: राष्ट्रिय वाणिज्य बैंक"></div>
+    <div><label class="form-label">शाखा</label><input name="bank_branch" class="form-input" value="{% if form %}{{ form.bank_branch }}{% elif uc %}{{ uc.bank_branch }}{% endif %}"></div>
+    <div><label class="form-label">खाता नम्बर</label><input name="account_number" class="form-input" value="{% if form %}{{ form.account_number }}{% elif uc %}{{ uc.account_number }}{% endif %}"></div>
+    <div><label class="form-label">खाताको नाम</label><input name="account_name" class="form-input" value="{% if form %}{{ form.account_name }}{% elif uc %}{{ uc.account_name }}{% endif %}" placeholder="खाली छोडे समितिकै नाम"></div>
+    <div><label class="form-label">खाता खोलेको मिति</label><input name="account_opened_date" class="form-input nepali-date" value="{% if form %}{{ form.account_opened_date }}{% else %}{{ bank_opened_bs|default:'' }}{% endif %}" placeholder="YYYY-MM-DD"></div>
+  </div>
+</div>

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}बोलपत्र जमानत दर्ता{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <p class="text-xs font-medium text-brand-700"><i class="fas fa-landmark"></i> राजस्व आम्दानी</p>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">बोलपत्र जमानत दर्ता</h1>
+      <p class="text-sm text-slate-500 mt-0.5">राखिएको जमानत रु. {{ total_held|money:0 }} · असफल बोलपत्रदाताको फिर्ता, सम्झौता नगर्नेको जफत</p>
+    </div>
+    <a href="{% url 'revenue_list' %}" class="btn-secondary"><i class="fas fa-arrow-left"></i> राजस्व आम्दानी</a>
+  </div>
+  <form method="get" class="flex gap-2">
+    <select name="status" class="form-select !w-auto" onchange="this.form.submit()"><option value="">सबै स्थिति</option>
+      {% for k, v in statuses %}<option value="{{ k }}" {% if f.status == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+  </form>
+  <form method="post" class="card overflow-x-auto">
+    {% csrf_token %}
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-xs text-slate-500"><tr>
+        <th class="px-3 py-2.5"></th><th class="px-3 py-2.5 text-left font-medium">राजस्व स्रोत</th><th class="px-3 py-2.5 text-left font-medium">बोलपत्रदाता</th>
+        <th class="px-3 py-2.5 text-left font-medium">प्रकार · नं.</th><th class="px-3 py-2.5 text-right font-medium">रकम</th><th class="px-3 py-2.5 text-left font-medium">स्थिति</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for b in rows %}
+        <tr class="{% if b.security_status == 'forfeited' %}bg-rose-50/50{% elif b.security_status == 'returned' %}text-slate-400{% endif %}">
+          <td class="px-3 py-2">{% if can_manage and b.security_status == 'held' and not b.defaulted %}{% if b.source.selected_id != b.id or b.source.agreement_date %}<input type="checkbox" name="bid" value="{{ b.id }}" checked>{% endif %}{% endif %}</td>
+          <td class="px-3 py-2"><a href="{% url 'revenue_list' %}?open={{ b.source_id }}" class="text-brand-700">{{ b.source.name }}</a><span class="block text-[11px] text-slate-400">आ.व. {{ b.source.fiscalyear.name }} · {{ b.round|to_nepali_number }} औँ आह्वान</span></td>
+          <td class="px-3 py-2">{{ b.name }}{% if b.source.selected_id == b.id %} <span class="badge bg-emerald-50 text-emerald-700 !py-0 text-[10px]">सफल</span>{% endif %}</td>
+          <td class="px-3 py-2">{{ b.get_security_kind_display }} · {{ b.security_ref }}</td>
+          <td class="px-3 py-2 text-right">{{ b.security_amount|money:0 }}</td>
+          <td class="px-3 py-2">{% if b.security_status == 'held' %}<span class="badge bg-amber-50 text-amber-700">राखिएको</span>{% elif b.security_status == 'returned' %}<span class="badge bg-slate-100 text-slate-500">फिर्ता {{ b.security_action_on|bs }}</span>{% else %}<span class="badge bg-rose-100 text-rose-700">जफत {{ b.security_action_on|bs }}</span>{% endif %}</td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="px-3 py-10 text-center text-slate-400">बोलपत्र जमानत दर्ता छैन।</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    {% if can_manage %}<div class="px-5 py-3 bg-slate-50 border-t flex justify-between items-center gap-3 text-xs text-slate-500">
+      <span>सफल बोलपत्रदाताको जमानत सम्झौता नभएसम्म फिर्ता हुँदैन; सम्झौता नगर्नेको जमानत कार्यप्रवाहबाट जफत हुन्छ।</span>
+      <button class="btn-primary"><i class="fas fa-rotate-left"></i> छानिएका फिर्ता दर्ता</button></div>{% endif %}
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}राजस्व ठेक्का प्रतिवेदन{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <p class="text-xs font-medium text-brand-700"><i class="fas fa-landmark"></i> राजस्व आम्दानी</p>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">राजस्व ठेक्का प्रतिवेदन</h1>
+      <p class="text-sm text-slate-500 mt-0.5">अनुमानित, सम्झौता, असुल र बाँकी — आ.व., वडा र प्रकारअनुसार</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="?{{ qs }}&print=1" target="_blank" class="btn-secondary"><i class="fas fa-print"></i> प्रिन्ट</a>
+      <a href="?{{ qs }}&export=xlsx" hx-boost="false" class="btn-secondary"><i class="fas fa-file-excel text-emerald-600"></i> Excel</a>
+    </div>
+  </div>
+  <form method="get" class="card p-4 flex flex-wrap gap-3">
+    <select name="fiscalyear" class="form-select !w-auto"><option value="">सबै आ.व.</option>{% for x in fiscal_years %}<option value="{{ x.id }}" {% if f.fiscalyear == x.id|stringformat:'s' %}selected{% endif %}>{{ x.name }}</option>{% endfor %}</select>
+    <select name="ward" class="form-select !w-auto"><option value="">सबै वडा</option>{% for w in wards %}<option value="{{ w.id }}" {% if f.ward == w.id|stringformat:'s' %}selected{% endif %}>वडा नं. {{ w.name }}</option>{% endfor %}</select>
+    <select name="category" class="form-select !w-auto"><option value="">सबै प्रकार</option>{% for k, v in categories %}<option value="{{ k }}" {% if f.category == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+    <select name="group" class="form-select !w-auto"><option value="">समूह नगर्ने</option><option value="ward" {% if f.group == 'ward' %}selected{% endif %}>वडाअनुसार</option><option value="category" {% if f.group == 'category' %}selected{% endif %}>प्रकारअनुसार</option><option value="fiscalyear" {% if f.group == 'fiscalyear' %}selected{% endif %}>आ.व. अनुसार</option></select>
+    <button class="btn-primary">हेर्नुहोस्</button>
+  </form>
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+    <div class="card p-4"><p class="text-xs text-slate-500">स्रोत</p><p class="text-lg font-bold">{{ total.n|npn }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">अनुमानित</p><p class="text-lg font-bold">रु. {{ total.est|money:0 }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">सम्झौता</p><p class="text-lg font-bold text-brand-700">रु. {{ total.contract|money:0 }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">असुल (+ विलम्ब शुल्क)</p><p class="text-lg font-bold text-emerald-700">रु. {{ total.collected|money:0 }}</p>{% if total.late %}<p class="text-[11px] text-slate-500">+ रु. {{ total.late|money:0 }}</p>{% endif %}</div>
+    <div class="card p-4"><p class="text-xs text-slate-500">बाँकी / बक्यौता</p><p class="text-lg font-bold text-rose-700">रु. {{ total.outstanding|money:0 }}</p>{% if total.arrears %}<p class="text-[11px] text-slate-500">बक्यौता रु. {{ total.arrears|money:0 }}</p>{% endif %}</div>
+  </div>
+  {% if groups %}
+  <div class="card overflow-x-auto"><table class="w-full text-sm">
+    <thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="px-3 py-2.5 text-left">समूह</th><th class="px-3 py-2.5 text-right">स्रोत</th><th class="px-3 py-2.5 text-right">अनुमानित</th><th class="px-3 py-2.5 text-right">सम्झौता</th><th class="px-3 py-2.5 text-right">असुल</th><th class="px-3 py-2.5 text-right">बाँकी</th><th class="px-3 py-2.5 text-right">म्याद नाघेको</th></tr></thead>
+    <tbody class="divide-y divide-slate-100">{% for k, g in groups.items %}<tr><td class="px-3 py-2 font-medium">{{ k }}</td><td class="px-3 py-2 text-right">{{ g.n|npn }}</td><td class="px-3 py-2 text-right">{{ g.est|money:0 }}</td><td class="px-3 py-2 text-right">{{ g.contract|money:0 }}</td><td class="px-3 py-2 text-right">{{ g.collected|money:0 }}</td><td class="px-3 py-2 text-right">{{ g.outstanding|money:0 }}</td><td class="px-3 py-2 text-right text-rose-600">{{ g.overdue|money:0 }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+  <div class="card overflow-x-auto"><table class="w-full text-[13px]">
+    <thead class="bg-slate-50 text-[11px] text-slate-500"><tr>
+      <th class="px-3 py-2.5 text-left min-w-[14rem]">राजस्व स्रोत</th><th class="px-3 py-2.5 text-left">ठेकेदार</th><th class="px-3 py-2.5 text-right">अनुमानित</th><th class="px-3 py-2.5 text-right">न्यूनतम कबोल</th>
+      <th class="px-3 py-2.5 text-right">सम्झौता</th><th class="px-3 py-2.5 text-right">न्यूनतमभन्दा</th><th class="px-3 py-2.5 text-right">असुल</th><th class="px-3 py-2.5 text-right">बाँकी</th><th class="px-3 py-2.5 text-left">स्थिति</th></tr></thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for r in rows %}<tr>
+        <td class="px-3 py-2"><a href="{% url 'revenue_list' %}?open={{ r.s.id }}" class="font-medium text-slate-800 hover:text-brand-700">{{ r.s.name }}</a><span class="block text-[11px] text-slate-400">आ.व. {{ r.s.fiscalyear.name }} · {% if r.s.ward %}वडा {{ r.s.ward.name|npn }} · {% endif %}{{ r.s.get_category_display }}</span></td>
+        <td class="px-3 py-2">{{ r.s.selected.name|default:'—' }}</td>
+        <td class="px-3 py-2 text-right">{{ r.est|money:0 }}</td><td class="px-3 py-2 text-right">{{ r.min_bid|money:0 }}</td><td class="px-3 py-2 text-right font-semibold">{{ r.contract|money:0 }}</td>
+        <td class="px-3 py-2 text-right">{% if r.uplift is not None %}{{ r.uplift|floatformat:1|npn }}%{% else %}—{% endif %}</td>
+        <td class="px-3 py-2 text-right text-emerald-700">{{ r.collected|money:0 }}</td>
+        <td class="px-3 py-2 text-right {% if r.overdue %}text-rose-600 font-semibold{% endif %}">{{ r.outstanding|money:0 }}{% if r.arrears %}<span class="block text-[10px]">बक्यौता {{ r.arrears|money:0 }}</span>{% endif %}</td>
+        <td class="px-3 py-2 text-xs">{{ r.status }}</td></tr>
+      {% empty %}<tr><td colspan="9" class="px-3 py-10 text-center text-slate-400">भेटिएन।</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

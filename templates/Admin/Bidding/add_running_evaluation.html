@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load nepali_date %}
+{% block title %}Running Evaluation{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+
+  <div>
+    <h1 class="text-lg md:text-xl font-bold text-slate-800">Running Evaluation (Running Bill)</h1>
+    <p class="text-sm text-slate-500 mt-0.5">रनिङ विल मूल्याङ्कन तथा भुक्तानी विवरण</p>
+  </div>
+
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      <div class="p-6 space-y-6">
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-file-contract"></i> ठेक्का / योजना</h2>
+          <div>
+            <label class="form-label">ठेक्का / योजना</label>
+            <select name="contract_id" class="form-select select2 w-full" onchange="fillContractInfo(this)" required>
+              <option value="">-- छान्नुहोस् --</option>
+              {% for c in contracts %}
+              <option value="{{ c.id }}"
+                      data-bidding-amount="{{ c.sealed_bid.bidding_amount }}"
+                      data-bidder-name="{{ c.sealed_bid.bidder_name_nepali|default:c.sealed_bid.bidder_name_english }}"
+                      data-bidding-number="{{ c.sealed_bid.bidding_number }}">
+                {{ c.sealed_bid.project.name }} — {{ c.sealed_bid.bidding_number }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div>
+              <label class="form-label">कबोल रकम</label>
+              <input type="text" id="bidding_amount" class="form-input" readonly>
+            </div>
+            <div>
+              <label class="form-label">ठेकदार / बोलपत्रदाता</label>
+              <input type="text" id="bidder_name" class="form-input" readonly>
+            </div>
+            <div>
+              <label class="form-label">ठेक्का नं</label>
+              <input type="text" id="bidding_number" class="form-input" readonly>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-calculator"></i> मूल्याङ्कन</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">कुल मूल्याङ्कन रकम (Cumulative)</label>
+              <input type="number" step="0.01" name="total_evaluated_amount" class="form-input" required>
+            </div>
+            <div>
+              <label class="form-label">यस पटक भुक्तानी योग्य रकम</label>
+              <input type="number" step="0.01" name="payable_amount" class="form-input" required>
+            </div>
+            <div>
+              <label class="form-label">अग्रिम समायोजन</label>
+              <input type="number" step="0.01" name="advance_adjusted" class="form-input calc-field" value="0">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-receipt"></i> कर कट्टी</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label class="form-label">अग्रिम कर</label>
+              <input type="number" step="0.01" name="agrim_tax" class="form-input calc-field" value="0">
+            </div>
+            <div>
+              <label class="form-label">VAT</label>
+              <input type="number" step="0.01" name="vat_deduction" class="form-input calc-field" value="0">
+            </div>
+            <div>
+              <label class="form-label">धरौटी</label>
+              <input type="number" step="0.01" name="dharauti_deduction" class="form-input calc-field" value="0">
+            </div>
+            <div>
+              <label class="form-label">बहाल कर</label>
+              <input type="number" step="0.01" name="bahal_tax" class="form-input calc-field" value="0">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><i class="fas fa-circle-check"></i> खुद भुक्तानी</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label text-emerald-600">खुद भुक्तानी रकम</label>
+              <input type="text" id="net_payable" class="form-input font-bold text-emerald-600" readonly>
+            </div>
+            <div class="md:col-span-1">
+              <label class="form-label">कैफियत</label>
+              <input type="text" name="remarks" class="form-input">
+            </div>
+            <div>
+              <label class="form-label">मूल्याङ्कन मिति</label>
+              <input type="text" name="evaluation_date" class="form-input nepali-date" required>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end">
+        <button type="submit" class="btn-success">
+          <i class="fas fa-floppy-disk"></i> Running Evaluation Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+function fillContractInfo(select) {
+  const opt = select.options[select.selectedIndex];
+  document.getElementById("bidding_amount").value = opt.dataset.biddingAmount || "";
+  document.getElementById("bidder_name").value = opt.dataset.bidderName || "";
+  document.getElementById("bidding_number").value = opt.dataset.biddingNumber || "";
+}
+
+const deductionFields = document.querySelectorAll(".calc-field");
+const netField = document.getElementById("net_payable");
+const payableInput = document.querySelector('[name="payable_amount"]');
+
+function calculateNet() {
+  const payable = parseFloat(payableInput.value) || 0;
+  let deductions = 0;
+  deductionFields.forEach(f => { deductions += parseFloat(f.value) || 0; });
+  const net = payable - deductions;
+  netField.value = net >= 0 ? net.toFixed(2) : "0.00";
+}
+
+deductionFields.forEach(f => { f.addEventListener("input", calculateNet); });
+payableInput.addEventListener("input", calculateNet);
+</script>
+{% endblock %}

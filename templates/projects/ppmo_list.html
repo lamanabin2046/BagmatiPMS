@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}PPMO कालोसूची{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">PPMO कालोसूची</h1>
+      <p class="text-sm text-slate-500 mt-0.5">सार्वजनिक खरिद अनुगमन कार्यालयले कालोसूचीमा राखेका फर्म — बोलपत्र मूल्याङ्कन, दरभाउपत्र र सोझै खरिदमा आफैँ रोकिन्छ (PAN, नभए नाम मिलाएर)।</p>
+    </div>
+    <a href="{% url 'firm_list' %}" class="btn-secondary"><i class="fas fa-arrow-left"></i> फर्म दर्ता</a>
+  </div>
+
+  <div class="grid sm:grid-cols-3 gap-3">
+    <div class="card p-4"><p class="text-xs text-slate-500">सूचीमा फर्म</p><p class="text-xl font-bold">{{ total|npn }}</p></div>
+    <div class="card p-4 {% if matched %}bg-rose-50/60{% endif %}"><p class="text-xs text-slate-500">यहाँ दर्ता भएकामध्ये मिलेका</p><p class="text-xl font-bold text-rose-700">{{ matched|length|npn }}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">पछिल्लो आयात</p><p class="text-base font-semibold">{% if imported_at %}{{ imported_at|date:"Y-m-d H:i" }}{% else %}आयात भएको छैन{% endif %}</p></div>
+  </div>
+
+  {% if can_import %}
+  <section class="card p-5 space-y-3">
+    <h2 class="font-semibold text-slate-800"><i class="fas fa-file-import text-brand-600"></i> सूची अद्यावधिक गर्नुहोस्</h2>
+    <ol class="text-sm text-slate-600 list-decimal pl-5 space-y-1">
+      <li><a href="https://blacklist.ppmo.gov.np/blacklisted" target="_blank" rel="noopener" class="text-brand-700 underline">blacklist.ppmo.gov.np</a> खोल्नुहोस् र सूची Excel / CSV मा कपी वा डाउनलोड गर्नुहोस्।</li>
+      <li>शीर्ष पङ्क्तिमा कम्तीमा <b>फर्मको नाम</b> (Name) चाहिन्छ; PAN, ठेगाना, देखि/सम्म मिति, कारण, निर्णय भए राम्रो। वि.सं. वा इ.सं. दुवै मिति चल्छ।</li>
+      <li>तल फाइल छानेर आयात गर्नुहोस्। सम्म मिति नाघेका प्रविष्टि आफैँ लागू हुँदैनन्।</li>
+    </ol>
+    <form method="post" enctype="multipart/form-data" hx-boost="false" class="flex flex-wrap items-center gap-3">
+      {% csrf_token %}
+      <input type="file" name="file" accept=".xlsx,.csv" class="form-input max-w-xs" required>
+      <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="replace" value="1" checked> पुरानो सूची हटाएर नयाँ राख्ने</label>
+      <button class="btn-primary"><i class="fas fa-upload"></i> आयात गर्नुहोस्</button>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if matched %}
+  <section class="card border-rose-200">
+    <div class="card-header"><h2 class="font-semibold text-rose-800"><i class="fas fa-triangle-exclamation"></i> यहाँ दर्ता भएका फर्म जो PPMO कालोसूचीमा मिल्छन्</h2></div>
+    <ul class="divide-y divide-slate-100 text-sm">
+      {% for f in matched %}<li class="px-4 py-2.5"><a href="{% url 'firm_detail' f.id %}" class="font-medium text-rose-700 hover:underline">{{ f.firm_name }}</a> <span class="text-slate-400">PAN {{ f.firm_pan|default:'—' }}</span></li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <section class="card">
+    <form method="get" class="p-4 flex gap-2"><input name="q" value="{{ q }}" class="form-input" placeholder="नाम वा PAN खोज्नुहोस्"><button class="btn-secondary"><i class="fas fa-search"></i></button></form>
+    <div class="overflow-x-auto">
+      <table class="w-full text-[13px]">
+        <thead><tr class="bg-slate-50 text-[11px] text-slate-500">
+          <th class="px-3 py-2.5 text-left font-medium min-w-[14rem]">फर्म</th><th class="px-3 py-2.5 text-left font-medium">PAN</th>
+          <th class="px-3 py-2.5 text-left font-medium">अवधि</th><th class="px-3 py-2.5 text-left font-medium">निर्णय / कारण</th><th class="px-3 py-2.5 text-left font-medium">स्थिति</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for b in rows %}
+          <tr><td class="px-3 py-2"><span class="font-medium">{{ b.name }}</span>{% if b.address %}<span class="block text-[11px] text-slate-400">{{ b.address }}</span>{% endif %}</td>
+            <td class="px-3 py-2">{{ b.pan|default:'—' }}</td>
+            <td class="px-3 py-2 whitespace-nowrap">{{ b.from_date|default:'' }}{% if b.to_date %} – {{ b.to_date }}{% endif %}</td>
+            <td class="px-3 py-2 text-[12px] text-slate-600">{{ b.decision }}{% if b.reason %}<span class="block">{{ b.reason }}</span>{% endif %}</td>
+            <td class="px-3 py-2">{% if b.active %}<span class="badge bg-rose-100 text-rose-700">लागू</span>{% else %}<span class="badge bg-slate-100 text-slate-500">अवधि सकिएको</span>{% endif %}</td></tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-3 py-10 text-center text-slate-400">{% if q %}भेटिएन।{% else %}PPMO कालोसूची आयात गरिएको छैन।{% endif %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "saas/base.html" %}
+{% block title %}पालिकाहरू{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold">पालिकाहरू</h1>
+    <p class="text-sm text-slate-500">जम्मा {{ total }} · सक्रिय {{ active }}</p>
+  </div>
+  <a href="{% url 'saas_palika_create' %}" class="btn-primary">+ नयाँ पालिका</a>
+</div>
+<div class="card overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-100 text-left text-slate-600">
+      <tr><th class="px-4 py-3">पालिका</th><th class="px-4 py-3">जिल्ला</th><th class="px-4 py-3">Site</th>
+          <th class="px-4 py-3 text-right">योजना</th><th class="px-4 py-3 text-right">प्रयोगकर्ता</th>
+          <th class="px-4 py-3">Plan</th><th class="px-4 py-3">स्थिति</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for p, s in rows %}
+      <tr class="border-t border-slate-100">
+        <td class="px-4 py-3 font-medium">{{ p.full_name }}<div class="text-xs text-slate-400">{{ p.schema_name }}</div></td>
+        <td class="px-4 py-3">{{ p.district|default:"-" }}</td>
+        <td class="px-4 py-3"><a class="text-indigo-600 underline" target="_blank" href="http://{{ p.primary_domain }}{{ port }}/">{{ p.primary_domain }}</a></td>
+        <td class="px-4 py-3 text-right">{{ s.projects }}</td>
+        <td class="px-4 py-3 text-right">{{ s.users }}</td>
+        <td class="px-4 py-3">{{ p.get_plan_display }}{% if p.paid_until %}<div class="text-xs text-slate-400">{{ p.paid_until }}</div>{% endif %}</td>
+        <td class="px-4 py-3">{% if p.is_active %}<span class="badge bg-emerald-100 text-emerald-700">सक्रिय</span>{% else %}<span class="badge bg-rose-100 text-rose-700">निष्क्रिय</span>{% endif %}</td>
+        <td class="px-4 py-3 text-right"><a href="{% url 'saas_palika_detail' p.pk %}" class="btn-light !py-1">खोल्नुहोस्</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="px-4 py-10 text-center text-slate-500">अहिलेसम्म कुनै पालिका छैन। “+ नयाँ पालिका” थिच्नुहोस्।</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% load outputs %}
+{# भूमिकाको गृहपृष्ठ: अभिवादन, भूमिका, आ.व., आजका काम (actions: [(label, url, icon, tone, count)]) #}
+<div class="relative card p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-4 overflow-hidden">
+  <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-brand-500/5 blur-3xl pointer-events-none"></div>
+  <div class="relative">
+    <div class="flex flex-wrap items-center gap-2">
+      <h1 class="text-2xl font-bold text-brand-800">नमस्ते, {{ me.name }}</h1>
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-50 text-brand-800 text-xs font-semibold"><span class="w-1.5 h-1.5 rounded-full bg-brand-600"></span>{{ role_label }}</span>
+      {% if fy %}<form method="get" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-xs text-slate-600">
+        <i data-lucide="calendar-days" class="w-3.5 h-3.5 text-teal-700"></i>
+        <select name="fiscalyear" onchange="this.form.submit()" class="bg-transparent font-semibold focus:outline-none cursor-pointer">
+          {% for x in fiscal_years %}<option value="{{ x.id }}" {% if x.id == fy.id %}selected{% endif %}>आ.व. {{ x.name|npn }}{% if x.is_current %} (चालु){% endif %}</option>{% endfor %}
+        </select></form>{% endif %}
+    </div>
+    <p class="text-sm text-slate-500 mt-1">{{ intro }}</p>
+  </div>
+  <div class="relative flex flex-wrap items-center gap-2">
+    {% for label, url, icon, tone, count in actions %}
+    <a href="{{ url }}" class="relative inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition
+       {% if tone == 'urgent' %}bg-rose-50 text-rose-800 hover:bg-rose-100{% else %}bg-slate-50 text-brand-800 hover:bg-slate-100{% endif %}">
+      <i data-lucide="{{ icon }}" class="w-4 h-4 {% if tone == 'urgent' %}text-rose-600{% endif %}"></i><span>{{ label }}{% if count %} ({{ count|npn }}){% endif %}</span>
+      {% if tone == 'urgent' and count %}<span class="flex h-2 w-2 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span></span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+</div>

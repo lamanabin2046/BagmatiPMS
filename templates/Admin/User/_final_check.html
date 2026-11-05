@@ -1,0 +1,45 @@
+{% comment %}अन्तिम मूल्याङ्कन फारमको तत्काल रकम जाँच (सर्भरको usercommittee/amounts.py check_final जस्तै).
+चाहिने: #totalValuation, input[name=officeContribution], #usersContribution, #net_payment (_tax_rows).
+लागत अनुमान: share/total (सम्पादनमा) वा select#id_project को option data-share / data-total (थप्दा).{% endcomment %}
+<div id="finCheck" class="rounded-xl border px-4 py-3 text-sm hidden" data-share="{{ share|default_if_none:''|stringformat:'s' }}" data-total="{{ total|default_if_none:''|stringformat:'s' }}">
+  <p class="font-semibold" id="finHead"></p>
+  <div id="finMsgs" class="mt-1 space-y-0.5"></div>
+</div>
+<script>
+(function () {
+  var ND = '०१२३४५६७८९';
+  var num = function (v) { return parseFloat(String(v || '').replace(/[०-९]/g, function (c) { return ND.indexOf(c); }).replace(/,/g, '')) || 0; };
+  var np = function (n) { return String(n).replace(/[0-9]/g, function (d) { return ND[d]; }); };
+  var rs = function (n) { return 'रु. ' + np(n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })); };
+  var box = document.getElementById('finCheck');
+  if (!box) return;
+  var form = box.closest('form');
+  var val = function (sel) { var el = form.querySelector(sel); return el ? num(el.value) : 0; };
+  function est() {
+    var sel = form.querySelector('select#id_project'), opt = sel && sel.options[sel.selectedIndex];
+    if (opt && opt.getAttribute('data-total')) return { share: num(opt.getAttribute('data-share')), total: num(opt.getAttribute('data-total')), has: true };
+    if (box.dataset.total) return { share: num(box.dataset.share), total: num(box.dataset.total), has: true };
+    return { has: false };
+  }
+  function check() {
+    var btn = form && form.querySelector('button[type=submit]');
+    var v = val('#totalValuation'), o = val("input[name='officeContribution']"), u = val('#usersContribution');
+    var netEl = document.getElementById('net_payment'), net = netEl && netEl.value !== '' ? num(netEl.value) : null;
+    if (!v) { box.classList.add('hidden'); if (btn) { btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed'); } return; }
+    var errs = [], warns = [], e = est();
+    if (v < 0 || o < 0 || u < 0) errs.push('रकम ऋणात्मक हुन मिल्दैन।');
+    if (Math.abs(o + u - v) > 1) errs.push('कार्यालय + उपभोक्ता = ' + rs(o + u) + ', जम्मा मूल्याङ्कन ' + rs(v) + ' सँग मिलेन।');
+    if (e.has && o > e.share + 1) errs.push('कार्यालयबाट भुक्तानी लागत अनुमानको कार्यालय अंश ' + rs(e.share) + ' भन्दा बढी भयो।');
+    if (net !== null && net < 0) errs.push('खुद भुक्तानी ' + rs(net) + ' ऋणात्मक भयो — कर वा रकम मिलाउनुहोस्।');
+    if (e.has && v > e.total + 1) warns.push('मूल्याङ्कन कुल लागत अनुमान ' + rs(e.total) + ' भन्दा ' + rs(v - e.total) + ' बढी छ — बढी भाग उपभोक्ता समितिले बेहोर्ने।');
+    box.className = 'rounded-xl border px-4 py-3 text-sm ' + (errs.length ? 'border-rose-200 bg-rose-50 text-rose-800' : warns.length ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800');
+    document.getElementById('finHead').innerHTML = errs.length ? '<i class="fas fa-circle-exclamation"></i> रकम मिलेन — सच्याएपछि मात्र सुरक्षित हुन्छ'
+      : warns.length ? '<i class="fas fa-triangle-exclamation"></i> रकम जाँच: चेतावनी' : '<i class="fas fa-circle-check"></i> रकम जाँच: ठीक छ' + (e.has ? ' (लागत अनुमान ' + rs(e.total) + ', कार्यालय अंश ' + rs(e.share) + ')' : '');
+    document.getElementById('finMsgs').innerHTML = errs.concat(warns).map(function (m) { return '<p class="text-xs">• ' + m + '</p>'; }).join('');
+    if (btn) { btn.disabled = errs.length > 0; btn.classList.toggle('opacity-50', errs.length > 0); btn.classList.toggle('cursor-not-allowed', errs.length > 0); }
+  }
+  ['input', 'change', 'click'].forEach(function (ev) { form.addEventListener(ev, function () { setTimeout(check, 30); }); });
+  if (window.jQuery) { jQuery(form).on('change', 'select', function () { setTimeout(check, 300); }); }
+  setTimeout(check, 200);
+})();
+</script>

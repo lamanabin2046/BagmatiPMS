@@ -1,0 +1,9 @@
+{% comment %}फर्म / निर्माण व्यवसायी दर्ता{% endcomment %}
+{% if 'firm.view' in me.perms or 'firm.manage' in me.perms or 'firm.blacklist' in me.perms %}
+<li>
+  <a href="{% url 'firm_list' %}" class="nav-link-item {% if current == 'firm_list' or current == 'firm_detail' or current == 'ppmo_list' %}active{% endif %}">
+    <i data-lucide="hard-hat" class="nav-icon"></i>
+    <span class="sidebar-label">फर्म / निर्माण व्यवसायी</span>
+  </a>
+</li>
+{% endif %}

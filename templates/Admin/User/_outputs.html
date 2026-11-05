@@ -1,0 +1,71 @@
+{% load nepali_date outputs %}{% comment %}भौतिक उपलब्धि — कामको प्रकार छानेपछि त्यसका सूचक देखिन्छन्।
+चाहिने: out_groups (projects.outputs.catalog), out_category_id. फारमका field: work_category, out_<id>{% endcomment %}
+<div id="outBox">
+  <div class="flex flex-wrap items-end justify-between gap-2 mb-3">
+    <h2 class="section-title mb-0"><i class="fas fa-ruler-combined"></i> भौतिक उपलब्धि
+      <span class="text-xs font-normal normal-case text-slate-400">— कति काम भयो (प्रतिवेदनमा जोडिन्छ)</span></h2>
+    {% if 'settings.outputs' in me.perms %}<a href="{% url 'output_settings' %}" target="_blank" rel="noopener" class="text-xs text-brand-700 hover:underline"><i class="fas fa-gear"></i> सूचक व्यवस्थापन</a>{% endif %}
+  </div>
+  <div class="grid md:grid-cols-3 gap-4 mb-3">
+    <div>
+      <label class="form-label">कामको प्रकार</label>
+      <select name="work_category" id="outCategory" class="form-select">
+        <option value="">छान्नुहोस्</option>
+        {% for g in out_groups %}<option value="{{ g.cat.id }}"{% if g.cat.id == out_category_id %} selected{% endif %}>{{ g.cat.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="md:col-span-2 flex items-end">
+      <label class="flex items-center gap-2 text-sm text-slate-600 pb-2">
+        <input type="checkbox" id="outShowAll" class="form-check"> अन्य प्रकारका उपलब्धि पनि देखाउनुहोस् <span class="text-xs text-slate-400">(जस्तै बाटोसँगै नाली, लाभान्वित जनसंख्या)</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="space-y-3" id="outGroups">
+    {% for g in out_groups %}
+    <div class="out-group rounded-xl border border-slate-200 p-3" data-cat="{{ g.cat.id }}" data-has="{% for it in g.items %}{% if it.value %}1{% endif %}{% endfor %}">
+      <p class="text-sm font-semibold text-slate-700 mb-2">{{ g.cat.name }}</p>
+      {% if g.items %}
+      <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+        {% for it in g.items %}
+        <label class="block">
+          <span class="form-label !mb-1">{{ it.ind.name }}{% if not it.ind.is_active %} <span class="text-[10px] text-slate-400">(निष्क्रिय)</span>{% endif %}</span>
+          <span class="flex">
+            <input name="out_{{ it.ind.id }}" inputmode="decimal" class="form-input rounded-r-none text-right" value="{% if it.value %}{{ it.value|qty }}{% endif %}" placeholder="०">
+            <span class="inline-flex items-center rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 px-3 text-xs text-slate-500 whitespace-nowrap">{{ it.ind.unit }}</span>
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-xs text-slate-400">यो प्रकारमा सूचक छैन — सेटिङ → उपलब्धि सूचकमा थप्नुहोस्।</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <p class="form-hint" id="outHint">कामको प्रकार छान्नुहोस् — त्यस प्रकारका सूचक देखिन्छन्। खाली वा ० छोडेका सूचक सुरक्षित हुँदैनन्।</p>
+</div>
+<script>
+(function () {
+  var box = document.getElementById('outBox'); if (!box) return;
+  var sel = document.getElementById('outCategory'), all = document.getElementById('outShowAll');
+  function render() {
+    var c = sel.value, showAll = all.checked;
+    box.querySelectorAll('.out-group').forEach(function (g) {
+      var on = showAll || g.dataset.cat === c || g.dataset.has;
+      g.classList.toggle('hidden', !on);
+      g.classList.toggle('border-brand-300', g.dataset.cat === c);
+      g.classList.toggle('bg-brand-50/30', g.dataset.cat === c);
+    });
+    document.getElementById('outHint').classList.toggle('hidden', !!c || showAll);
+  }
+  sel.addEventListener('change', render); all.addEventListener('change', render);
+  // अन्तिम मूल्याङ्कन (थप्ने) फारम: योजना छान्दा त्यसको कामको प्रकार आफैँ
+  var proj = document.getElementById('id_project');
+  if (proj) {
+    var pick = function () { var o = proj.options[proj.selectedIndex]; var c = o && o.getAttribute('data-category'); if (c && !sel.value) { sel.value = c; render(); } };
+    proj.addEventListener('change', pick); if (window.jQuery) { jQuery(proj).on('change', pick); } pick();
+  }
+  render();
+})();
+</script>

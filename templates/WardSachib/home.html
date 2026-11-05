@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}वडा सचिव ड्यासबोर्ड{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Fixed chart heights so Chart.js (maintainAspectRatio:false) fills the
+     box instead of growing with the column width — same convention used
+     on the Admin dashboard. */
+  .chart-box { position: relative; height: 150px; }
+  .chart-card-body { padding: 14px 16px; }
+  .chart-legend-row { margin-top: 8px; font-size: 11px; gap: 10px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ================= PAGE HEADER ================= -->
+<div class="mb-6">
+  <h1 class="text-xl md:text-2xl font-bold text-slate-800">वडा सचिव ड्यासबोर्ड</h1>
+  <p class="text-sm text-slate-500 mt-0.5">वडा नं. {{ sachib.ward.name }} – {{ sachib.name }}</p>
+</div>
+
+{% include 'includes/_my_work_lazy.html' %}
+
+<!-- ================= STAT CARDS ================= -->
+<div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+  <a href="{% url 'ward_project_list' %}" class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4 hover:border-brand-300 transition">
+    <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-user-plus"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ committee_pending_count }}</p>
+      <p class="text-xs text-slate-500">उपभोक्ता समिति विवरण बाँकी</p>
+    </div>
+  </a>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-clipboard-list"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ total_count }}</p>
+      <p class="text-xs text-slate-500">लागत अनुमान भएका योजना (वडा {{ sachib.ward.name }})</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-hourglass-half"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ pending_count }}</p>
+      <p class="text-xs text-slate-500">सिफारिस बाँकी</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-circle-check"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ issued_count }}</p>
+      <p class="text-xs text-slate-500">सिफारिस जारी भएका</p>
+    </div>
+  </div>
+  <a href="{% url 'view_projects_for_completion_recommendation' %}" class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-4 hover:border-brand-300 transition">
+    <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-flag-checkered"></i></div>
+    <div>
+      <p class="text-2xl font-bold text-slate-800 leading-tight">{{ completion_pending_count }}</p>
+      <p class="text-xs text-slate-500">काम सम्पन्न सिफारिस बाँकी</p>
+    </div>
+  </a>
+</div>
+
+<!-- ================= CHARTS ================= -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+
+  <!-- योजना प्रगति चरण अनुसार (bar) -->
+  <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-card">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+      <i class="fas fa-chart-bar text-brand-500"></i>
+      <h2 class="text-sm font-semibold text-slate-700">योजना प्रगति चरण अनुसार (वडा {{ sachib.ward.name }})</h2>
+    </div>
+    <div class="chart-card-body">
+      <div class="chart-box" style="height: 220px;">
+        <canvas id="pipelineChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- उपभोक्ता समिति स्थिति (donut) -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+      <i class="fas fa-chart-pie text-brand-500"></i>
+      <h2 class="text-sm font-semibold text-slate-700">उपभोक्ता समिति स्थिति</h2>
+    </div>
+    <div class="chart-card-body">
+      <div class="chart-box">
+        <canvas id="committeeDonutChart"></canvas>
+      </div>
+      <div class="space-y-2 text-sm mt-3">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-500"><span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>गठन भयो</span>
+          <span class="font-semibold text-slate-800">{{ committee_done_count }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-500"><span class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-2"></span>बाँकी</span>
+          <span class="font-semibold text-slate-800">{{ committee_pending_count }}</span>
+        </div>
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+          <span class="text-slate-500">कुल योजना</span>
+          <span class="font-semibold text-slate-800">{{ total_ward_projects }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= कुल भुक्तानी / बजेट उपयोग ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card mt-4">
+  <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+    <i class="fas fa-sack-dollar text-emerald-500"></i>
+    <h2 class="text-sm font-semibold text-slate-700">कुल भुक्तानी तथा बजेट उपयोग (वडा {{ sachib.ward.name }})</h2>
+  </div>
+  <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+    <div>
+      <p class="text-xs text-slate-400">कुल भुक्तानी भएको रकम</p>
+      <p class="text-2xl font-bold text-emerald-600 mt-1">रु {{ total_paid|floatformat:2 }}</p>
+    </div>
+    <div class="md:col-span-2">
+      <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+        <span>बजेट उपयोग</span>
+        <span class="font-semibold text-slate-700">{{ utilization_percent|floatformat:1 }}%</span>
+      </div>
+      <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
+        <div class="h-full bg-emerald-500 rounded-full" style="width: {{ utilization_percent|floatformat:0 }}%"></div>
+      </div>
+      <p class="text-xs text-slate-400 mt-2">कुल विनियोजित बजेट: रु {{ total_ward_budget|floatformat:2 }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= RECENT PROJECTS ================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card mt-4">
+  <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+    <h2 class="text-sm font-semibold text-slate-700">पछिल्ला योजनाहरु</h2>
+    <a href="{% url 'view_projects_for_recommendation' %}" class="btn-chip-brand"><i class="fas fa-arrow-right"></i> सबै हेर्नुहोस्</a>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase tracking-wide text-slate-500 bg-slate-50">
+          <th class="px-5 py-3 font-medium">क्र.सं.</th>
+          <th class="px-5 py-3 font-medium">योजना नाम</th>
+          <th class="px-5 py-3 font-medium">स्थिति</th>
+          <th class="px-5 py-3 font-medium">कार्य</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for p in recent_projects %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 text-slate-700">{{ forloop.counter }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ p.name }}</td>
+          <td class="px-5 py-3">
+            {% if p.ward_recommendation %}
+            <span class="badge bg-emerald-50 text-emerald-700">सिफारिस जारी भयो</span>
+            {% else %}
+            <span class="badge bg-amber-50 text-amber-700">बाँकी</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3">
+            {% if p.ward_recommendation %}
+            <a href="{% url 'print_ward_recommendation' p.id %}" class="btn-chip-emerald"><i class="fas fa-print"></i> हेर्नुहोस्</a>
+            {% else %}
+            <a href="{% url 'add_ward_recommendation' p.id %}" class="btn-chip-amber"><i class="fas fa-file-signature"></i> सिफारिस तयार गर्नुहोस्</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-5 py-6 text-center text-slate-400">डाटा उपलब्ध छैन</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script>
+// ================= 1) योजना प्रगति चरण अनुसार (horizontal bar) =================
+// A single ordered measure (project count per pipeline stage) -> one hue,
+// light to dark, so the ramp itself reads as progression through the
+// pipeline — same convention as the Admin dashboard's "Bidding Pipeline" chart.
+new Chart(document.getElementById('pipelineChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ pipeline_labels_json|safe }},
+    datasets: [{
+      data: {{ pipeline_counts_json|safe }},
+      backgroundColor: ['#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b76f6', '#1d4ed8'],
+      borderRadius: 4,
+      barPercentage: 0.7,
+      categoryPercentage: 0.7,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ctx.parsed.x + ' योजना' } },
+    },
+    scales: {
+      x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { precision: 0, font: { size: 10 } } },
+      y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+    }
+  }
+});
+
+// ================= 2) उपभोक्ता समिति स्थिति (donut) =================
+new Chart(document.getElementById('committeeDonutChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['गठन भयो', 'बाँकी'],
+    datasets: [{
+      data: [{{ committee_done_count }}, {{ committee_pending_count }}],
+      backgroundColor: ['#10b981', '#f59e0b'],
+      borderColor: '#ffffff',
+      borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '65%',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ctx.label + ': ' + ctx.parsed + ' योजना' } },
+    }
+  }
+});
+</script>
+{% endblock %}

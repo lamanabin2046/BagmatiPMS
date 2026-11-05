@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+{% load static %}
+{% load letters %}
+{% load nepali_date %}
+{% load nepali_filters %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>बोलपत्रको स्वीकृत गर्ने आशयको सूचना</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ================= RESET ================= */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ================= PAGE / PRINT SETTINGS ================= */
+    @page {
+      size: A4;
+      margin: 20mm 16mm 18mm 22mm; /* extra left margin for punching/binding */
+    }
+
+    :root {
+      --gov-red: #b0281f;
+      --gov-red-dark: #8c1f18;
+      --ink: #1c1c1c;
+      --muted: #6b6b6b;
+      --hairline: #d8c9a3;
+    }
+
+    html, body { background: #e9e9e9; }
+
+    body {
+      font-family: 'Noto Sans Devanagari', 'Mangal', 'Inter', Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.85;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ================= A4 SHEET (screen preview only) ================= */
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 14mm auto;
+      background: #fff;
+      padding: 20mm 16mm 18mm 22mm;
+      box-shadow: 0 4px 28px rgba(0,0,0,.18);
+    }
+
+    /* ================= HEADER ================= */
+    .letter-header {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      border-bottom: 3px solid var(--gov-red);
+      padding-bottom: 12px;
+      margin-bottom: 6px;
+      position: relative;
+    }
+    .letter-header::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; bottom: -6px;
+      border-bottom: 1px solid var(--gov-red);
+    }
+    .office-logo-wrap {
+      flex: 0 0 auto;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .office-logo { width: 100%; height: 100%; object-fit: contain; }
+    .office-title {
+      flex: 1 1 auto;
+      text-align: center;
+      line-height: 1.35;
+    }
+    .office-title h2 { font-size: 25px; font-weight: 800; color: var(--gov-red); letter-spacing: .3px; }
+    .office-title h3 { font-size: 16px; font-weight: 600; color: var(--gov-red); margin-top: 2px; }
+    .office-title h4 { font-size: 13px; font-weight: 500; color: var(--gov-red-dark); margin-top: 1px; }
+    .header-spacer { flex: 0 0 auto; width: 80px; }
+
+    /* ================= TITLE ================= */
+    .notice-title {
+      text-align: center;
+      font-weight: 700;
+      font-size: 17px;
+      margin: 22px 0 6px;
+    }
+    .notice-subtitle {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    /* ================= BODY ================= */
+    .text-main {
+      text-align: justify;
+      margin-bottom: 16px;
+    }
+    .text-main strong { color: var(--ink); }
+
+    /* ================= TABLE ================= */
+    .table-box {
+      margin: 10px 0 16px;
+      border: 1px solid var(--hairline);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid #eee0c6; padding: 8px 10px; vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    th {
+      background: #fbf3e7;
+      color: var(--gov-red-dark);
+      font-weight: 700;
+      font-size: 12.5px;
+      text-align: center;
+      border-right: 1px solid var(--hairline);
+    }
+    th:last-child { border-right: none; }
+    td { border-right: 1px solid #eee0c6; }
+    td:last-child { border-right: none; }
+    .text-center { text-align: center; }
+    .text-end { text-align: right; font-weight: 600; }
+
+    /* ================= PRINT ADJUSTMENTS ================= */
+    @media print {
+      html, body { background: #fff; }
+      .sheet { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+      .table-box { page-break-inside: avoid; break-inside: avoid; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="sheet">
+
+  <!-- ================= HEADER ================= -->
+  {% include 'includes/letterhead.html' with branch="(योजना शाखा)" %}
+{% editable_letter "bidding.print_asay_notice" "बोलपत्रको स्वीकृत गर्ने आशयको सूचना" %}
+
+  <!-- ================= TITLE ================= -->
+  <div class="notice-title">बोलपत्रको स्वीकृत गर्ने आशयको सूचना</div>
+  <div class="notice-subtitle">(प्रथम पटक प्रकाशन मितिः ................ गते)</div>
+
+  <!-- ================= BODY TEXT ================= -->
+  <p class="text-main">
+    यस {{ palika.palika_type }}बाट राष्ट्रिय दैनिक पत्रिकामा निम्न लिखित योजनाको कार्य गर्नका लागि
+    विद्युतीय बोलपत्र मार्फत सूचना प्रकाशित गर्दा ई–सबमिसन मार्फत रितपूर्वक दर्ता हुन
+    आएका बोलपत्रहरुमध्ये तपशीलमा उल्लेखित बोलपत्र न्यूनतम मूल्यांकित तथा सारभूत रुपमा
+    प्रभावग्राही देखिएको व्यहोरा बोलपत्र समितिको
+    <strong>{{ evaluation_date|nepali_date }}</strong> गतेको निर्णयबाट सिफारिस भई
+    आएकोले उक्त बोलपत्र स्वीकृत गर्ने आशयको सार्वजनिक खरिद ऐन, २०६३ को दफा २७(२) र (३)
+    एवं ऐनको दफा ४७ को प्रयोजनार्थ सम्बन्धित सबैको जानकारीको लागि ७ (सात) दिने सूचना
+    प्रकाशित गरिएको छ।
+  </p>
+
+  <!-- ================= TABLE ================= -->
+  <div class="table-box">
+    <table>
+      <thead>
+        <tr>
+          <th>बोलपत्र / ठेक्का नं</th>
+          <th>कार्यको विवरण</th>
+          <th>बोलपत्रदाताको नाम र ठेगाना</th>
+          <th>कबोल अंक रु. (मुअकर र पिएस समेत)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-center">{{ bidding.bidding_number }}</td>
+          <td>{{ bidding.project.name }}</td>
+          <td>
+            {{ bidding.bidder_name_nepali }}<br>
+            {{ bidding.bidder_address_nepali }}
+          </td>
+          <td class="text-end">
+            {{ bidding.bidding_amount|floatformat:2|to_nepali_number }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+{% endeditable_letter %}
+</div>
+
+<!-- ================= AUTO PRINT ================= -->
+<script>
+  window.__letterPrint = function () {
+    window.print();
+    setTimeout(function () {
+      window.location.href = "__BID_RETURN__";
+    }, 2000);
+  };
+</script>
+
+</body>
+</html>

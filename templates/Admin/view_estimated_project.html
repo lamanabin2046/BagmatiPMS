@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}कागजात तयारी{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">लागत अनुमान तयार भएको योजनाको विवरण</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>सिन</th>
+            <th>योजनाको नाम</th>
+            <th>वडा</th>
+            <th class="text-right">विनियोजित रकम</th>
+            <th class="text-right">कन्टेन्जेन्सी</th>
+            <th class="text-right">श्रमदान</th>
+            <th class="text-right">लागत अनुमान</th>
+            <th>आवश्यक काजगात बनाउनुहोस</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in cost_estimate %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td><a href="{% url 'project_timeline' i.project.id %}" class="text-brand-600 font-semibold hover:underline">{{ i.project.name }}</a></td>
+            <td>{{ i.project.ward.name }}</td>
+            <td class="text-right">{{ i.budget|floatformat:2 }}/-</td>
+            <td class="text-right">{{ i.contingency_amount|floatformat:2 }}/-</td>
+            <td class="text-right">{{ i.user_contribution|floatformat:2 }}/-</td>
+            <td class="text-right font-semibold">{{ i.total_cost|floatformat:2 }}/-</td>
+            <td>
+              <div class="flex flex-wrap gap-2">
+                <a href="{% url 'print_tippani' i.project.id %}" class="btn-chip-emerald">टिप्पणी</a>
+                <a href="{% url 'print_documents' i.project.id %}" class="btn-chip-amber">सम्झौता</a>
+                <a href="{% url 'print_bank_letter' i.project.id %}" class="btn-chip-rose">बैंकपत्र</a>
+                <a href="{% url 'print_work_order' i.project.id %}" class="btn-chip-rose">कार्यादेश</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-4 border-t border-slate-100 flex justify-end">
+      <a href="" class="btn-success"><i class="fas fa-file-excel"></i> Download In Excel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

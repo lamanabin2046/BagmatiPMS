@@ -1,0 +1,35 @@
+<script>
+  'use strict';
+
+  $(document).ready(function() {
+
+      // Area chart
+
+      var options = {
+          series: [{{project_count}}, {{estimated_count}}],
+          chart: {
+          height: 310,
+          width: '100%',
+          type: 'pie',
+        },
+        labels: ['Total Projects', 'Estimated Projects'],
+        responsive: [{
+          breakpoint: 480,
+          options: {
+            chart: {
+              width: 200
+            },
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }]
+        };
+
+        var chart = new ApexCharts(document.querySelector("#Budget_expenditure"), options);
+        chart.render();
+
+
+
+  });
+</script>

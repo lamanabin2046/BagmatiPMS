@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+{% load static %}
+{% load letters %}
+{% load nepali_date %}
+{% load nepali_filters %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>बोलपत्र स्वीकृत गर्ने सिफारिस टिप्पणी</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ================= RESET ================= */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ================= PAGE / PRINT SETTINGS ================= */
+    @page {
+      size: A4;
+      margin: 22mm 18mm 20mm 25mm; /* extra left margin for punching/binding */
+    }
+
+    :root {
+      --gov-red: #b0281f;
+      --gov-red-dark: #8c1f18;
+      --ink: #1c1c1c;
+      --muted: #6b6b6b;
+      --hairline: #d8c9a3;
+    }
+
+    html, body {
+      background: #e9e9e9;
+    }
+
+    body {
+      font-family: 'Noto Sans Devanagari', 'Mangal', 'Inter', Arial, sans-serif;
+      font-size: 14.5px;
+      line-height: 1.7;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ================= A4 SHEET (screen preview only) ================= */
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 14mm auto;
+      background: #fff;
+      padding: 20mm 16mm 18mm 22mm;
+      box-shadow: 0 4px 28px rgba(0,0,0,.18);
+    }
+
+    .gov-red { color: var(--gov-red); }
+
+    /* ================= HEADER ================= */
+    .letter-header {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      border-bottom: 3px solid var(--gov-red);
+      padding-bottom: 12px;
+      margin-bottom: 6px;
+      position: relative;
+    }
+    .letter-header::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; bottom: -6px;
+      border-bottom: 1px solid var(--gov-red);
+    }
+
+    .office-logo-wrap {
+      flex: 0 0 auto;
+      width: 88px;
+      height: 88px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .office-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .office-title {
+      flex: 1 1 auto;
+      text-align: center;
+      line-height: 1.35;
+    }
+    .office-title h2 {
+      font-size: 25px;
+      font-weight: 800;
+      color: var(--gov-red);
+      letter-spacing: .3px;
+    }
+    .office-title h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gov-red);
+      margin-top: 2px;
+    }
+    .office-title h4 {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gov-red-dark);
+      margin-top: 1px;
+    }
+
+    .header-spacer { flex: 0 0 auto; width: 88px; }
+
+    /* ================= META ROW ================= */
+    .letter-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 16px 0 6px;
+      font-size: 14px;
+    }
+    .letter-meta .chip {
+      display: inline-block;
+      border: 1px solid var(--gov-red);
+      color: var(--gov-red);
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 3px;
+      letter-spacing: .5px;
+    }
+    .letter-meta .date-box {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    /* ================= SUBJECT ================= */
+    .letter-subject {
+      text-align: center;
+      font-weight: 700;
+      font-size: 16px;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      margin: 20px 0 22px;
+      letter-spacing: .2px;
+    }
+
+    /* ================= SALUTATION ================= */
+    .letter-salutation {
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    /* ================= BODY ================= */
+    .letter-body p {
+      text-align: justify;
+      margin-bottom: 9px;
+    }
+    .letter-body strong { color: var(--ink); }
+
+    /* ================= SUMMARY TABLE ================= */
+    .summary-box {
+      margin: 12px 0 16px;
+      border: 1px solid var(--hairline);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .summary-box table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .summary-box caption {
+      text-align: left;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--gov-red);
+      background: #fbf3e7;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--hairline);
+      caption-side: top;
+    }
+    .summary-box td {
+      padding: 6px 14px;
+      border-bottom: 1px solid #eee0c6;
+    }
+    .summary-box tr:last-child td { border-bottom: none; }
+    .summary-box td.label { color: var(--muted); width: 55%; }
+    .summary-box td.value { text-align: right; font-weight: 700; white-space: nowrap; }
+    .summary-box tr.total td { background: #fbf3e7; }
+    .summary-box tr.total td.label { color: var(--gov-red-dark); font-weight: 700; }
+    .summary-box tr.total td.value { color: var(--gov-red-dark); }
+
+    /* ================= AUTHORIZATION ================= */
+    .auth-block {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 40px;
+      text-align: center;
+    }
+    .auth-block .auth-col {
+      flex: 1;
+      padding-top: 10px;
+      border-top: 1px solid #888;
+    }
+    .auth-block .auth-col p { line-height: 1.5; font-size: 13.5px; }
+    .auth-block .auth-col p.role {
+      font-weight: 700;
+      color: var(--ink);
+      margin-top: 2px;
+    }
+    .auth-block .auth-col p.action {
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    /* ================= PRINT ADJUSTMENTS ================= */
+    @media print {
+      html, body { background: #fff; }
+      .sheet {
+        width: auto;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="sheet">
+
+  <!-- ================= HEADER ================= -->
+  {% include 'includes/letterhead.html' with branch="(योजना शाखा)" %}
+{% editable_letter "bidding.print_contract_tippani" "बोलपत्र स्वीकृत गर्ने सिफारिस टिप्पणी" %}
+
+  <!-- ================= META ================= -->
+  <div class="letter-meta">
+    <span class="chip">टिप्पणी र आदेश</span>
+    <span class="date-box">मिति: {{ evaluation_date|nepali_date }}</span>
+  </div>
+
+  <!-- ================= SUBJECT ================= -->
+  <div class="letter-subject">
+    विषयः– बोलपत्र स्वीकृत गर्ने सम्बन्धमा ।
+  </div>
+
+  <!-- ================= ADDRESS ================= -->
+  <p class="letter-salutation">
+    श्रीमान प्रमुख प्रशासकिय अधिकृत ज्यू,
+  </p>
+
+  <!-- ================= BODY ================= -->
+  <div class="letter-body">
+
+    <p>
+      यस कार्यालयबाट <strong>{{ bidding.project.name }}</strong> कार्यको लागि
+      ठेक्का नं. <strong>{{ bidding.bidding_number }}</strong> अन्तर्गत विद्युतीय
+      बोलपत्र मार्फत मिति <strong>{{ bid_published_date|nepali_date }}</strong>
+      गते सूचना प्रकाशन गरी बोलपत्र आह्वान गरिएकोमा, ई–सबमिसन मार्फत रितपूर्वक
+      दर्ता हुन आएका बोलपत्रहरुको बोलपत्र मूल्यांकन समितिबाट प्राविधिक तथा
+      आर्थिक मूल्यांकन गरिएको छ।
+    </p>
+
+    <p>
+      उक्त मूल्यांकनको क्रममा बोलपत्रदाता
+      <strong>{{ bidding.bidder_name_nepali }}</strong>,
+      ठेगाना <strong>{{ bidding.bidder_address_nepali }}</strong> बाट पेश भएको
+      कबोल अंक रु. <strong>{{ bidding.bidding_amount|floatformat:2|to_nepali_number }}/-</strong>
+      को बोलपत्र न्यूनतम मूल्यांकित तथा सारभूत रुपमा प्रभावग्राही (Substantially
+      Responsive) देखिएकोले बोलपत्र मूल्यांकन समितिको मिति
+      <strong>{{ evaluation_date|nepali_date }}</strong> गतेको बैठकबाट उक्त
+      बोलपत्र स्वीकृत गर्न सिफारिस भई आएको छ।
+    </p>
+
+    <p>
+      स्वीकृत हुने बोलपत्रदातासँग सम्झौता गर्नुअघि सार्वजनिक खरिद ऐन तथा
+      नियमावली बमोजिम कार्यसम्पादन जमानत (Performance Bank Guarantee) पेश गर्न
+      लगाई सो जमानतको म्याद कम्तिमा मिति
+      <strong>{{ performance_bond_expiring_date|nepali_date }}</strong> गतेसम्म
+      कायम रहने गरी लिनु पर्ने भएकोले, माथि उल्लेखित बोलपत्रदाताको बोलपत्र
+      स्वीकृत गरी कार्यसम्पादन जमानत प्राप्त भए पश्चात सम्झौता गर्न
+      स्वीकृतिका लागि यो टिप्पणी निर्णयार्थ पेश गरेको छु।
+    </p>
+
+    <div class="summary-box">
+      <table>
+        <caption>बोलपत्र विवरण</caption>
+        <tbody>
+          <tr>
+            <td class="label">ठेक्का नं.</td>
+            <td class="value">{{ bidding.bidding_number }}</td>
+          </tr>
+          <tr>
+            <td class="label">आयोजनाको नाम</td>
+            <td class="value">{{ bidding.project.name }}</td>
+          </tr>
+          <tr>
+            <td class="label">बोलपत्रदाताको नाम</td>
+            <td class="value">{{ bidding.bidder_name_nepali }}</td>
+          </tr>
+          <tr class="total">
+            <td class="label">कबोल अंक</td>
+            <td class="value">{{ bidding.bidding_amount|floatformat:2|to_nepali_number }}/-</td>
+          </tr>
+          <tr>
+            <td class="label">PG म्याद (कम्तिमा)</td>
+            <td class="value">{{ performance_bond_expiring_date|nepali_date }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ================= AUTHORIZATION ================= -->
+  <div class="auth-block">
+    <div class="auth-col">
+      <p class="role">(योजना शाखा)</p>
+      <p class="action">पेश गर्ने</p>
+    </div>
+
+    <div class="auth-col">
+      <p class="role">(लेखा शाखा)</p>
+      <p class="action">सिफारिस गर्ने</p>
+    </div>
+
+    <div class="auth-col">
+      <p class="role">(प्रमुख प्रशासकिय अधिकृत)</p>
+      <p class="action">सदर गर्ने</p>
+    </div>
+  </div>
+
+{% endeditable_letter %}
+</div>
+
+<script>
+  window.__letterPrint = function () {
+    window.print();
+    setTimeout(function () {
+      window.location.href = "__BID_RETURN__";
+    }, 1000);
+  };
+</script>
+
+</body>
+</html>

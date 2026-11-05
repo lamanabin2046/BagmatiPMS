@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+{% load static %}
+{% load letters %}
+{% load nepali_date %}
+{% load nepali_filters %}
+{% load outputs %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8">
+  <title>भुक्तानी सम्बन्धमा</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    /* ================= PAGE SETUP ================= */
+    @page {
+      size: A4;
+      margin-top: 40px;
+      margin-right: 40px;
+      margin-bottom: 40px;
+      margin-left: 0.7in; /* Government punch margin */
+    }
+
+    body {
+      font-family: "Mangal", "Kalimati", Arial, sans-serif;
+      font-size: 15px;
+      color: #000;
+      line-height: 1.9;
+    }
+
+    /* ================= LETTER HEAD ================= */
+    .letter-head {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      color: #b91c1c; /* Government red */
+      border-bottom: 2px solid #b91c1c;
+      padding-bottom: 10px;
+      margin-bottom: 18px;
+    }
+
+    .letter-head * {
+      color: #b91c1c !important;
+    }
+
+    .letter-head img {
+      width: 90px;
+    }
+
+    .letter-head-content {
+      flex-grow: 1;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    /* ================= META ================= */
+    .date-right {
+      text-align: right;
+      margin-bottom: 12px;
+    }
+
+    /* ================= SUBJECT ================= */
+    .subject {
+      text-align: center;
+      font-weight: bold;
+      text-decoration: underline;
+      margin: 22px 0;
+    }
+
+    /* ================= BODY ================= */
+    .text-main {
+      text-align: justify;
+    }
+
+    /* ================= DETAILS ================= */
+    .details p {
+      margin: 2px 0;
+    }
+
+    /* ================= SIGN ================= */
+    .signature-section {
+      margin-top: 70px;
+      display: flex;
+      justify-content: space-between;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ================= LETTER HEAD ================= -->
+{% include 'includes/letterhead.html' with title="टिप्पणी र आदेश" %}
+{% editable_letter "quatation.print_quatation_final_payment_tippani" "भुक्तानी सम्बन्धमा" %}
+
+<!-- ================= DATE ================= -->
+<div class="date-right">
+  <strong>मिति:</strong> {{ application_date_nepali }}
+</div>
+
+<!-- ================= SUBJECT ================= -->
+<div class="subject">
+  विषयः भुक्तानी सम्बन्धमा ।
+</div>
+
+<!-- ================= BODY ================= -->
+<p>श्रीमान्,</p>
+
+<p class="text-main">
+  {% include 'includes/officename.html' %} को चालु आ. व.
+  {{ data.fiscalyear|to_nepali_number }}
+  को {{ palika.assembly }}बाट स्वीकृत बजेट अनुसार वडा नम्बर
+  {{ data.ward|to_nepali_number }}
+  मा वडा/पालिका स्तरीय योजना
+  <strong>{{ data.project_name }}</strong>
+  कार्यका लागि श्री
+  {{ data.lowest_bidder_firm }} {{ data.firm_address }}
+  र यस कार्यालयबीच मिति
+  {{ data.start_date_nepali|nepali_date }}
+  गते सम्पन्न सम्झौता अनुसार
+  जम्मा रु. {{ data.lowest_bidded_price|money:0 }}/-
+  (भ्याट समेत) मा कार्य सम्पन्न गर्न
+  कार्यादेश दिइएको थियो ।
+</p>
+
+<p class="text-main">
+  सोही अनुसार प्राविधिक मूल्याङ्कन गरी अन्तिम बिल
+  तथा बिल भर्पाई संलग्न राखी भुक्तानी माग गरिएकोमा
+  प्राविधिक मूल्याङ्कन अनुसार ५% धरौटी कट्टा गरी{% if data.advance %}
+  तथा दिइसकेको अग्रिम भुक्तानी रु. {{ data.advance|money:0 }}/- समायोजन गरी{% endif %}
+  बाँकी रकममा नियमानुसार कर कट्टा गरी
+  निज फर्मको बैंक खातामार्फत भुक्तानी दिन
+  उपयुक्त देखिएकोले निर्णयार्थ पेश गरिएको छ ।
+</p>
+
+<!-- ================= DETAILS ================= -->
+<div class="details">
+  <p><strong>तपशील :</strong></p>
+  <p>प्राविधिकबाट आएको अन्तिम मूल्याङ्कन रकम : रु. {{ data.total_valuation|money }}</p>
+  <p>रिटेन्सन (५%) रकम : रु. {{ data.retention|money }}</p>
+  <p>आयकर कट्टी रकम : रु. {{ data.tax_deduction|money }}</p>
+  {% if data.advance %}<p>अग्रिम भुक्तानी कट्टी रकम : रु. {{ data.advance|money }}</p>{% endif %}
+  <p><strong>भुक्तानी दिने खुद रकम : रु. {{ data.final_payment|money }}</strong></p>
+</div>
+
+<!-- ================= SIGNATURE ================= -->
+<div class="signature-section">
+  <div>
+    .........................<br>
+    योजना शाखा<br>
+    पेश गर्ने
+  </div>
+
+  <div>
+    .........................<br>
+    लेखा शाखा<br>
+    सिफारिस गर्ने
+  </div>
+
+  <div>
+    .................................<br>
+    प्रमुख प्रशासकीय अधिकृत<br>
+    सदर गर्ने
+  </div>
+</div>
+
+{% endeditable_letter %}
+<script>
+  window.__letterPrint = function () {
+    window.print();
+    setTimeout(function () {
+      window.location.href = "__WF_RETURN__";
+    }, 1200);
+  };
+</script>
+
+</body>
+</html>

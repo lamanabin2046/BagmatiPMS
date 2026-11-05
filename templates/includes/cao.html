@@ -1,0 +1,12 @@
+{# पत्रमा हस्ताक्षर: प्रमुख प्रशासकीय अधिकृत वा उहाँबाट प्रत्यायोजित अधिकृत (letters/signers.py) #}
+<div>
+  <p>................................</p>
+  {% if signer %}
+  {% if signer.name %}<p>{{ signer.name }}</p>{% endif %}
+  <p>({{ signer.post }})</p>
+  {% if signer.note %}<p style="font-size:12px">({{ signer.note }})</p>{% endif %}
+  {% else %}
+  {% if palika.cao_name %}<p>{{ palika.cao_name }}</p>{% endif %}
+  <p>(प्रमुख प्रशासकिय अधिकृत)</p>
+  {% endif %}
+</div>

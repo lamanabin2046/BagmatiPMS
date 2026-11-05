@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+{% include 'reports/_head.html' with report_title=title %}
+
+<div class="no-print grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+  <div class="card p-4"><p class="text-xs text-slate-500">योजनामा विनियोजित</p><p class="text-xl font-bold text-slate-800">रु. {{ total.budget|money:0 }}</p>
+    {% if total.allocated %}<p class="text-[11px] text-slate-400">शीर्षकमा स्वीकृत रु. {{ total.allocated|money:0 }}</p>{% endif %}</div>
+  <div class="card p-4"><p class="text-xs text-slate-500">प्रतिबद्धता (अनुमान / सम्झौता)</p><p class="text-xl font-bold text-brand-700">रु. {{ total.committed|money:0 }}</p></div>
+  <div class="card p-4"><p class="text-xs text-slate-500">खर्च ({{ total.pct|npn }}%)</p><p class="text-xl font-bold text-slate-800">रु. {{ total.spent|money:0 }}</p>
+    <div class="mt-2 h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-brand-600" style="width: {% if total.pct > 100 %}100{% else %}{{ total.pct|stringformat:'s' }}{% endif %}%"></div></div></div>
+  <a href="?{{ qs }}&flag=over" class="card p-4 hover:shadow-soft {% if f.flag == 'over' %}ring-2 ring-rose-500{% endif %} {% if total.over %}bg-rose-50/60{% endif %}">
+    <p class="text-xs text-slate-500"><i class="fas fa-triangle-exclamation text-rose-600"></i> विनियोजनभन्दा बढी</p><p class="text-xl font-bold {% if total.over %}text-rose-700{% else %}text-slate-800{% endif %}">{{ total.over|npn }}</p></a>
+  <a href="?{{ qs }}&flag=near" class="card p-4 hover:shadow-soft {% if f.flag == 'near' %}ring-2 ring-amber-500{% endif %}">
+    <p class="text-xs text-slate-500"><i class="fas fa-gauge-high text-amber-600"></i> ९०% भन्दा बढी खर्च</p><p class="text-xl font-bold text-amber-700">{{ total.near|npn }}</p></a>
+</div>
+
+<form method="get" class="no-print card p-4 mb-5" data-live-filter>
+  <input type="hidden" name="flag" value="{{ f.flag }}">
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
+    <div><label class="form-label">आर्थिक वर्ष</label>
+      <select name="fiscalyear" class="form-select">{% for y in fiscal_years %}<option value="{{ y.id }}" {% if fy.id == y.id %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">वडा</label>
+      <select name="ward" class="form-select"><option value="">सबै वडा</option>
+        {% for w in all_wards %}<option value="{{ w.id }}" {% if f.ward == w.id|stringformat:'s' %}selected{% endif %}>वडा नं. {{ w.name }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">स्रोत</label>
+      <select name="budget_type" class="form-select"><option value="">सबै</option>
+        {% for b in budget_types %}<option value="{{ b.id }}" {% if f.budget_type == b.id|stringformat:'s' %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></div>
+    <div class="col-span-2"><label class="form-label">योजना, शीर्षक वा उपशीर्षक नं.</label>
+      <input type="search" name="q" value="{{ f.q }}" class="form-input" placeholder="खोज्नुहोस्..."></div>
+  </div>
+  {% if f.flag %}<a href="?fiscalyear={{ fy.id }}&ward={{ f.ward }}&budget_type={{ f.budget_type }}&q={{ f.q|urlencode }}" class="inline-block mt-2 text-xs text-brand-600 underline">“{% if f.flag == 'over' %}विनियोजनभन्दा बढी{% else %}९०%+ खर्च{% endif %}” फिल्टर हटाउनुहोस्</a>{% endif %}
+</form>
+
+{% if can_manage %}
+<div class="no-print flex flex-wrap gap-2 mb-4">
+  <a href="{% url 'budget_heads' %}?fiscalyear={{ fy.id }}" class="btn-secondary"><i class="fas fa-list"></i> बजेट शीर्षक</a>
+  <a href="{% url 'budget_amendment_new' %}?fiscalyear={{ fy.id }}" class="btn-secondary"><i class="fas fa-right-left"></i> थप / कटौती / रकमान्तर</a>
+</div>
+{% endif %}
+
+{% for g in groups %}
+<section class="card mb-4">
+  <details {% if g.rows|length <= 25 or f.q or f.flag %}open{% endif %}>
+    <summary class="card-header cursor-pointer flex-wrap gap-x-6 gap-y-1">
+      <div class="flex-1 min-w-[14rem]">
+        <h2 class="font-semibold text-slate-800">{% if g.head %}{% if g.head.code %}<span class="text-slate-400 font-normal">{{ g.head.code }}</span> {% endif %}{{ g.head.name }}{% else %}<span class="text-amber-700">शीर्षक नतोकिएका योजना</span>{% endif %}</h2>
+        <p class="text-[11px] text-slate-500">{% if g.head.budget_type %}{{ g.head.budget_type.name }} · {% endif %}{{ g.rows|length|npn }} योजना
+          {% if g.allocated is not None %} · स्वीकृत रु. {{ g.allocated|money:0 }} · योजना नछुट्याएको रु. {{ g.unassigned|money:0 }}{% endif %}</p>
+      </div>
+      <div class="text-right text-xs"><span class="text-slate-500">विनियोजित</span><br><b>{{ g.budget|money:0 }}</b></div>
+      <div class="text-right text-xs"><span class="text-slate-500">खर्च</span><br><b>{{ g.spent|money:0 }}</b> <span class="text-slate-400">({{ g.pct|npn }}%)</span></div>
+      <div class="text-right text-xs"><span class="text-slate-500">बाँकी</span><br><b class="{% if g.balance < 0 %}text-rose-600{% else %}text-emerald-700{% endif %}">{{ g.balance|money:0 }}</b></div>
+    </summary>
+    <div class="overflow-x-auto">
+      <table class="w-full text-[13px]">
+        <thead><tr class="bg-slate-50 text-[11px] text-slate-500">
+          <th class="px-3 py-2 text-left font-medium">क्र.सं.</th>
+          <th class="px-3 py-2 text-left font-medium min-w-[16rem]">योजनाको नाम</th>
+          <th class="px-3 py-2 text-right font-medium">विनियोजित</th>
+          <th class="px-3 py-2 text-right font-medium">प्रतिबद्धता</th>
+          <th class="px-3 py-2 text-right font-medium">खर्च</th>
+          <th class="px-3 py-2 text-right font-medium">बाँकी</th>
+          <th class="px-3 py-2 text-left font-medium min-w-[8rem]">खर्च %</th>
+        </tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in g.rows %}
+          <tr class="{% if r.flag == 'over' %}bg-rose-50/50{% endif %}">
+            <td class="px-3 py-2 text-slate-400">{{ forloop.counter|npn }}</td>
+            <td class="px-3 py-2"><span class="font-medium text-slate-800">{{ r.p.name }}</span>
+              <span class="block text-[11px] text-slate-400">वडा नं. {{ r.p.ward.name|default:'—' }} · {{ r.kind_label|default:'—' }}{% if r.status_label %} · {{ r.status_label }}{% endif %}</span></td>
+            <td class="px-3 py-2 text-right whitespace-nowrap">{{ r.budget|money }}</td>
+            <td class="px-3 py-2 text-right whitespace-nowrap {% if r.committed > r.budget %}text-rose-600 font-medium{% endif %}">{% if r.committed %}{{ r.committed|money }}{% else %}—{% endif %}</td>
+            <td class="px-3 py-2 text-right whitespace-nowrap">{{ r.spent|money }}</td>
+            <td class="px-3 py-2 text-right whitespace-nowrap font-medium {% if r.balance < 0 %}text-rose-600{% endif %}">{{ r.balance|money }}</td>
+            <td class="px-3 py-2">
+              <div class="flex items-center gap-2"><div class="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden min-w-[3rem]">
+                <div class="h-full {% if r.flag == 'over' %}bg-rose-500{% elif r.flag == 'near' %}bg-amber-500{% else %}bg-brand-600{% endif %}" style="width: {% if r.pct > 100 %}100{% else %}{{ r.pct|stringformat:'s' }}{% endif %}%"></div></div>
+                <span class="text-[11px] text-slate-500 w-10 text-right">{{ r.pct|npn }}%</span></div>
+              {% if r.flag == 'over' %}<span class="text-[10px] text-rose-600">{% if r.committed > r.budget %}प्रतिबद्धता विनियोजनभन्दा बढी{% else %}खर्च विनियोजनभन्दा बढी{% endif %}</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="px-3 py-4 text-center text-slate-400">यस शीर्षकमा योजना राखिएको छैन।</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</section>
+{% empty %}
+<div class="card p-8 text-center text-slate-400">यस आ.व.मा कुनै योजना भेटिएन।</div>
+{% endfor %}
+{% endblock %}

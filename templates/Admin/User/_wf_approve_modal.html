@@ -1,0 +1,190 @@
+{% load nepali_date %}
+{# HTMX partial (page-wide modal): रुजु / स्वीकृत वा सदस्य र कागजात — purpose: approve | review #}
+<div class="flex flex-col max-h-[92vh]">
+  {# ---- header ---- #}
+  <div class="flex items-start justify-between gap-4 px-6 py-4 border-b border-slate-100">
+    <div class="min-w-0">
+      <p class="text-xs font-medium text-brand-700 flex items-center gap-1.5">
+        {% if purpose == 'approve' %}<i class="fas fa-stamp"></i> रुजु / स्वीकृत{% else %}<i class="fas fa-users"></i> उपभोक्ता समिति — सदस्य र कागजात{% endif %}
+      </p>
+      <h2 class="text-lg font-bold text-slate-800 truncate mt-0.5">{{ project.name }}</h2>
+      <p class="text-xs text-slate-500 mt-0.5">
+        वडा नं. {{ project.ward.name|to_nepali_number }} · {{ project.fiscalyear.name }}
+        <span class="badge bg-violet-50 text-violet-700 ml-1 !py-0.5">{{ mode_label }}</span>
+      </p>
+    </div>
+    <button type="button" onclick="closeAppModal()" class="w-9 h-9 shrink-0 rounded-lg text-slate-500 hover:bg-slate-100" title="बन्द (Esc)">
+      <i class="fas fa-xmark text-lg"></i>
+    </button>
+  </div>
+
+  {# ---- body ---- #}
+  <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5 slim-scroll-light">
+
+    {# सारांश #}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="rounded-xl border border-slate-200 p-3">
+        <p class="text-[11px] text-slate-500">स्वीकृत बजेट</p>
+        <p class="font-semibold text-slate-800">रु. {{ project.budget|floatformat:0|to_nepali_number }}</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-3">
+        <p class="text-[11px] text-slate-500">लागत अनुमान (कुल)</p>
+        <p class="font-semibold text-slate-800">{% if estimate %}रु. {{ estimate.total_cost|floatformat:0|to_nepali_number }}{% else %}<span class="text-rose-600">बाँकी</span>{% endif %}</p>
+        {% if estimate %}<p class="text-[11px] {% if amount and not amount.ok %}text-rose-600 font-medium{% else %}text-slate-400{% endif %}">उपभोक्ता योगदान रु. {{ estimate.user_contribution|floatformat:0|to_nepali_number }} ({{ amount.pct|floatformat:"-2"|to_nepali_number }}%{% if amount.need %}, न्यूनतम {{ amount.need|floatformat:"-2"|to_nepali_number }}%{% endif %})</p>{% endif %}
+      </div>
+      <div class="rounded-xl border border-slate-200 p-3">
+        <p class="text-[11px] text-slate-500">उपभोक्ता समिति</p>
+        <p class="font-semibold text-slate-800 truncate">{{ committee.name|default:'—' }}</p>
+        {% if formation_bs %}<p class="text-[11px] text-slate-400">गठन {{ formation_bs }}</p>{% endif %}
+      </div>
+      <div class="rounded-xl border border-slate-200 p-3">
+        <p class="text-[11px] text-slate-500">आयोजना कार्यान्वयन अवधि</p>
+        <p class="font-semibold text-slate-800">{{ start_bs|default:'—' }} → {{ end_bs|default:'—' }}</p>
+      </div>
+    </div>
+
+    {# सदस्य र कागजात #}
+    <section>
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <h3 class="text-sm font-semibold text-slate-800">पदाधिकारी तथा सदस्य ({{ rows|length|to_nepali_number }} जना)</h3>
+        {% if missing_count %}
+          <span class="badge bg-rose-50 text-rose-700"><i class="fas fa-triangle-exclamation mr-1"></i> {{ missing_count|to_nepali_number }} जनाका कागजात नपुगेका</span>
+        {% elif rows %}
+          <span class="badge bg-emerald-50 text-emerald-700"><i class="fas fa-circle-check mr-1"></i> सबैका कागजात पुगेका</span>
+        {% endif %}
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-slate-200">
+        <table class="w-full text-sm min-w-[920px]">
+          <thead><tr class="bg-slate-50 text-xs text-slate-500 text-left">
+            <th class="px-3 py-2 font-medium">पद</th><th class="px-3 py-2 font-medium">नाम / ठेगाना</th><th class="px-3 py-2 font-medium">लिङ्ग</th>
+            <th class="px-3 py-2 font-medium">NID / ना.प्र.नं.</th><th class="px-3 py-2 font-medium">मोबाइल</th>
+            <th class="px-3 py-2 font-medium">कागजात</th>
+          </tr></thead>
+          <tbody class="divide-y divide-slate-100">
+          {% for r in rows %}
+            <tr class="align-top {% if r.missing %}bg-rose-50/40{% endif %}">
+              <td class="px-3 py-3 whitespace-nowrap"><span class="badge {% if r.post == 'member' %}bg-slate-100 text-slate-600{% else %}bg-brand-50 text-brand-700{% endif %}">{{ r.post_label }}</span></td>
+              <td class="px-3 py-3"><p class="font-medium text-slate-800">{{ r.name }}</p><p class="text-xs text-slate-500">{{ r.address|default:'' }}</p></td>
+              <td class="px-3 py-3 text-xs {% if r.gender == 'महिला' %}text-pink-700 font-medium{% else %}text-slate-600{% endif %}">{{ r.gender|default:'—' }}</td>
+              <td class="px-3 py-3 text-xs text-slate-600 whitespace-nowrap">{% if r.nid %}NID {{ r.nid }}<br>{% endif %}{% if r.citizenship %}ना.प्र. {{ r.citizenship }}{% endif %}{% if not r.nid and not r.citizenship %}—{% endif %}</td>
+              <td class="px-3 py-3 text-xs text-slate-600">{{ r.mobile|default:'—' }}</td>
+              <td class="px-3 py-3">
+                <div class="flex gap-2">
+                  {% for d in r.doc_list %}
+                    {% if d.url %}
+                      <button type="button" class="group text-center" onclick="viewDoc('{{ d.url }}', {{ d.pdf|yesno:'true,false' }}, '{{ r.name|escapejs }} — {{ d.label }}')">
+                        {% if d.pdf %}
+                          <span class="w-14 h-11 rounded-lg border border-slate-200 bg-rose-50 text-rose-600 flex items-center justify-center group-hover:ring-2 ring-brand-300"><i class="fas fa-file-pdf"></i></span>
+                        {% else %}
+                          <img src="{{ d.url }}" loading="lazy" alt="" class="w-14 h-11 object-cover rounded-lg border border-slate-200 group-hover:ring-2 ring-brand-300">
+                        {% endif %}
+                        <span class="block text-[10px] text-slate-500 mt-0.5 leading-tight w-14 truncate">{{ d.label }}</span>
+                      </button>
+                    {% else %}
+                      <span class="text-center" title="{{ d.label }} छैन">
+                        <span class="w-14 h-11 rounded-lg border border-dashed border-slate-300 text-slate-300 flex items-center justify-center"><i class="fas fa-image"></i></span>
+                        <span class="block text-[10px] text-slate-400 mt-0.5 leading-tight w-14 truncate">{{ d.label }}</span>
+                      </span>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+                {% if r.missing %}<p class="text-[11px] text-rose-600 mt-1"><i class="fas fa-circle-exclamation"></i> नपुगेको: {{ r.missing|join:', ' }}</p>{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="px-3 py-6 text-center text-slate-400">समितिका सदस्य राखिएका छैनन्।</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if gender.total %}
+      <div class="mt-2 rounded-lg px-3 py-2 text-xs flex flex-wrap gap-x-4 gap-y-1 {% if gender.ok %}bg-emerald-50 text-emerald-800{% else %}bg-amber-50 text-amber-800{% endif %}">
+        <b><i class="fas fa-venus-mars"></i> महिला सहभागिता: {{ gender.pct|to_nepali_number }}%</b>
+        <span>महिला {{ gender.women|to_nepali_number }} · पुरुष {{ gender.men|to_nepali_number }}{% if gender.other %} · अन्य {{ gender.other|to_nepali_number }}{% endif %} · कुल {{ gender.total|to_nepali_number }}</span>
+        {% for w in gender.warnings %}<span><i class="fas fa-triangle-exclamation"></i> {{ w }}</span>{% empty %}<span>✓ ३३% र पदाधिकारीमा महिला दुवै पुगेको</span>{% endfor %}
+      </div>
+      {% endif %}
+      {% if conflicts %}
+      <div class="mt-2 rounded-lg px-3 py-2 text-xs {% if conflict_block %}bg-rose-50 text-rose-800{% else %}bg-amber-50 text-amber-800{% endif %}">
+        <b><i class="fas fa-user-group"></i> अर्को सक्रिय समितिमा पनि पदाधिकारी{% if not conflict_block %} (चेतावनी){% endif %}</b>
+        {% for c in conflicts %}
+        <p class="mt-0.5">{{ c.name }} ({{ c.post_label }}) —
+          {% for o in c.others %}“{{ o.committee }}” ({{ o.project }}{% if o.ward %}, वडा {{ o.ward|to_nepali_number }}{% endif %}) मा {{ o.post_label }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if can_edit_committee and missing_count %}
+        <a href="{% url 'edit_usercommittee' committee.id %}" class="inline-flex items-center gap-1.5 text-xs text-brand-700 hover:underline mt-2">
+          <i class="fas fa-pen"></i> समिति सम्पादन गरी कागजात थप्नुहोस्
+        </a>
+      {% endif %}
+    </section>
+
+    {# वडा सिफारिस #}
+    {% if mode == 'municipal' %}
+    <section class="rounded-xl border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h3 class="text-sm font-semibold text-slate-800">वडा सिफारिस (सम्झौताका लागि)</h3>
+        {% if recommendation %}
+          <p class="text-xs text-slate-500 mt-0.5">{% if recommendation.source == 'upload' %}अपलोड गरिएको{% else %}पोर्टलबाट{% endif %}{% if recommendation.chalani_number %} · च.नं. {{ recommendation.chalani_number }}{% endif %}{% if recommendation.recommendation_date %} · {{ recommendation.recommendation_date|date:'Y-m-d' }}{% endif %}</p>
+        {% else %}
+          <p class="text-xs text-rose-600 mt-0.5">बाँकी</p>
+        {% endif %}
+      </div>
+      {% if rec_link %}<a href="{{ rec_link }}" target="_blank" rel="noopener" class="btn-chip-slate"><i class="fas fa-up-right-from-square"></i> सिफारिस हेर्नुहोस्</a>{% endif %}
+    </section>
+    {% endif %}
+
+    {% if approval %}
+    <section class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+      <p class="text-sm font-semibold text-emerald-800"><i class="fas fa-circle-check"></i> रुजु / स्वीकृत भइसकेको</p>
+      <p class="text-xs text-emerald-900/80 mt-1">{{ approval.approver_name }} ({{ approval.approver_post }}) · {{ approval.approved_at|date:'Y-m-d H:i' }}</p>
+      {% if approval.remarks %}<p class="text-xs italic text-emerald-900/80 mt-1">“{{ approval.remarks }}”</p>{% endif %}
+    </section>
+    {% endif %}
+  </div>
+
+  {# ---- footer: approve ---- #}
+  {% if purpose == 'approve' and can_approve and not approval %}
+  <form class="border-t border-slate-100 px-6 py-4 bg-slate-50/70 rounded-b-2xl space-y-3"
+        hx-post="{% url 'uc_approve' project.id %}" hx-target="#approve-msg" hx-swap="innerHTML">
+    {% csrf_token %}
+    {% if problems %}
+      <div class="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 space-y-0.5">
+        {% for p in problems %}<p class="text-xs text-rose-700"><i class="fas fa-circle-exclamation"></i> {{ p }}</p>{% endfor %}
+      </div>
+    {% endif %}
+    <div id="approve-msg"></div>
+    <textarea name="remarks" rows="2" class="form-textarea" placeholder="कैफियत / निर्देशन (ऐच्छिक)" {% if problems %}disabled{% endif %}></textarea>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="text-xs text-slate-500">स्वीकृत गर्ने: <b>{{ name }}</b> ({{ post }})</p>
+      <div class="flex gap-2">
+        <button type="button" class="btn-secondary" onclick="closeAppModal()">रद्द</button>
+        <button type="submit" class="btn-success {% if problems %}opacity-50 cursor-not-allowed{% endif %}" {% if problems %}disabled{% endif %}
+                hx-confirm="सबै कागजात हेरेर यो योजना रुजु / स्वीकृत गर्ने?">
+          <i class="fas fa-stamp"></i> रुजु / स्वीकृत गर्नुहोस्
+        </button>
+      </div>
+    </div>
+  </form>
+  {% else %}
+  <div class="border-t border-slate-100 px-6 py-3 flex justify-end">
+    <button type="button" class="btn-secondary" onclick="closeAppModal()">बन्द गर्नुहोस्</button>
+  </div>
+  {% endif %}
+</div>
+
+{# कागजात ठूलो गरी हेर्ने #}
+<div id="doc-viewer" class="hidden absolute inset-0 z-10 bg-slate-900/85 rounded-2xl flex-col">
+  <div class="flex items-center justify-between px-5 py-3 text-white">
+    <p id="doc-viewer-title" class="text-sm font-medium truncate"></p>
+    <div class="flex gap-2">
+      <a id="doc-viewer-open" href="#" target="_blank" rel="noopener" class="btn-chip-slate !bg-white/10 !text-white !border-white/20"><i class="fas fa-up-right-from-square"></i> नयाँ ट्याबमा</a>
+      <button type="button" onclick="closeDoc()" class="btn-chip-slate !bg-white/10 !text-white !border-white/20"><i class="fas fa-xmark"></i> बन्द</button>
+    </div>
+  </div>
+  <div class="flex-1 min-h-0 p-4 flex items-center justify-center">
+    <img id="doc-viewer-img" src="" alt="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl hidden">
+    <iframe id="doc-viewer-pdf" src="about:blank" class="w-full h-full rounded-lg bg-white hidden"></iframe>
+  </div>
+</div>

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}वडाका योजनाहरू{% endblock %}
+{% block content %}
+
+<!-- ================= PAGE HEADER ================= -->
+<div class="mb-6">
+  <h1 class="text-xl md:text-2xl font-bold text-slate-800">वडाका योजनाहरू</h1>
+  <p class="text-sm text-slate-500 mt-0.5">वडा नं. {{ sachib.ward.name }} – {{ sachib.name }}</p>
+</div>
+
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card">
+  <div class="px-5 py-4 border-b border-slate-100">
+    <h2 class="text-sm font-semibold text-slate-700">योजना सूची र उपभोक्ता समिति विवरण</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs uppercase tracking-wide text-slate-500 bg-slate-50">
+          <th class="px-5 py-3 font-medium">क्र.सं.</th>
+          <th class="px-5 py-3 font-medium">योजना नाम</th>
+          <th class="px-5 py-3 font-medium">आ.व.</th>
+          <th class="px-5 py-3 font-medium">बजेट</th>
+          <th class="px-5 py-3 font-medium">उपभोक्ता समिति स्थिति</th>
+          <th class="px-5 py-3 font-medium">कार्य</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for p in projects %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 text-slate-700">{{ forloop.counter }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ p.name }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ p.fiscalyear.name|default:"—" }}</td>
+          <td class="px-5 py-3 text-slate-700">रु. {{ p.budget|floatformat:0 }}</td>
+          <td class="px-5 py-3">
+            {% if p.user_committee %}
+            <span class="badge bg-emerald-50 text-emerald-700">गठन भयो</span>
+            {% else %}
+            <span class="badge bg-amber-50 text-amber-700">बाँकी</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3">
+            {% if p.user_committee %}
+            <a href="{% url 'edit_usercommittee' p.user_committee.id %}" class="btn-chip-amber"><i class="fas fa-pen"></i> सम्पादन गर्नुहोस्</a>
+            {% else %}
+            <a href="{% url 'add_usercommittee_for_project' p.id %}" class="btn-chip-emerald"><i class="fas fa-user-plus"></i> समिति विवरण भर्नुहोस्</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-5 py-6 text-center text-slate-400">यस वडामा हाल कुनै योजना छैन</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

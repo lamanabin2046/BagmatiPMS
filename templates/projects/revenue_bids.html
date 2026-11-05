@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}बोलपत्र खोल्ने र मूल्याङ्कन{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <p class="text-xs font-medium text-brand-700"><i class="fas fa-landmark"></i> {{ module_label }}</p>
+      <h1 class="text-lg md:text-xl font-bold text-slate-800 mt-0.5"><i class="fas fa-scale-balanced text-brand-500"></i> बोलपत्र खोल्ने र मूल्याङ्कन</h1>
+      <p class="text-sm text-slate-500 mt-0.5">{{ s.name }}{% if s.ward %} · वडा नं. {{ s.ward.name|to_nepali_number }}{% endif %}</p>
+    </div>
+    <a href="{{ back }}" class="btn-secondary"><i class="fas fa-arrow-left"></i> कार्यप्रवाहमा फर्कनुहोस्</a>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    {% for c in cards %}<div class="card p-3"><p class="text-[11px] text-slate-500">{{ c.label }}</p><p class="font-semibold {% if c.brand %}text-brand-700{% else %}text-slate-800{% endif %} truncate">{{ c.value }}</p>{% if c.sub %}<p class="text-[11px] text-slate-400 truncate">{{ c.sub }}</p>{% endif %}</div>{% endfor %}
+  </div>
+  {% if errors %}<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 space-y-0.5">{% for e in errors %}<p class="text-sm text-rose-700"><i class="fas fa-circle-exclamation"></i> {{ e }}</p>{% endfor %}</div>{% endif %}
+  {% if sealed_count and not sealed_open %}
+  <div class="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm text-violet-900"><i class="fas fa-lock"></i> {{ sealed_count|to_nepali_number }} वटा अनलाइन बोलपत्र सिलबन्दी छन् — पेश गर्ने अन्तिम मिति ({{ s.bid_deadline|bs }}) सकिएपछि मात्र यहाँ खुल्छन्।</div>
+  {% elif online_new %}
+  <div class="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm text-violet-900"><i class="fas fa-lock-open"></i> {{ online_new|to_nepali_number }} वटा अनलाइन बोलपत्र खोलिए — कागजात र जमानत जाँचेर “योग्य” र “जमानत ठीक” चिन्ह लगाउनुहोस्।</div>
+  {% endif %}
+  <div class="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-2.5 text-sm text-brand-900">
+    <i class="fas fa-circle-info text-brand-500"></i> पेश गर्ने अन्तिम मिति {{ s.bid_deadline|bs }} · न्यूनतम कबोल रु. {{ s.min_bid|money:0 }} · बोलपत्र जमानत {{ s.bid_security_pct|floatformat:"-2"|to_nepali_number }}% ·
+    कागजात नपुगेको वा जमानत नमिलेको बोलपत्रमा चिन्ह हटाउनुहोस्। न्यूनतम कबोलभन्दा कम कबोल आफैँ अमान्य हुन्छ।
+  </div>
+  <form method="post" class="card" novalidate>
+    {% csrf_token %}<input type="hidden" name="next" value="{{ next }}">
+    <div class="p-5 border-b border-slate-100"><label class="form-label">बोलपत्र खोलेको मिति <span class="text-rose-500">*</span></label>
+      <input name="opening_date" value="{{ opening_date }}" class="form-input nepali-date max-w-xs" autocomplete="off" required></div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-xs text-slate-500"><tr>
+          <th class="px-3 py-2.5 text-left font-medium min-w-[14rem]">बोलपत्रदाता (फर्म / व्यक्ति)</th><th class="px-3 py-2.5 text-left font-medium">PAN</th>
+          <th class="px-3 py-2.5 text-left font-medium">कबोल अङ्क (रु.)</th><th class="px-3 py-2.5 text-center font-medium">योग्य / कागजात</th>
+          <th class="px-3 py-2.5 text-center font-medium">जमानत ठीक</th><th class="px-3 py-2.5 text-left font-medium min-w-[18rem]">बोलपत्र जमानत (प्रकार · रकम · बैंक/रसिद नं.)</th>
+          <th class="px-3 py-2.5 text-left font-medium min-w-[10rem]">कैफियत</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in rows %}
+          <tr>
+            <td class="px-3 py-2">{% if r.online %}<span class="badge bg-violet-50 text-violet-700 !py-0 text-[10px] mb-1"><i class="fas fa-globe"></i> अनलाइन</span>{% endif %}<input name="name_{{ r.key }}" value="{{ r.name }}" list="firm-options" class="form-input !py-1.5">
+              <input name="address_{{ r.key }}" value="{{ r.address }}" class="form-input !py-1 mt-1 text-xs" placeholder="ठेगाना"></td>
+            <td class="px-3 py-2"><input name="pan_{{ r.key }}" value="{{ r.pan }}" class="form-input !py-1.5 !w-28" maxlength="9" inputmode="numeric"></td>
+            <td class="px-3 py-2"><input name="amount_{{ r.key }}" value="{{ r.amount }}" class="form-input !py-1.5 !w-40" inputmode="decimal"></td>
+            <td class="px-3 py-2 text-center"><input type="checkbox" name="eligible_{{ r.key }}" value="1" {% if r.eligible %}checked{% endif %}></td>
+            <td class="px-3 py-2 text-center"><input type="checkbox" name="security_{{ r.key }}" value="1" {% if r.security %}checked{% endif %}></td>
+            <td class="px-3 py-2"><div class="flex gap-1">
+              <select name="seckind_{{ r.key }}" class="form-select !py-1.5" style="width:6.5rem"><option value="">—</option><option value="bank" {% if r.seckind == 'bank' %}selected{% endif %}>बैंक</option><option value="cash" {% if r.seckind == 'cash' %}selected{% endif %}>नगद</option></select>
+              <input name="secamt_{{ r.key }}" value="{{ r.secamt }}" class="form-input !py-1.5" style="width:7rem" inputmode="decimal" placeholder="रकम">
+              <input name="secref_{{ r.key }}" value="{{ r.secref }}" class="form-input !py-1.5" style="width:8rem" placeholder="नं."></div>
+              {% for d in r.docs %}<a href="{{ d.url }}" target="_blank" rel="noopener" class="text-[11px] text-brand-700 mr-2"><i class="fas fa-paperclip"></i> कागजात {{ forloop.counter|to_nepali_number }}</a>{% endfor %}</td>
+            <td class="px-3 py-2"><input name="remarks_{{ r.key }}" value="{{ r.remarks }}" class="form-input !py-1.5"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <datalist id="firm-options">{% for fo in firm_options %}<option value="{{ fo.firm_name }}">{{ fo.firm_pan }} {{ fo.firm_address }}</option>{% endfor %}</datalist>
+    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-2">
+      <a href="{{ back }}" class="btn-secondary">रद्द</a>
+      <button type="submit" class="btn-success"><i class="fas fa-floppy-disk"></i> सुरक्षित गर्नुहोस्</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

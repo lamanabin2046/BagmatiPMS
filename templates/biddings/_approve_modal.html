@@ -1,0 +1,93 @@
+{% load nepali_date outputs %}
+{# HTMX partial (page-wide modal): बोलपत्र रुजु / स्वीकृत #}
+<div class="flex flex-col max-h-[92vh]">
+  <div class="flex items-start justify-between gap-4 px-6 py-4 border-b border-slate-100">
+    <div class="min-w-0">
+      <p class="text-xs font-medium text-brand-700 flex items-center gap-1.5"><i class="fas fa-stamp"></i> बोलपत्र रुजु / स्वीकृत</p>
+      <h2 class="text-lg font-bold text-slate-800 truncate mt-0.5">{{ project.name }}</h2>
+      <p class="text-xs text-slate-500 mt-0.5">वडा नं. {{ project.ward.name|to_nepali_number }} · {{ project.fiscalyear.name }}{% if bid %} · ठेक्का नं. {{ bid.bidding_number }}{% endif %}</p>
+    </div>
+    <button type="button" onclick="closeAppModal()" class="w-9 h-9 shrink-0 rounded-lg text-slate-500 hover:bg-slate-100" title="बन्द (Esc)">
+      <i class="fas fa-xmark text-lg"></i>
+    </button>
+  </div>
+
+  <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5 slim-scroll-light">
+    {% if bid %}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="rounded-xl border border-slate-200 p-3">
+        <p class="text-[11px] text-slate-500">विनियोजित रकम</p>
+        <p class="font-semibold text-slate-800">रु. {{ bid.budget|default:project.budget|money:0 }}</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-3">
+        <p class="text-[11px] text-slate-500">कुल लागत अनुमान</p>
+        <p class="font-semibold text-slate-800">रु. {{ bid.total_cost_estimate|money:0 }}</p>
+        <p class="text-[11px] text-slate-400">भ्याट सहित रु. {{ bid.cost_estimate_vat|money:0 }}{% if bid.ps_amount %} + पि.एस. रु. {{ bid.ps_amount|money:0 }}{% endif %}</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-3">
+        <p class="text-[11px] text-slate-500">कबोल रकम</p>
+        <p class="font-semibold text-brand-700">{% if bid.bidding_amount %}रु. {{ bid.bidding_amount|money:0 }}{% else %}<span class="text-rose-600">बाँकी</span>{% endif %}</p>
+        {% if below is not None %}<p class="text-[11px] {% if below < 0 %}text-rose-600 font-medium{% else %}text-slate-400{% endif %}">{% if below < 0 %}लागत अनुमानभन्दा {{ below|floatformat:2|cut:'-'|to_nepali_number }}% बढी{% else %}लागत अनुमानभन्दा {{ below|floatformat:2|to_nepali_number }}% घटी{% endif %}</p>{% endif %}
+      </div>
+      <div class="rounded-xl border border-slate-200 p-3">
+        <p class="text-[11px] text-slate-500">कार्यसम्पादन जमानत (सुझाव)</p>
+        <p class="font-semibold text-slate-800">{% if pg %}रु. {{ pg|money:0 }}{% else %}—{% endif %}</p>
+        <p class="text-[11px] text-slate-400">कबोलको ५% (+ ८५% भन्दा कम कबोलमा थप)</p>
+      </div>
+    </div>
+
+    <section class="rounded-xl border border-slate-200 overflow-hidden">
+      <table class="w-full text-sm">
+        <tbody class="divide-y divide-slate-100">
+          <tr><td class="px-4 py-2.5 text-slate-500 w-56">छनोट भएको निर्माण व्यवसायी</td><td class="px-4 py-2.5 font-medium text-slate-800">{{ bid.bidder_name_nepali|default:'—' }}{% if bid.bidder_name_english %} <span class="text-slate-400 font-normal">({{ bid.bidder_name_english }})</span>{% endif %}</td></tr>
+          <tr><td class="px-4 py-2.5 text-slate-500">प्रोप्राइटर / ठेगाना</td><td class="px-4 py-2.5">{{ bid.bidder_owner_nepali|default:'—' }} · {{ bid.bidder_address_nepali|default:'—' }}</td></tr>
+          {% for label, d in dates %}<tr><td class="px-4 py-2.5 text-slate-500">{{ label }} मिति</td><td class="px-4 py-2.5">{{ d|default:'—' }}</td></tr>{% endfor %}
+          <tr><td class="px-4 py-2.5 text-slate-500">आशयको सूचना</td><td class="px-4 py-2.5">{% if asay_bs %}{{ asay_bs }} मा छापिएको{% else %}<span class="text-amber-700">छापिएको अभिलेख छैन</span>{% endif %}</td></tr>
+        </tbody>
+      </table>
+    </section>
+    {% endif %}
+
+    {% if warnings %}
+    <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 space-y-0.5">
+      {% for w in warnings %}<p class="text-xs text-amber-800"><i class="fas fa-triangle-exclamation"></i> {{ w }}</p>{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if approval %}
+    <section class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+      <p class="text-sm font-semibold text-emerald-800"><i class="fas fa-circle-check"></i> रुजु / स्वीकृत भइसकेको</p>
+      <p class="text-xs text-emerald-900/80 mt-1">{{ approval.approver_name }} ({{ approval.approver_post }}) · {{ approval.approved_at|date:'Y-m-d H:i' }}</p>
+      {% if approval.remarks %}<p class="text-xs italic text-emerald-900/80 mt-1">“{{ approval.remarks }}”</p>{% endif %}
+    </section>
+    {% endif %}
+  </div>
+
+  {% if can_approve and not approval %}
+  <form class="border-t border-slate-100 px-6 py-4 bg-slate-50/70 rounded-b-2xl space-y-3"
+        hx-post="{% url 'bid_wf_approve' project.id %}" hx-target="#approve-msg" hx-swap="innerHTML">
+    {% csrf_token %}
+    {% if problems %}
+      <div class="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 space-y-0.5">
+        {% for p in problems %}<p class="text-xs text-rose-700"><i class="fas fa-circle-exclamation"></i> {{ p }}</p>{% endfor %}
+      </div>
+    {% endif %}
+    <div id="approve-msg"></div>
+    <textarea name="remarks" rows="2" class="form-textarea" placeholder="कैफियत / निर्देशन (ऐच्छिक)" {% if problems %}disabled{% endif %}></textarea>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="text-xs text-slate-500">स्वीकृत गर्ने: <b>{{ name }}</b> ({{ post }})</p>
+      <div class="flex gap-2">
+        <button type="button" class="btn-secondary" onclick="closeAppModal()">रद्द</button>
+        <button type="submit" class="btn-success {% if problems %}opacity-50 cursor-not-allowed{% endif %}" {% if problems %}disabled{% endif %}
+                hx-confirm="मूल्याङ्कन हेरेर यो बोलपत्र स्वीकृत गर्ने?">
+          <i class="fas fa-stamp"></i> रुजु / स्वीकृत गर्नुहोस्
+        </button>
+      </div>
+    </div>
+  </form>
+  {% else %}
+  <div class="border-t border-slate-100 px-6 py-3 flex justify-end">
+    <button type="button" class="btn-secondary" onclick="closeAppModal()">बन्द गर्नुहोस्</button>
+  </div>
+  {% endif %}
+</div>

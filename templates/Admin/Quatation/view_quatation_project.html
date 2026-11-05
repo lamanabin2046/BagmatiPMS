@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}प्रस्ताव विवरण{% endblock %}
+{% block content %}
+<div class="space-y-4">
+
+  <h1 class="text-lg md:text-xl font-bold text-slate-800">Quotation Details</h1>
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-shell" data-table="true">
+        <thead>
+          <tr>
+            <th>S.N.</th>
+            <th>Project Name</th>
+            <th>Budget</th>
+            <th>Cost Estimate</th>
+            <th>Contingency</th>
+            <th>Firm Name</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for quation in quations %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ quation.project_name }}</td>
+            <td>{{ quation.budget }}</td>
+            <td>{{ quation.cost_estimate }}</td>
+            <td>{{ quation.contingency }}</td>
+            <td>{{ quation.lowest_firm_name }}</td>
+            <td>
+              <div class="flex flex-wrap gap-2">
+                <a href="{% url 'print_quatation_tippani' quation.id %}" class="btn-chip-emerald">सुरु टिप्पणी</a>
+                <a href="{% url 'send_quatation_letter' quation.id %}" class="btn-chip-brand">प्रस्ताव माग</a>
+                <a href="{% url 'add_quatation_amount' quation.id %}" class="btn-chip-emerald">दर प्रवेष्टी</a>
+                <a href="{% url 'approved_quatation_tippani' quation.id %}" class="btn-chip-emerald">सम्झौता टिप्पणी</a>
+                <a href="{% url 'add_quatation_agreement' quation.id %}" class="btn-chip-emerald">सम्झौताको विवरण</a>
+                <a href="{% url 'print_quatation_agreement' quation.id %}" class="btn-chip-emerald">सम्झौताको प्रिन्ट</a>
+                <a href="{% url 'print_quatation_work_order' quation.id %}" class="btn-chip-emerald">कार्यादेश प्रिन्ट</a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-slate-400 py-6">No quotations available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+  <h1 class="text-xl md:text-2xl font-bold text-slate-800">{{ page_title }}</h1>
+</div>
+
+<div class="bg-white rounded-2xl border border-slate-200 shadow-card max-w-lg">
+  <form method="post" class="p-5 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="form-label">{{ label }}</label>
+      <input type="text" name="name" class="form-input" value="{{ item.name }}" required>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="submit" class="btn-primary"><i class="fas fa-save"></i> सुरक्षित गर्नुहोस्</button>
+      <a href="{% url list_url_name %}" class="btn-secondary">रद्द गर्नुहोस्</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

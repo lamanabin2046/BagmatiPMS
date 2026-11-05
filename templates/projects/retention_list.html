@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load nepali_date outputs %}
+{% block title %}धरौटी फिर्ता{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-800">धरौटी फिर्ता</h1>
+    <p class="text-sm text-slate-500 mt-1">अन्तिम भुक्तानीदेखि {{ months|npn }} महिना (त्रुटि सच्याउने अवधि) पछि — इन्जिनियर / वडाको सिफारिस → टिप्पणी → फिर्ता · {{ filter_desc }}</p>
+  </div>
+  {% if 'report.uc' in me.perms %}<a href="{% url 'deduction_register' %}?code=dharauti" class="btn-secondary no-print"><i class="fas fa-list"></i> धरौटी कट्टी विवरण</a>{% endif %}
+</div>
+
+{# ---------- स्थितिअनुसार ---------- #}
+{% with base='?fiscalyear='|add:f.fiscalyear|add:'&ward='|add:f.ward|add:'&kind='|add:f.kind|add:'&q='|add:f.q %}
+<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-5">
+  <a href="{{ base }}&status=pending" class="card p-4 hover:shadow-soft {% if f.status == 'pending' %}ring-2 ring-amber-500{% endif %} {% if counts.due or counts.recommended or counts.tippani %}bg-amber-50/60{% endif %}">
+    <p class="text-xs text-slate-500"><i class="fas fa-hourglass-end text-amber-600"></i> काम गर्न बाँकी</p>
+    <p class="text-2xl font-bold text-slate-800">{{ counts.due|add:counts.recommended|add:counts.tippani|npn }}</p>
+    <p class="text-[11px] text-slate-400">सिफारिस {{ counts.due|npn }} · टिप्पणी {{ counts.recommended|npn }} · फिर्ता {{ counts.tippani|npn }}</p></a>
+  <a href="{{ base }}&status=held" class="card p-4 hover:shadow-soft {% if f.status == 'held' %}ring-2 ring-brand-500{% endif %}">
+    <p class="text-xs text-slate-500"><i class="fas fa-lock text-brand-600"></i> रोक्का (अवधि बाँकी)</p>
+    <p class="text-2xl font-bold text-slate-800">{{ counts.held|npn }}</p></a>
+  <a href="{{ base }}&status=running" class="card p-4 hover:shadow-soft {% if f.status == 'running' %}ring-2 ring-brand-500{% endif %}">
+    <p class="text-xs text-slate-500"><i class="fas fa-person-digging text-slate-500"></i> काम चालु</p>
+    <p class="text-2xl font-bold text-slate-800">{{ counts.running|npn }}</p></a>
+  <a href="{{ base }}&status=released" class="card p-4 hover:shadow-soft {% if f.status == 'released' %}ring-2 ring-emerald-500{% endif %}">
+    <p class="text-xs text-slate-500"><i class="fas fa-circle-check text-emerald-600"></i> फिर्ता भइसकेको</p>
+    <p class="text-2xl font-bold text-slate-800">{{ counts.released|npn }}</p></a>
+  <div class="card p-4"><p class="text-xs text-slate-500">रोक्का धरौटी (फिर्ता बाँकी)</p><p class="text-lg font-bold text-amber-700">रु. {{ held_total|money:0 }}</p></div>
+  <div class="card p-4"><p class="text-xs text-slate-500">फिर्ता भइसकेको</p><p class="text-lg font-bold text-emerald-700">रु. {{ released_total|money:0 }}</p></div>
+</div>
+{% endwith %}
+
+<form method="get" class="no-print card p-4 mb-5" data-live-filter>
+  <input type="hidden" name="status" value="{{ f.status }}">
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
+    <div><label class="form-label">खरिद विधि</label>
+      <select name="kind" class="form-select"><option value="">सबै विधि</option>
+        {% for k, l in kinds %}<option value="{{ k }}" {% if f.kind == k %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">आर्थिक वर्ष</label>
+      <select name="fiscalyear" class="form-select"><option value="all">सबै</option>
+        {% for y in fiscal_years %}<option value="{{ y.id }}" {% if f.fiscalyear == y.id|stringformat:'s' %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">वडा</label>
+      <select name="ward" class="form-select"><option value="">सबै वडा</option>
+        {% for w in all_wards %}<option value="{{ w.id }}" {% if f.ward == w.id|stringformat:'s' %}selected{% endif %}>वडा नं. {{ w.name }}</option>{% endfor %}</select></div>
+    <div class="col-span-2"><label class="form-label">समिति / निर्माण व्यवसायी / फर्म वा योजना</label>
+      <input type="search" name="q" value="{{ f.q }}" class="form-input" placeholder="नाम खोज्नुहोस्..."></div>
+  </div>
+</form>
+
+<div class="space-y-3">
+  {% for it in items %}
+  {% with p=it.p rel=it.release %}
+  <div class="card p-4 {% if open_id == p.id %}ring-2 ring-brand-400{% endif %}" {% if open_id == p.id %}id="ret-open"{% endif %}>
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
+        <p class="font-semibold text-slate-800">{{ p.name }}</p>
+        <p class="text-xs text-slate-500 mt-0.5">
+          <span class="rounded px-1.5 py-0.5 {% if it.kind == 'uc' %}bg-amber-50 text-amber-700{% elif it.kind == 'bid' %}bg-sky-50 text-sky-700{% else %}bg-violet-50 text-violet-700{% endif %}">{{ it.kind_label }}</span>
+          {{ it.party_label }}: <b class="text-slate-700">{{ it.party|default:'—' }}</b> · वडा नं. {{ p.ward.name|default:'—' }}{% if p.fiscalyear %} · आ.व. {{ p.fiscalyear.name }}{% endif %}
+        </p>
+      </div>
+      <div class="text-right">
+        <p class="text-lg font-bold text-amber-700">रु. {{ it.held|money }}</p>
+        <span class="badge {% if it.status == 'released' %}bg-emerald-50 text-emerald-700{% elif it.status == 'held' or it.status == 'running' %}bg-slate-100 text-slate-600{% else %}bg-amber-50 text-amber-800{% endif %}">{{ it.status_label }}</span>
+      </div>
+    </div>
+
+    {# समयरेखा #}
+    <ol class="mt-3 grid sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+      <li class="rounded-lg border px-3 py-2 {% if it.completed_on %}border-emerald-200 bg-emerald-50/50{% else %}border-slate-200{% endif %}">
+        <p class="font-semibold text-slate-700"><i class="fas fa-flag-checkered"></i> अन्तिम भुक्तानी</p>
+        <p class="text-slate-500">{{ it.completed_bs|default:'बाँकी' }}</p></li>
+      <li class="rounded-lg border px-3 py-2 {% if it.due and it.days_left <= 0 %}border-emerald-200 bg-emerald-50/50{% else %}border-slate-200{% endif %}">
+        <p class="font-semibold text-slate-700"><i class="fas fa-hourglass-half"></i> अवधि सकिने ({{ months|npn }} महिना)</p>
+        <p class="text-slate-500">{{ it.due_bs|default:'—' }}{% if it.due and it.days_left > 0 %} · {{ it.days_left|npn }} दिन बाँकी{% endif %}</p></li>
+      <li class="rounded-lg border px-3 py-2 {% if rel %}border-emerald-200 bg-emerald-50/50{% elif it.status == 'due' %}border-amber-300 bg-amber-50{% else %}border-slate-200{% endif %}">
+        <p class="font-semibold text-slate-700"><i class="fas fa-file-signature"></i> सिफारिस (इन्जिनियर / वडा)</p>
+        {% if rel %}<p class="text-slate-500">{{ rel.get_rec_by_display }} · {{ it.rec_bs }}{% if rel.rec_number %} · {{ rel.rec_number }}{% endif %}</p>
+          <a href="{{ rel.rec_document.url }}" target="_blank" rel="noopener" class="text-brand-700 hover:underline"><i class="fas fa-paperclip"></i> सिफारिस पत्र</a>
+        {% else %}<p class="text-slate-400">बाँकी</p>{% endif %}</li>
+      <li class="rounded-lg border px-3 py-2 {% if rel.released_on %}border-emerald-200 bg-emerald-50/50{% elif rel.tippani_printed_at %}border-amber-300 bg-amber-50{% else %}border-slate-200{% endif %}">
+        <p class="font-semibold text-slate-700"><i class="fas fa-money-bill-transfer"></i> टिप्पणी र फिर्ता</p>
+        {% if rel.released_on %}<p class="text-slate-500">रु. {{ rel.released_amount|money }} · {{ it.released_bs }}{% if rel.voucher_number %} · भौचर {{ rel.voucher_number }}{% endif %}</p>
+          {% if rel.approved_document %}<a href="{{ rel.approved_document.url }}" target="_blank" rel="noopener" class="text-brand-700 hover:underline"><i class="fas fa-paperclip"></i> सदर भएको टिप्पणी</a>{% endif %}
+        {% elif rel.tippani_printed_at %}<p class="text-slate-500">टिप्पणी {{ it.tippani_bs }} मा छापिएको</p>
+        {% else %}<p class="text-slate-400">बाँकी</p>{% endif %}</li>
+    </ol>
+
+    <div class="mt-3 flex flex-wrap items-center gap-1.5 no-print">
+      {% if it.status != 'released' and it.status != 'running' and can_recommend %}
+        <a href="{% url 'retention_recommend' p.id %}" class="{% if not rel %}btn-chip-brand{% else %}btn-chip-slate{% endif %}"><i class="fas fa-upload"></i> {% if rel %}सिफारिस सच्याउनुहोस्{% else %}सिफारिस अपलोड{% endif %}</a>
+      {% endif %}
+      {% if rel and can_manage %}
+        <a href="{% url 'retention_tippani' p.id %}" target="_blank" rel="noopener" class="{% if not rel.tippani_printed_at %}btn-chip-brand{% else %}btn-chip-slate{% endif %}"><i class="fas fa-print"></i> {% if rel.tippani_printed_at %}✓ {% endif %}फिर्ता टिप्पणी</a>
+        {% if rel.tippani_printed_at and not rel.released_on %}<a href="{% url 'retention_release' p.id %}" class="btn-chip-brand"><i class="fas fa-check"></i> फिर्ता दर्ता</a>{% endif %}
+      {% endif %}
+      <details class="ml-auto text-xs">
+        <summary class="cursor-pointer text-slate-500 hover:text-slate-800">धरौटी कट्टी ({{ it.lines|length|npn }} पटक)</summary>
+        <ul class="mt-1 space-y-0.5">{% for ln in it.lines %}<li>{{ ln.source }} · {{ ln.label }} · रु. {{ ln.amount|money }}</li>{% endfor %}</ul>
+      </details>
+    </div>
+    {% if rel.early_reason %}<p class="mt-2 text-xs text-amber-700"><i class="fas fa-triangle-exclamation"></i> म्यादअघि फिर्ता: {{ rel.early_reason }}</p>{% endif %}
+  </div>
+  {% endwith %}
+  {% empty %}
+  <div class="card p-10 text-center text-slate-400"><i class="fas fa-box-open text-3xl text-slate-300 block mb-2"></i> यो छनोटमा धरौटी कट्टी भएको योजना छैन।</div>
+  {% endfor %}
+</div>
+{% if open_id %}<script>(function(){var e=document.getElementById('ret-open'); if(e) setTimeout(function(){e.scrollIntoView({block:'center',behavior:'smooth'});},150);})();</script>{% endif %}
+{% endblock %}

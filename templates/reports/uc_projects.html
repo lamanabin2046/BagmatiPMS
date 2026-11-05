@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load outputs %}
+{% block title %}{{ report_title }}{% endblock %}
+
+{% block content %}
+{% include 'reports/_head.html' with active="projects" %}
+{% include 'reports/_filters.html' %}
+
+<section class="card">
+  <div class="overflow-x-auto">
+    <table class="w-full text-[13px]">
+      <thead><tr class="bg-slate-50 text-[11px] text-slate-500 align-bottom">
+        <th class="px-2 py-2.5 text-left font-medium">क्र.सं.</th>
+        <th class="px-2 py-2.5 text-left font-medium min-w-[14rem]">योजना / समिति, निर्माण व्यवसायी वा फर्म</th>
+        <th class="px-2 py-2.5 text-left font-medium">वडा</th>
+        <th class="px-2 py-2.5 text-left font-medium">स्थिति</th>
+        <th class="px-2 py-2.5 text-right font-medium">विनियोजित</th>
+        <th class="px-2 py-2.5 text-right font-medium">लागत अनुमान</th>
+        <th class="px-2 py-2.5 text-right font-medium">सम्झौता</th>
+        <th class="px-2 py-2.5 text-right font-medium">मूल्याङ्कन</th>
+        <th class="px-2 py-2.5 text-right font-medium">किस्ता / अग्रिम / रनिङ</th>
+        <th class="px-2 py-2.5 text-right font-medium">कुल भुक्तानी</th>
+        <th class="px-2 py-2.5 text-right font-medium">कर कट्टी</th>
+        <th class="px-2 py-2.5 text-right font-medium">खुद भुक्तानी</th>
+        <th class="px-2 py-2.5 text-right font-medium">बाँकी</th>
+      </tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for r in rows %}
+        <tr class="align-top">
+          <td class="px-2 py-2 text-slate-400">{{ forloop.counter|npn }}</td>
+          <td class="px-2 py-2"><span class="font-medium text-slate-800">{{ r.p.name }}</span>
+            <span class="block text-[11px] text-slate-400">{% if not f.kind %}<span class="rounded px-1 {% if r.kind == 'uc' %}bg-amber-50 text-amber-700{% elif r.kind == 'bid' %}bg-sky-50 text-sky-700{% else %}bg-violet-50 text-violet-700{% endif %}">{{ r.kind_label }}</span> · {% endif %}{{ r.party|default:'—' }}{% if r.work_category %} · {{ r.work_category }}{% endif %}{% if r.p.sector %} · {{ r.p.sector.name }}{% if r.p.subsector %} › {{ r.p.subsector.name }}{% endif %}{% endif %}</span></td>
+          <td class="px-2 py-2">{{ r.p.ward.name|default:'—' }}</td>
+          <td class="px-2 py-2 whitespace-nowrap"><span class="rounded-full px-2 py-0.5 text-[11px] {% if r.status == 'completed' %}bg-emerald-50 text-emerald-700{% elif r.status == 'paid' %}bg-sky-50 text-sky-700{% elif r.status == 'running' %}bg-amber-50 text-amber-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ r.status_label }}</span></td>
+          <td class="px-2 py-2 text-right whitespace-nowrap">{{ r.allocated|money }}</td>
+          <td class="px-2 py-2 text-right whitespace-nowrap">{{ r.estimate|money }}</td>
+          <td class="px-2 py-2 text-right whitespace-nowrap">{{ r.contract|money }}</td>
+          <td class="px-2 py-2 text-right whitespace-nowrap">{{ r.valuation|money }}</td>
+          <td class="px-2 py-2 text-right whitespace-nowrap">{% if r.inst_count %}{{ r.installments|money }}<span class="block text-[10px] text-slate-400">{{ r.inst_count|npn }} पटक</span>{% else %}—{% endif %}</td>
+          <td class="px-2 py-2 text-right whitespace-nowrap font-medium">{{ r.gross|money }}</td>
+          <td class="px-2 py-2 text-right whitespace-nowrap text-rose-700">{{ r.tax|money }}</td>
+          <td class="px-2 py-2 text-right whitespace-nowrap">{{ r.net|money }}</td>
+          <td class="px-2 py-2 text-right whitespace-nowrap text-emerald-700">{{ r.remaining|money }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="13" class="px-3 py-10 text-center text-slate-400">यो छनोटमा कुनै योजना छैन।</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if rows %}
+      <tfoot><tr class="bg-slate-50 font-semibold border-t-2 border-slate-200">
+        <td class="px-2 py-2.5" colspan="4">जम्मा ({{ t.count|npn }} योजना)</td>
+        <td class="px-2 py-2.5 text-right whitespace-nowrap">{{ t.allocated|money }}</td>
+        <td class="px-2 py-2.5 text-right whitespace-nowrap">{{ t.estimate|money }}</td>
+        <td class="px-2 py-2.5 text-right whitespace-nowrap">{{ t.contract|money }}</td>
+        <td class="px-2 py-2.5 text-right whitespace-nowrap">{{ t.valuation|money }}</td>
+        <td class="px-2 py-2.5 text-right whitespace-nowrap">{{ t.installments|money }}</td>
+        <td class="px-2 py-2.5 text-right whitespace-nowrap">{{ t.gross|money }}</td>
+        <td class="px-2 py-2.5 text-right whitespace-nowrap text-rose-700">{{ t.tax|money }}</td>
+        <td class="px-2 py-2.5 text-right whitespace-nowrap">{{ t.net|money }}</td>
+        <td class="px-2 py-2.5 text-right whitespace-nowrap text-emerald-700">{{ t.remaining|money }}</td>
+      </tr></tfoot>
+      {% endif %}
+    </table>
+  </div>
+</section>
+{% endblock %}

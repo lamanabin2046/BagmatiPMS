@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+{% load static %}
+{% load letters %}
+{% load nepali_date %}
+{% load nepali_filters %}
+{% load outputs %}
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>अग्रिम भुक्तानी स्वीकृत गर्ने टिप्पणी</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ================= RESET ================= */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ================= PAGE / PRINT SETTINGS ================= */
+    @page {
+      size: A4;
+      margin: 22mm 18mm 20mm 25mm; /* extra left margin for punching/binding */
+    }
+
+    :root {
+      --gov-red: #b0281f;
+      --gov-red-dark: #8c1f18;
+      --ink: #1c1c1c;
+      --muted: #6b6b6b;
+      --hairline: #d8c9a3;
+    }
+
+    html, body {
+      background: #e9e9e9;
+    }
+
+    body {
+      font-family: 'Noto Sans Devanagari', 'Mangal', 'Inter', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ================= A4 SHEET (screen preview only) ================= */
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 14mm auto;
+      background: #fff;
+      padding: 20mm 16mm 18mm 22mm;
+      box-shadow: 0 4px 28px rgba(0,0,0,.18);
+    }
+
+    .gov-red { color: var(--gov-red); }
+
+    /* ================= HEADER ================= */
+    .letter-header {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      border-bottom: 3px solid var(--gov-red);
+      padding-bottom: 12px;
+      margin-bottom: 6px;
+      position: relative;
+    }
+    .letter-header::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; bottom: -6px;
+      border-bottom: 1px solid var(--gov-red);
+    }
+
+    .office-logo-wrap {
+      flex: 0 0 auto;
+      width: 88px;
+      height: 88px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .office-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .office-title {
+      flex: 1 1 auto;
+      text-align: center;
+      line-height: 1.35;
+    }
+    .office-title h2 {
+      font-size: 25px;
+      font-weight: 800;
+      color: var(--gov-red);
+      letter-spacing: .3px;
+    }
+    .office-title h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gov-red);
+      margin-top: 2px;
+    }
+    .office-title h4 {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gov-red-dark);
+      margin-top: 1px;
+    }
+
+    .header-spacer { flex: 0 0 auto; width: 88px; }
+
+    /* ================= META ROW ================= */
+    .letter-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 16px 0 6px;
+      font-size: 14px;
+    }
+    .letter-meta .chip {
+      display: inline-block;
+      border: 1px solid var(--gov-red);
+      color: var(--gov-red);
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 3px;
+      letter-spacing: .5px;
+    }
+    .letter-meta .date-box {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    /* ================= SUBJECT ================= */
+    .letter-subject {
+      text-align: center;
+      font-weight: 700;
+      font-size: 16px;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      margin: 20px 0 22px;
+      letter-spacing: .2px;
+    }
+
+    /* ================= SALUTATION ================= */
+    .letter-salutation {
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    /* ================= BODY ================= */
+    .letter-body p {
+      text-align: justify;
+      margin-bottom: 9px;
+    }
+    .letter-body strong { color: var(--ink); }
+
+    /* ================= SUMMARY TABLE ================= */
+    .summary-box {
+      margin: 12px 0 16px;
+      border: 1px solid var(--hairline);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .summary-box table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .summary-box caption {
+      text-align: left;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--gov-red);
+      background: #fbf3e7;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--hairline);
+      caption-side: top;
+    }
+    .summary-box td {
+      padding: 6px 14px;
+      border-bottom: 1px solid #eee0c6;
+    }
+    .summary-box tr:last-child td { border-bottom: none; }
+    .summary-box td.label { color: var(--muted); width: 55%; }
+    .summary-box td.value { text-align: right; font-weight: 700; white-space: nowrap; }
+    .summary-box tr.total td { background: #fbf3e7; }
+    .summary-box tr.total td.label { color: var(--gov-red-dark); font-weight: 700; }
+    .summary-box tr.total td.value { color: var(--gov-red-dark); }
+
+    /* ================= AUTHORIZATION ================= */
+    .auth-block {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 26px;
+      text-align: center;
+    }
+    .auth-block .auth-col {
+      flex: 1;
+      padding-top: 10px;
+      border-top: 1px solid #888;
+    }
+    .auth-block .auth-col p { line-height: 1.5; font-size: 13.5px; }
+    .auth-block .auth-col p.role {
+      font-weight: 700;
+      color: var(--ink);
+      margin-top: 2px;
+    }
+    .auth-block .auth-col p.action {
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    /* ================= PRINT ADJUSTMENTS ================= */
+    @media print {
+      html, body { background: #fff; }
+      .sheet {
+        width: auto;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="sheet">
+
+  <!-- ================= HEADER ================= -->
+  {% include 'includes/letterhead.html' with branch="(योजना शाखा)" %}
+{% editable_letter "quatation.print_advance_tippani" "दरभाउपत्र: अग्रिम भुक्तानी स्वीकृत गर्ने टिप्पणी" %}
+
+  <!-- ================= META ================= -->
+  <div class="letter-meta">
+    <span class="chip">टिप्पणी र आदेश</span>
+    <span class="date-box">मिति: {{ today_nepali }}</span>
+  </div>
+
+  <!-- ================= SUBJECT ================= -->
+  <div class="letter-subject">
+    विषयः– अग्रिम भुक्तानी स्वीकृत गर्ने सम्बन्धमा ।
+  </div>
+
+  <!-- ================= ADDRESS ================= -->
+  <p class="letter-salutation">
+    श्रीमान प्रमुख प्रशासकिय अधिकृत ज्यू,
+  </p>
+
+  <!-- ================= BODY ================= -->
+  <div class="letter-body">
+
+    <p>
+      यस कार्यालय अन्तर्गत सञ्चालन भइरहेको
+      <strong>{{ project.name }}</strong> योजना अन्तर्गत
+      दरभाउपत्रबाट छनोट भई मिति <strong>{{ agreement_date_nepali }}</strong> मा सम्झौता भएको फर्म
+      <strong>श्री {{ firm_name }}{% if firm_address %}, {{ firm_address }}{% endif %}</strong>
+      बाट सम्झौता बमोजिम कार्य अगाडि बढाउन रु.
+      <strong>{{ advance.approved_amount|money }}/-</strong>
+      अग्रिम भुक्तानी स्वीकृत गरिदिनुहुन मिति
+      <strong>{{ approval_date_nepali }}</strong> गते निवेदन
+      पेश भएको छ।
+    </p>
+
+    <p>
+      सो अग्रिम भुक्तानी रकम बापत सार्वजनिक खरिद ऐन तथा नियमावली बमोजिम
+      फर्मबाट
+      <strong>{{ advance.bank_name }}</strong> बाट जारी जमानत नं.
+      <strong>{{ advance.guarantee_number }}</strong>, रकम रु.
+      <strong>{{ advance.guaranteed_amount|money }}/-</strong>
+      बराबरको बैंक जमानत मिति
+      <strong>{{ issue_date_nepali }}</strong> देखि मिति
+      <strong>{{ expiry_date_nepali }}</strong> सम्म म्याद कायम
+      हुने गरी
+      यस कार्यालयको नाममा पेश भई दर्ता भएको छ।
+    </p>
+
+    <p>
+      पेश भएको बैंक जमानत जाँचबुझ गर्दा सम्झौता तथा प्रचलित कानुन बमोजिम
+      रीतपूर्वकको देखिएकोले माथि उल्लेखित रकम अग्रिम भुक्तानी स्वीकृत गरी
+      भुक्तानी दिन उपयुक्त देखिन्छ।
+    </p>
+
+    <p>
+      तसर्थ, उक्त अग्रिम भुक्तानी स्वीकृत गर्ने सम्बन्धी निर्णयार्थ यो
+      टिप्पणी पेश गरेको छु।
+    </p>
+
+    <div class="summary-box">
+      <table>
+        <caption>अग्रिम भुक्तानी विवरण</caption>
+        <tbody>
+          <tr>
+            <td class="label">आयोजनाको नाम</td>
+            <td class="value">{{ project.name }}</td>
+          </tr>
+          <tr>
+            <td class="label">फर्मको नाम</td>
+            <td class="value">{{ firm_name }}</td>
+          </tr>
+          <tr>
+            <td class="label">सम्झौता रकम</td>
+            <td class="value">{{ agreed_amount|money }}/-</td>
+          </tr>
+          <tr class="total">
+            <td class="label">अग्रिम भुक्तानी रकम</td>
+            <td class="value">{{ advance.approved_amount|money }}/-</td>
+          </tr>
+          <tr>
+            <td class="label">जमानत जारी गर्ने बैंक</td>
+            <td class="value">{{ advance.bank_name }}</td>
+          </tr>
+          <tr>
+            <td class="label">जमानत नम्बर</td>
+            <td class="value">{{ advance.guarantee_number }}</td>
+          </tr>
+          <tr>
+            <td class="label">जमानत रकम</td>
+            <td class="value">{{ advance.guaranteed_amount|money }}/-</td>
+          </tr>
+          <tr>
+            <td class="label">जमानत म्याद</td>
+            <td class="value">{{ issue_date_nepali }} — {{ expiry_date_nepali }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ================= AUTHORIZATION ================= -->
+  <div class="auth-block">
+    <div class="auth-col">
+      <p class="role">(योजना शाखा)</p>
+      <p class="action">पेश गर्ने</p>
+    </div>
+
+    <div class="auth-col">
+      <p class="role">(लेखा शाखा)</p>
+      <p class="action">सिफारिस गर्ने</p>
+    </div>
+
+    <div class="auth-col">
+      <p class="role">(प्रमुख प्रशासकिय अधिकृत)</p>
+      <p class="action">सदर गर्ने</p>
+    </div>
+  </div>
+
+{% endeditable_letter %}
+</div>
+
+<script>
+  window.__letterPrint = function () {
+    window.print();
+    setTimeout(function () {
+      window.location.href = "__WF_RETURN__";
+    }, 3000);
+  };
+</script>
+
+</body>
+</html>
