@@ -80,7 +80,7 @@
         <i class="fas fa-times"></i>
       </button>
     </div>
-    <form id="resetPasswordForm" method="post" class="p-5 space-y-4">
+    <form id="resetPasswordForm" method="post" class="p-5 space-y-4" hx-boost="false">
       {% csrf_token %}
       <p class="text-sm text-slate-600">
         <span id="resetModalName" class="font-medium"></span> (<span id="resetModalMobile"></span>) को लागि नयाँ पासवर्ड सेट गर्दै हुनुहुन्छ।
@@ -102,6 +102,7 @@
 </div>
 
 <!-- ================= DISABLE STAFF MODAL ================= -->
+{# hx-boost="false": action बटन थिचेपछि मात्र तोकिन्छ; HTMX ले पेज लोड हुँदा नै action पढ्ने भएकाले boost गर्दा यही पेजमा POST जान्थ्यो #}
 <div id="disableStaffModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center px-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
     <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -110,7 +111,7 @@
         <i class="fas fa-times"></i>
       </button>
     </div>
-    <form id="disableStaffForm" method="post" class="p-5 space-y-4">
+    <form id="disableStaffForm" method="post" class="p-5 space-y-4" hx-boost="false">
       {% csrf_token %}
       <input type="hidden" name="action" value="deactivate">
       <p class="text-sm text-slate-600">
@@ -141,7 +142,8 @@
     document.getElementById("disableModalName").textContent = name;
     document.getElementById("disableModalMobile").textContent = mobile;
     document.getElementById("disableCaoNote").classList.toggle("hidden", role !== "CAO");
-    document.getElementById("disableStaffForm").action = TOGGLE_ACTIVE_URL_TEMPLATE.replace(/0(?=\/?$)/, userId);
+    // setAttribute: फारममा name="action" भएको input छ, त्यसैले form.action = ... ले काम गर्दैन
+    document.getElementById("disableStaffForm").setAttribute("action", TOGGLE_ACTIVE_URL_TEMPLATE.replace(/0(?=\/?$)/, userId));
     document.getElementById("disableStaffModal").classList.remove("hidden");
   }
 
@@ -166,7 +168,7 @@
   function openResetModal(userId, name, mobile) {
     document.getElementById("resetModalName").textContent = name;
     document.getElementById("resetModalMobile").textContent = mobile;
-    document.getElementById("resetPasswordForm").action = RESET_PASSWORD_URL_TEMPLATE.replace(/0(?=\/?$)/, userId);
+    document.getElementById("resetPasswordForm").setAttribute("action", RESET_PASSWORD_URL_TEMPLATE.replace(/0(?=\/?$)/, userId));
     document.getElementById("resetPasswordModal").classList.remove("hidden");
   }
 
