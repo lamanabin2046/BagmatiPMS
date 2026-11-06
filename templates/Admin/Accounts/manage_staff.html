@@ -5,7 +5,8 @@
 <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
   <div>
     <h1 class="text-xl md:text-2xl font-bold text-slate-800">कर्मचारी</h1>
-    <p class="text-sm text-slate-500 mt-0.5">सबै कर्मचारी खाताहरूको सूची। नयाँ कर्मचारी यहीँबाट थप्नुहोस्; पासवर्ड बिर्सेको कर्मचारीको नयाँ पासवर्ड पनि यहीँबाट सेट गर्न सकिन्छ।</p>
+    <p class="text-sm text-slate-500 mt-0.5">सबै कर्मचारी खाताहरूको सूची। नयाँ कर्मचारी यहीँबाट थप्नुहोस्; पासवर्ड बिर्सेको कर्मचारीको नयाँ पासवर्ड पनि यहीँबाट सेट गर्न सकिन्छ।
+      सरुवा वा अवकाश भएका कर्मचारीको खाता <b>निष्क्रिय</b> गर्नुहोस् — खाता मेटिँदैन, पुराना अभिलेखमा नाम रहन्छ, तर लगइन तुरुन्तै बन्द हुन्छ।</p>
   </div>
   <a href="{% url 'add_staff' %}" class="btn-primary"><i class="fas fa-user-plus"></i> नयाँ कर्मचारी थप्नुहोस्</a>
 </div>
@@ -26,23 +27,40 @@
       </thead>
       <tbody class="divide-y divide-slate-100">
         {% for staff in staff_rows %}
-        <tr class="hover:bg-slate-50">
+        <tr class="hover:bg-slate-50 {% if not staff.is_active %}bg-slate-50/70 text-slate-400{% endif %}">
           <td class="px-5 py-3 text-slate-500">{{ forloop.counter }}</td>
           <td class="px-5 py-3 text-slate-700 font-medium">{{ staff.name }}</td>
           <td class="px-5 py-3 text-slate-700">{{ staff.mobile }}</td>
           <td class="px-5 py-3 text-slate-700">{{ staff.role }}</td>
           <td class="px-5 py-3">
-            {% if staff.status == "Active" %}
-            <span class="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium px-2.5 py-1">{{ staff.status }}</span>
+            {% if staff.is_active %}
+            <span class="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium px-2.5 py-1">सक्रिय</span>
             {% else %}
-            <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-600 text-xs font-medium px-2.5 py-1">{{ staff.status }}</span>
+            <span class="inline-flex items-center rounded-full bg-rose-50 text-rose-700 text-xs font-medium px-2.5 py-1">निष्क्रिय</span>
             {% endif %}
           </td>
           <td class="px-5 py-3">
-            <button type="button" class="btn-chip-emerald"
-                    onclick="openResetModal('{{ staff.id }}', '{{ staff.name|escapejs }}', '{{ staff.mobile|escapejs }}')">
-              <i class="fas fa-key"></i> पासवर्ड रिसेट
-            </button>
+            <div class="flex flex-wrap items-center gap-2">
+              {% if staff.is_active %}
+              <button type="button" class="btn-chip-emerald"
+                      onclick="openResetModal('{{ staff.id }}', '{{ staff.name|escapejs }}', '{{ staff.mobile|escapejs }}')">
+                <i class="fas fa-key"></i> पासवर्ड रिसेट
+              </button>
+              <button type="button" class="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100"
+                      onclick="openDisableModal('{{ staff.id }}', '{{ staff.name|escapejs }}', '{{ staff.mobile|escapejs }}', '{{ staff.role|escapejs }}')">
+                <i class="fas fa-user-slash"></i> निष्क्रिय गर्नुहोस्
+              </button>
+              {% else %}
+              <form method="post" action="{% url 'toggle_staff_active' staff.id %}"
+                    onsubmit="return confirm('{{ staff.name|escapejs }} ({{ staff.mobile|escapejs }}) को खाता फेरि सक्रिय गर्ने?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="activate">
+                <button type="submit" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100">
+                  <i class="fas fa-user-check"></i> फेरि सक्रिय गर्नुहोस्
+                </button>
+              </form>
+              {% endif %}
+            </div>
           </td>
         </tr>
         {% empty %}
@@ -83,7 +101,63 @@
   </div>
 </div>
 
+<!-- ================= DISABLE STAFF MODAL ================= -->
+<div id="disableStaffModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center px-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-slate-700">कर्मचारी खाता निष्क्रिय गर्नुहोस्</h2>
+      <button type="button" onclick="closeDisableModal()" class="text-slate-400 hover:text-rose-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <form id="disableStaffForm" method="post" class="p-5 space-y-4">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="deactivate">
+      <p class="text-sm text-slate-600">
+        <span id="disableModalName" class="font-medium"></span> (<span id="disableModalMobile"></span>) को खाता निष्क्रिय गर्दै हुनुहुन्छ।
+        यसपछि उहाँले लगइन गर्न सक्नुहुन्न; पुराना अभिलेख र पत्रमा नाम रहिरहन्छ। पछि चाहिए फेरि सक्रिय गर्न सकिन्छ।
+      </p>
+      <p id="disableCaoNote" class="hidden rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+        नयाँ प्रमुख प्रशासकीय अधिकृतको खाता थप्नुहोस् र <b>कार्यालय सेटिङ</b> मा CAO को नाम पनि बदल्नुहोस् — पत्रमा हस्ताक्षरकर्ताको नाम त्यहीँबाट छापिन्छ।
+      </p>
+      <div>
+        <label class="form-label">कारण (ऐच्छिक)</label>
+        <input type="text" name="reason" class="form-input w-full" maxlength="200" placeholder="जस्तै: सरुवा — २०८३/०७/२०">
+      </div>
+      <div class="flex items-center gap-2 pt-2">
+        <button type="submit" class="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white hover:bg-rose-700">
+          <i class="fas fa-user-slash"></i> निष्क्रिय गर्नुहोस्
+        </button>
+        <button type="button" onclick="closeDisableModal()" class="btn-secondary flex-1">रद्द गर्नुहोस्</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
+  var TOGGLE_ACTIVE_URL_TEMPLATE = "{% url 'toggle_staff_active' 0 %}";
+
+  function openDisableModal(userId, name, mobile, role) {
+    document.getElementById("disableModalName").textContent = name;
+    document.getElementById("disableModalMobile").textContent = mobile;
+    document.getElementById("disableCaoNote").classList.toggle("hidden", role !== "CAO");
+    document.getElementById("disableStaffForm").action = TOGGLE_ACTIVE_URL_TEMPLATE.replace(/0(?=\/?$)/, userId);
+    document.getElementById("disableStaffModal").classList.remove("hidden");
+  }
+
+  function closeDisableModal() {
+    document.getElementById("disableStaffModal").classList.add("hidden");
+    document.getElementById("disableStaffForm").reset();
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeDisableModal();
+  });
+
+  document.getElementById("disableStaffModal").addEventListener("click", function (e) {
+    if (e.target.id === "disableStaffModal") closeDisableModal();
+  });
+
   // "0" is a placeholder pk here — swapped for the real id below. Building the
   // URL this way (instead of hardcoding "/Admin/ResetPassword/") keeps it correct
   // even if the accounts app's URL prefix ever changes.

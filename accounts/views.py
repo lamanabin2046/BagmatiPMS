@@ -86,6 +86,10 @@ def doLogin(request):
                 return redirect('login')
 
         else:
+            off = CustomUser.objects.filter(mobile=sec.norm_mobile(mobile) or mobile, is_active=False).first()
+            if off is not None and off.check_password(password or ""):
+                messages.error(request, "तपाईंको खाता निष्क्रिय गरिएको छ (सरुवा / अवकाश)। थप जानकारीका लागि Admin लाई सम्पर्क गर्नुहोस्।")
+                return redirect('login')
             locked, left = sec.record_failure(mobile, ip)
             if locked:
                 messages.error(request, f"{sec._np(sec.MAX_FAILS)} पटक गलत पासवर्ड — सुरक्षाका लागि लगइन केही समय बन्द गरियो। "
@@ -271,7 +275,7 @@ def manage_staff(request):
     if not (request.user.is_authenticated and getattr(request.user, "user_type", None) == "1"):
         return redirect("unauthorized")
 
-    users = CustomUser.objects.exclude(pk=request.user.pk).order_by("user_type", "mobile")
+    users = CustomUser.objects.exclude(pk=request.user.pk).order_by("-is_active", "user_type", "mobile")
     role_label_map = dict(CustomUser.USER_CHOICES)
 
     staff_rows = []
@@ -287,6 +291,7 @@ def manage_staff(request):
             "mobile": user.mobile,
             "role": role_label,
             "status": status,
+            "is_active": user.is_active,
         })
 
     return render(request, "Admin/Accounts/manage_staff.html", {
@@ -340,6 +345,63 @@ def reset_staff_password(request, user_id):
 
             messages.success(request, f"{target_user.mobile} को पासवर्ड सफलतापूर्वक रिसेट भयो।")
 
+    return redirect("manage_staff")
+
+
+def toggle_staff_active(request, user_id):
+    """कर्मचारी निष्क्रिय / सक्रिय — सरुवा, अवकाश आदिमा। खाता मेटिँदैन: पुराना
+    स्वीकृति, पत्र र अभिलेखमा नाम रहिरहन्छ, तर लगइन तुरुन्तै बन्द हुन्छ
+    (Django ले निष्क्रिय प्रयोगकर्ताको खुला session पनि अर्को अनुरोधमै रद्द गर्छ)।"""
+    if not (request.user.is_authenticated and getattr(request.user, "user_type", None) == "1"):
+        return redirect("unauthorized")
+    if request.method != "POST":
+        return redirect("manage_staff")
+
+    target_user = CustomUser.objects.filter(pk=user_id).first()
+    if target_user is None:
+        messages.error(request, "प्रयोगकर्ता फेला परेन।")
+        return redirect("manage_staff")
+    if target_user.pk == request.user.pk:
+        messages.error(request, "आफ्नै खाता निष्क्रिय गर्न मिल्दैन।")
+        return redirect("manage_staff")
+
+    activate = request.POST.get("action") == "activate"
+    if not activate and target_user.user_type == "1" and not CustomUser.objects.filter(
+            user_type="1", is_active=True).exclude(pk=target_user.pk).exists():
+        messages.error(request, "अन्तिम सक्रिय Admin लाई निष्क्रिय गर्न मिल्दैन।")
+        return redirect("manage_staff")
+
+    target_user.is_active = activate
+    target_user.save(update_fields=["is_active"])
+    attr = ROLE_PROFILE_ATTR.get(target_user.user_type)
+    profile = getattr(target_user, attr, None) if attr else None
+    if profile is not None and hasattr(profile, "status"):
+        profile.status = "Active" if activate else "Inactive"
+        profile.save(update_fields=["status"])
+
+    name, _status = _staff_profile(target_user)
+    reason = (request.POST.get("reason") or "").strip()[:200]
+    try:
+        from usercommittee.models import ActivityLog
+        ActivityLog.objects.create(
+            user=request.user,
+            action="update",
+            model_name="प्रयोगकर्ता (" + ("सक्रिय" if activate else "निष्क्रिय") + ")",
+            object_id=target_user.pk,
+            object_repr=f"{name} ({target_user.mobile})",
+            note=("Admin द्वारा खाता सक्रिय गरियो" if activate else "Admin द्वारा खाता निष्क्रिय गरियो")
+                 + (f" — {reason}" if reason else ""),
+        )
+    except Exception:
+        pass
+
+    if activate:
+        messages.success(request, f"{name} ({target_user.mobile}) को खाता फेरि सक्रिय भयो।")
+    else:
+        msg = f"{name} ({target_user.mobile}) को खाता निष्क्रिय भयो — अब लगइन गर्न मिल्दैन।"
+        if target_user.user_type == "2":
+            msg += " नयाँ प्रमुख प्रशासकीय अधिकृतको नाम कार्यालय सेटिङमा पनि बदल्नुहोस् (पत्रमा त्यहीँबाट छापिन्छ)।"
+        messages.success(request, msg)
     return redirect("manage_staff")
 
 

@@ -25,6 +25,7 @@ urlpatterns = [
     path('Admin/Office/', views_office.office_settings, name='office_settings'),
     path('Admin/Wards/', views_wards.manage_wards, name='manage_wards'),
     path('Admin/ResetPassword/<int:user_id>/', views.reset_staff_password, name='reset_staff_password'),
+    path('Admin/StaffActive/<int:user_id>/', views.toggle_staff_active, name='toggle_staff_active'),
     path('Engineer/Home/', views.engineer_home, name='engineer_home'),
     path('Engineer/View/Projects', views.view_projects_engineer, name='view_projects_engineer'),
     path('Engineer/View/UserCommittee', views.view_usercommittee_engineer, name='view_usercommittee_engineer'),
