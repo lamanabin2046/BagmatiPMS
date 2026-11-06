@@ -111,7 +111,12 @@ def add_project(request):
         )
         project.save()
         messages.success(request, "योजना दर्ता भयो। अब वार्षिक खरिद योजनाबाट खरिद विधि तोक्नुहोस्।")
-        return redirect('view_projects') 
+        # दर्तापछि वार्षिक खरिद योजना (APP) मा — खरिद विधि त्यहीँ तोकिन्छ; APP हेर्ने अनुमति नभए योजना सूचीमा
+        from accounts.permissions import user_perms
+        from .views_app import VIEW_PERMS
+        if user_perms(request.user) & VIEW_PERMS:
+            return redirect('app_list')
+        return redirect('view_projects')
 
     
     fiscalyear = [cur] if cur else FiscalYear.objects.all()   # नयाँ योजना: चालु आ.व. मात्र
