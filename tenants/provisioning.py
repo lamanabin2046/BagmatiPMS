@@ -16,7 +16,7 @@ from .models import Domain, Palika
 
 # The code filters projects by these ids (usercommittee=1, bidding=2, quotation=3),
 # so they must be created first and in this exact order.
-PROCUREMENT_TYPES = ["उपभोक्ता समिति", "सिलबन्दी बोलपत्र", "सिलबन्दी दरभाउ पत्र"]   # id १–३ (migration 0012 ले पनि बनाउँछ)
+PROCUREMENT_TYPES = ["उपभोक्ता समिति", "शिलबन्दी बोलपत्र", "शिलबन्दी दरभाउ पत्र"]   # id १–३ — migration 0012 कै हिज्जे (फरक हिज्जेले दोहोरो पङ्क्ति बन्थ्यो)
 BUDGET_TYPES = ["स्थानीय तह", "संघीय", "प्रदेश"]
 PROJECT_TYPES = ["वडा स्तरीय", "पालिका स्तरीय", "प्रदेश साझेदारी", "संघीय साझेदारी"]
 NEPALI_DIGITS = str.maketrans("0123456789", "०१२३४५६७८९")
